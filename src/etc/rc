@@ -16,6 +16,7 @@ trap "echo 'Boot interrupted'; exit 1" 3
 HOME=/
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
 export HOME PATH
+use_secadm="no"
 
 echo "Mounting filesystems..."
 
@@ -53,6 +54,8 @@ done
 if _tmpdir=$(mktemp -d -q /.diskless.XXXXXX); then
 	# only remove the directory
 	rmdir ${_tmpdir}
+	# Only use secadm when / is writable
+	use_secadm="yes"
 else
 	# fake a writeable environment in some subdirs
 	for i in conf etc home root usr var; do
@@ -204,6 +207,11 @@ done
 echo -n "."
 /sbin/ldconfig -elf /usr/lib /usr/local/lib /lib
 /etc/rc.d/ldconfig start 2>/dev/null
+
+if [ ${use_secadm} = "yes" ]; then
+	echo "Starting secadm"
+	secadm set
+fi
 
 # Launching kbdmux(4)
 if [ -f "/dev/kbdmux0" ]; then
