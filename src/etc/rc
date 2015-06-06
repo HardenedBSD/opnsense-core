@@ -210,7 +210,7 @@ echo -n "."
 
 if [ ${use_secadm} = "yes" ]; then
 	echo "Starting secadm"
-	secadm set
+	/usr/local/sbin/secadm set
 fi
 
 # Launching kbdmux(4)
