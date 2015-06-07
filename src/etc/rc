@@ -55,7 +55,9 @@ if _tmpdir=$(mktemp -d -q /.diskless.XXXXXX); then
 	# only remove the directory
 	rmdir ${_tmpdir}
 	# Only use secadm when / is writable
-	use_secadm="yes"
+	if [ -f /usr/local/etc/secadm.rules ]; then
+		use_secadm="yes"
+	fi
 else
 	# fake a writeable environment in some subdirs
 	for i in conf etc home root usr var; do
