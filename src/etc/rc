@@ -62,7 +62,9 @@ if _tmpdir=$(mktemp -d -q /.diskless.XXXXXX); then
 	/bin/rm -rf /var/tmp/*
 
 	# Only use secadm when / is writable
-	use_secadm="yes"
+	if [ -f /usr/local/etc/secadm.rules ]; then
+		use_secadm="yes"
+	fi
 else
 	# fake a writeable environment in some subdirs
 	for i in conf etc home root usr var; do
