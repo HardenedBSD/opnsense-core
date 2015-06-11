@@ -238,6 +238,7 @@ echo "done."
 echo -n "Launching the init system..."
 rm -f /root/lighttpd*
 touch /var/run/booting
+sleep 10
 /usr/local/etc/rc.bootup
 rm /var/run/booting
 
