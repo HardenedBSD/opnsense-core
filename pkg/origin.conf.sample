@@ -1,0 +1,8 @@
+OPNsense: {
+  fingerprints: "/usr/local/etc/pkg/fingerprints/OPNsense",
+  url: "pkg+http://pkg.opnsense.org/${ABI}/%%REPO_FLAVOUR%%",
+  signature_type: "fingerprints",
+  mirror_type: "srv",
+  priority: 11,
+  enabled: yes
+}

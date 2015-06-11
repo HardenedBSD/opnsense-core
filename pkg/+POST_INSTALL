@@ -1,9 +1,3 @@
-echo "Updating /etc/shells"
-cp /etc/shells /etc/shells.bak
-(grep -v /usr/local/etc/rc.initial /etc/shells.bak; \
-    echo /usr/local/etc/rc.initial) > /etc/shells
-rm -f /etc/shells.bak
-
 echo "Registering root shell"
 pw usermod -n root -s /usr/local/etc/rc.initial
 
@@ -25,3 +19,6 @@ echo "%%REPO_VERSION%%-%%REPO_COMMENT%%" > /usr/local/opnsense/version/opnsense
 if /usr/local/etc/rc.d/configd status > /dev/null; then
 	/usr/local/etc/rc.d/configd restart
 fi
+
+echo "Flush Phalcon volt templates"
+rm -f /usr/local/opnsense/mvc/app/cache/*.php

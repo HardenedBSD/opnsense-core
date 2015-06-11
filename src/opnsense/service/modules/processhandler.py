@@ -45,6 +45,7 @@ import glob
 import time
 import uuid
 import shlex
+import tempfile
 import ph_inline_actions
 from modules import singleton
 
@@ -410,6 +411,13 @@ class Action(object):
                 if script_command.find('%s') > -1:
                     # use command execution parameters in action parameter template
                     # use quotes on parameters to prevent code injection
+                    if script_command.count('%s') > len(parameters):
+                        # script command accepts more parameters then given, full with empty parameters
+                        for i in range(script_command.count('%s')-len(parameters)):
+                            parameters.append("")
+                    elif len(parameters) > script_command.count('%s'):
+                        # parameters then expected, fail execution
+                        return 'Parameter mismatch'
                     script_command = script_command % tuple(map(lambda x: '"'+x.replace('"', '\\"')+'"',
                                                                 parameters[0:script_command.count('%s')]))
 
@@ -429,8 +437,12 @@ class Action(object):
                     return 'Execute error'
             elif self.type.lower() == 'script_output':
                 try:
-                    script_output = subprocess.check_output(script_command, env=self.config_environment, shell=True)
-                    return script_output
+                    with tempfile.NamedTemporaryFile() as output_stream:
+                        subprocess.check_call(script_command, env=self.config_environment, shell=True,
+                                                              stdout=output_stream, stderr=subprocess.STDOUT)
+                        output_stream.seek(0)
+                        script_output = output_stream.read()
+                        return script_output
                 except:
                     syslog.syslog(syslog.LOG_ERR, '[%s] Script action failed at %s' % (message_uuid,
                                                                                        traceback.format_exc()))

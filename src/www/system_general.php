@@ -36,13 +36,23 @@ function get_locale_list()
 {
 	$locales = array();
 
+	/* first one is the default */
 	$locales['en_US'] = _('English');
 	//$locales['ja_JP'] = _('Japanese');
 	$locales['zh_CN'] = _('Chinese (Simplified)');
 
-	asort($locales);
-
 	return $locales;
+}
+
+function get_flavour_list()
+{
+	$flavours = array();
+
+	/* first one is the default */
+	$flavours['latest'] = 'OpenSSL';
+	$flavours['libressl'] = 'LibreSSL';
+
+	return $flavours;
 }
 
 $pconfig['hostname'] = $config['system']['hostname'];
@@ -173,7 +183,7 @@ if ($_POST) {
 		update_if_changed("NTP servers", $config['system']['timeservers'], strtolower($_POST['timeservers']));
 		update_if_changed("NTP update interval", $config['system']['time-update-interval'], $_POST['timeupdateinterval']);
 
-		if($_POST['language'] && $_POST['language'] != $config['system']['language']) {
+		if ($_POST['language'] && $_POST['language'] != $config['system']['language']) {
 			$config['system']['language'] = $_POST['language'];
 			set_language($config['system']['language']);
 		}
@@ -460,11 +470,11 @@ include("head.inc");
 							</td>
 						</tr>
 						<tr>
-							<td width="22%" valign="top" class="vncell"><?php echo gettext("Language");?></td>
+							<td width="22%" valign="top" class="vncell"><?=gettext("Language");?></td>
 							<td width="78%" class="vtable">
 								<select name="language" class="selectpicker" data-style="btn-default" data-width="auto">
 									<?php
-									foreach(get_locale_list() as $lcode => $ldesc) {
+									foreach (get_locale_list() as $lcode => $ldesc) {
 										$selected = ' selected="selected"';
 										if($lcode != $pconfig['language'])
 											$selected = '';

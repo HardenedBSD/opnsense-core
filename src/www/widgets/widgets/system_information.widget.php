@@ -35,39 +35,24 @@ require_once('notices.inc');
 include_once("includes/functions.inc.php");
 require_once("script/load_phalcon.php");
 
-$file_pkg_status="/tmp/pkg_status.json";
-
-if ($_POST['action'] == 'pkg_update') {
-    /* Setup Shell variables */
-    $shell_output = array();
-    $shell = new OPNsense\Core\Shell();
-    // execute shell command and collect (only valid) info into named array
-    $shell->exec('/usr/local/opnsense/scripts/pkg_updatecheck.sh', false, $shell_output);
-}
-
-if (file_exists($file_pkg_status)) {
-        $json = file_get_contents($file_pkg_status);
-        $pkg_status = json_decode($json, true);
-}
-
 if ($_REQUEST['getupdatestatus']) {
-    if (file_exists($file_pkg_status)) {
-        if ($pkg_status["connection"]=="error") {
-            echo "<span class='text-danger'>".gettext("Connection Error")."</span><br/><span class='btn-link' onclick='checkupdate()'>".gettext("Click to retry now")."</span>";
-        } elseif ($pkg_status["repository"]=="error") {
-            echo "<span class='text-danger'>".gettext("Repository Problem")."</span><br/><span class='btn-link' onclick='checkupdate()'>".gettext("Click to retry now")."</span>";
-        } elseif ($pkg_status["updates"]=="0") {
-            echo "<span class='text-info'>".gettext("At")." <small>".$pkg_status["last_check"]."</small>".gettext(" no updates found.")."<br/><span class='btn-link' onclick='checkupdate()'>Click to check now</span>";
-        } else {
-            echo "<span class='text-danger'>".gettext("A total of ").$pkg_status["updates"].gettext(" update(s) are available.")."<br/><span class='text-info'><small>(When last checked at: ".$pkg_status["last_check"]." )</small></span>"."</span><br/><a href='/ui/core/firmware/'>".gettext("Click to upgrade")."</a> | <span class='btn-link' onclick='checkupdate()'>Re-check now</span>";
-        }
-    } else {
-        echo "<span class='text-danger'>".gettext("Unknown")."</span><br/><span class='btn-link' onclick='checkupdate()'>".gettext("Click to check now")."</span>";
+    $pkg_json = trim(configd_run('firmware pkgstatus'));
+    if ($pkg_json != '') {
+        $pkg_status = json_decode($pkg_json, true);
     }
+
+    if (!isset($pkg_status) || $pkg_status["connection"]=="error") {
+        echo "<span class='text-danger'>".gettext("Connection Error")."</span><br/><span class='btn-link' onclick='checkupdate()'>".gettext("Click to retry")."</span>";
+    } elseif ($pkg_status["repository"]=="error") {
+        echo "<span class='text-danger'>".gettext("Repository Problem")."</span><br/><span class='btn-link' onclick='checkupdate()'>".gettext("Click to retry")."</span>";
+    } elseif ($pkg_status["updates"]=="0") {
+        echo "<span class='text-info'>".gettext("Your system is up to date.")."</span><br/><span class='btn-link' onclick='checkupdate()'>Click to check for updates</span>";
+    } else {
+        echo "<span class='text-info'>".gettext("There are ").$pkg_status["updates"].gettext(" update(s) available.")."</span><br/><a href='/ui/core/firmware/'>".gettext("Click to upgrade")."</a> | <span class='btn-link' onclick='checkupdate()'>Re-check now</span>";
+    }
+
     exit;
 }
-
-$curcfg = $config['system']['firmware'];
 
 $filesystems = get_mounted_filesystems();
 
@@ -119,18 +104,14 @@ endif; ?>
 			</td>
 
 		</tr>
-					<?php if (!isset($config['system']['firmware']['disablecheck'])) :
-?>
 			<tr>
 				<td>
 					Updates
 				</td>
 					<td>
-						<div id='updatestatus'><span class="text-info">Fetching status</span></div>
+						<div id='updatestatus'><span class='btn-link' onclick='checkupdate()'><?=gettext("Click to check for updates");?></span></div>
 					</td>
 				</tr>
-				<?php
-endif; ?>
 		<tr>
 			<td width="25%" class="vncellt"><?=gettext("CPU Type");?></td>
 			<td width="75%" class="listr">
@@ -306,42 +287,34 @@ endforeach; ?>
 <script type="text/javascript">
 //<![CDATA[
 	function checkupdate() {
-		jQuery('#updatestatus').html('<span class="text-info">Updating.... (may take up to 30 seconds) </span>');
+		jQuery('#updatestatus').html('<span class="text-info">Updating.... (may take up to 30 seconds)</span>');
 		jQuery.ajax({
 			type: "POST",
 			url: '/widgets/widgets/system_information.widget.php',
 			data:{action:'pkg_update'},
 			success:function(html) {
-				//alert(html);
 				getstatus();
-
 			}
 		});
 	}
-	window.onload = function(){
-		getstatus();
-	}
 
-	<?php if (!isset($config['system']['firmware']['disablecheck'])) :
-?>
-		function getstatus() {
-			scroll(0,0);
-			var url = "/widgets/widgets/system_information.widget.php";
-			var pars = 'getupdatestatus=yes';
-			jQuery.ajax(
-			url,
-			{
+	function getstatus() {
+		scroll(0,0);
+		var url = "/widgets/widgets/system_information.widget.php";
+		var pars = 'getupdatestatus=yes';
+		jQuery.ajax(
+		url,
+		{
 			type: 'get',
 			data: pars,
 			complete: activitycallback
-			});
-		}
-		function activitycallback(transport) {
-			// .html() method process all script tags contained in responseText,
-			// to avoid this we set the innerHTML property
-			jQuery('#updatestatus').prop('innerHTML',transport.responseText);
-		}
-	<?php
-endif; ?>
+		});
+	}
+
+	function activitycallback(transport) {
+		// .html() method process all script tags contained in responseText,
+		// to avoid this we set the innerHTML property
+		jQuery('#updatestatus').prop('innerHTML',transport.responseText);
+	}
 //]]>
 </script>

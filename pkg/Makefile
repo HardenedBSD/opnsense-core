@@ -1,19 +1,28 @@
 all:
 
 install:
+	# main pkg(8) glue
 	@cp ${.CURDIR}/+PRE_DEINSTALL ${DESTDIR}
 	@cp ${.CURDIR}/+POST_INSTALL ${DESTDIR}
 	@cp ${.CURDIR}/+MANIFEST ${DESTDIR}
-	@mkdir -p ${DESTDIR}/usr/local/etc/pkg/repos
-	@cp ${.CURDIR}/HardenedBSD.conf ${DESTDIR}/usr/local/etc/pkg/repos
-	@echo /usr/local/etc/pkg/repos/HardenedBSD.conf
-	@cp ${.CURDIR}/pkg.conf ${DESTDIR}/usr/local/etc
-	@echo /usr/local/etc/pkg.conf
+	# config.xml factory reset file
 	@cp ${.CURDIR}/config.xml.sample ${DESTDIR}/usr/local/etc
 	@echo "@sample /usr/local/etc/config.xml.sample"
-	@mkdir -p ${DESTDIR}/usr/local/etc/pkg/fingerprints/HardenedBSD/trusted
-	@cp ${.CURDIR}/trusted/hardenedbsd.crt \
-	    ${DESTDIR}/usr/local/etc/pkg/fingerprints/HardenedBSD/trusted
-	@echo /usr/local/etc/pkg/fingerprints/HardenedBSD/trusted/hardenedbsd.crt
+	# create needed root direction
+	@mkdir -p ${DESTDIR}/usr/local/etc/pkg
+	# available repository configurations
+	@cp -r ${.CURDIR}/repos ${DESTDIR}/usr/local/etc/pkg/
+	@(cd ${.CURDIR}/repos; find * -type f) | \
+	    xargs -n1 printf "/usr/local/etc/pkg/repos/%s\n"
+	# main package repository configuration
+	@cp ${.CURDIR}/origin.conf.sample ${DESTDIR}/usr/local/etc/pkg/repos
+	@echo "@sample /usr/local/etc/pkg/repos/origin.conf.sample"
+	# available fingerprints
+	@cp -r ${.CURDIR}/fingerprints ${DESTDIR}/usr/local/etc/pkg/
+	@(cd ${.CURDIR}/fingerprints; find * -type f) | \
+	    xargs -n1 printf "/usr/local/etc/pkg/fingerprints/%s\n"
+	# XXX CONSERVATIVE_UPGRADE is not very helpful
+	@cp ${.CURDIR}/pkg.conf ${DESTDIR}/usr/local/etc
+	@echo /usr/local/etc/pkg.conf
 
 .PHONY: install

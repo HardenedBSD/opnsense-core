@@ -1,8 +1,9 @@
+#!/usr/local/bin/php
 <?php
 
 /*
-	Copyright (C) 2014-2015 Deciso B.V.
-	All rights reserved.
+	Copyright (C) 2015 Franco Fichtner <franco@opnsense.org>
+	All rights reserved
 
 	Redistribution and use in source and binary forms, with or without
 	modification, are permitted provided that the following conditions are met:
@@ -24,14 +25,34 @@
 	CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 	POSSIBILITY OF SUCH DAMAGE.
-
 */
 
-$active_tab = isset($active_tab) ? $active_tab : $_SERVER['PHP_SELF'];
-$tab_array = array();
-//$tab_array[] = array(gettext("Manual Update"), $active_tab == "/system_firmware.php", "system_firmware.php");
-$tab_array[] = array(gettext("Auto Update"), $active_tab == "/system_firmware_check.php", "system_firmware_check.php");
-$tab_array[] = array(gettext("Updater Settings"), $active_tab == "/system_firmware_settings.php", "system_firmware_settings.php");
-//$tab_array[] = array(gettext("Restore Full Backup"), $active_tab == "/system_firmware_restorefullbackup.php", "system_firmware_restorefullbackup.php");
+/* test scipt only, not in production */
+$pkg_mirror = 'http://pkg.opnsense.org';
+$pkg_flavour = 'latest';
 
-display_top_tabs($tab_array);
+if (count($argv) > 1) {
+	$pkg_flavour = $argv[1];
+}
+if (count($argv) > 2) {
+	$pkg_mirror = $argv[2];
+}
+
+$pkg_sample = file_get_contents('/usr/local/etc/pkg/repos/origin.conf.sample');
+$pkg_sample = explode(PHP_EOL, $pkg_sample);
+$pkg_config = '';
+
+foreach ($pkg_sample as $pkg_line) {
+	if (!strlen($pkg_line)) {
+		continue;
+	} elseif (!strncasecmp($pkg_line, '  url:', 6)) {
+		$pkg_line = sprintf(
+			'  url: "pkg+%s/${ABI}/%s",',
+			$pkg_mirror,
+			$pkg_flavour
+		);
+	}
+	$pkg_config .= $pkg_line . PHP_EOL;
+}
+
+file_put_contents('/usr/local/etc/pkg/repos/origin.conf', $pkg_config);

@@ -1,6 +1,6 @@
-#!/usr/local/bin/python2.7
+#!/usr/bin/env python2.7
 """
-    Copyright (c) 2014 Ad Schellevis
+    Copyright (c) 2015 Ad Schellevis
 
     part of OPNsense (https://www.opnsense.org/)
 
@@ -28,51 +28,35 @@
     POSSIBILITY OF SUCH DAMAGE.
 
     --------------------------------------------------------------------------------------
-    package : configd
-    function: commandline execute commands to configd daemon
-
-
+    script to fetch all suricata rule information into a single json object with the following contents:
+        rules : all relevant metadata from the rules including the default enabled or disabled state
+        total_rows: total rowcount for this selection
+        parameters: list of parameters used
 """
-__author__ = 'Ad Schellevis'
-import socket
+import json
 import sys
+from rulecache import RuleCache
 
 
-if len(sys.argv) <= 1:
-    print 'usage : %s [unix domain socket filename] <command>'%sys.argv[0]
-    sys.exit(0)
-else:
-    server_address = sys.argv[1].strip()
+# Because rule parsing isn't very useful when the rule definitions didn't change we create a single json file
+# to hold the last results (combined with creation date and number of files).
+if __name__ == '__main__':
+    rc = RuleCache()
+    if rc.isChanged():
+        rc.create()
 
-if len(sys.argv) > 2:
-    exec_command = ' '.join(sys.argv[2:])
-else:
-    # command line input
-    exec_command = raw_input('command:')+'\n'
+    # load parameters, ignore validation here the search method only processes valid input
+    parameters = {'limit':'0','offset':'0','sort_by':'', 'filter':'', 'filter_fields':''}
+    cmd=None
+    for arg in sys.argv[1:]:
+        if cmd is None:
+            cmd=arg[1:]
+        else:
+            if cmd in parameters:
+                parameters[cmd] = arg.strip()
+            cmd=None
 
-# Create and open unix domain socket
-sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-print ('connecting to %s' % server_address)
-try:
-    sock.connect(server_address)
-except socket.error, msg:
-    print ('error connection to %s '%server_address)
-    sys.exit(1)
-
-# send command and await response
-try:
-    print ('send:%s '%exec_command)
-    sock.send(exec_command)
-    data = ""
-    while True:
-        line = sock.recv(4096)
-        if line:
-            data = data + line
-
-        # end of stream marker found, exit
-        if data.find("%c%c%c"%(chr(0),chr(0),chr(0))) > -1:
-            break
-
-    print ('response:%s'% data[:-3] )
-finally:
-    sock.close()
+    # dump output
+    result=rc.search(**parameters)
+    result['parameters'] = parameters
+    print (json.dumps(result))
