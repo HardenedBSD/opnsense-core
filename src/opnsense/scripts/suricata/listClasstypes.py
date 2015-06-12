@@ -28,35 +28,17 @@
     POSSIBILITY OF SUCH DAMAGE.
 
     --------------------------------------------------------------------------------------
-    script to fetch all suricata rule information into a single json object with the following contents:
-        rules : all relevant metadata from the rules including the default enabled or disabled state
-        total_rows: total rowcount for this selection
-        parameters: list of parameters used
+    script to fetch all classtypes from the installed suricata rules using the shared rule cache:
 """
 import json
-import sys
 from rulecache import RuleCache
 
-
-# Because rule parsing isn't very useful when the rule definitions didn't change we create a single json file
-# to hold the last results (combined with creation date and number of files).
 if __name__ == '__main__':
     rc = RuleCache()
     if rc.isChanged():
         rc.create()
 
-    # load parameters, ignore validation here the search method only processes valid input
-    parameters = {'limit':'0','offset':'0','sort_by':'', 'filter':''}
-    cmd=None
-    for arg in sys.argv[1:]:
-        if cmd is None:
-            cmd=arg[1:]
-        else:
-            if cmd in parameters:
-                parameters[cmd] = arg.strip()
-            cmd=None
+    items=rc.listClassTypes()
+    result = {'items': items, 'count':len(items)}
 
-    # dump output
-    result=rc.search(**parameters)
-    result['parameters'] = parameters
     print (json.dumps(result))

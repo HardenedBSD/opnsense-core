@@ -33,6 +33,7 @@ POSSIBILITY OF SUCH DAMAGE.
      */
     function updateStatus() {
         // update UI
+        $('#updatelist').empty();
         $('#maintabs li:eq(0) a').tab('show');
         $("#checkupdate_progress").addClass("fa fa-spinner fa-pulse");
         $('#updatestatus').attr('class', 'text-info');
@@ -95,6 +96,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
         ajaxCall('/api/core/firmware/upgrade',{upgrade:$.upgrade_action},function() {
             $("#upgrade_progress").removeClass("fa fa-spinner fa-pulse");
+            $('#updatelist').empty();
             setTimeout(trackStatus, 1000) ;
         });
     }

@@ -33,6 +33,7 @@ import os
 import os.path
 import glob
 import sqlite3
+import shlex
 
 class RuleCache(object):
     """
@@ -41,7 +42,8 @@ class RuleCache(object):
         # suricata rule settings, source directory and cache json file to use
         self.rule_source_dir = '/usr/local/etc/suricata/rules/'
         self.cachefile = '%srules.sqlite'%self.rule_source_dir
-        self._rule_fields = ['sid','msg','classtype','rev','gid','source','enabled']
+        self._rule_fields = ['sid','msg','classtype','rev','gid','source','enabled','reference']
+        self._rule_defaults = {'classtype':'##none##'}
 
     def listLocal(self):
         all_rule_files=[]
@@ -85,7 +87,8 @@ class RuleCache(object):
         cur = db.cursor()
         cur.execute('create table stats (timestamp number, files number)')
         cur.execute("""create table rules (sid number, msg text, classtype text,
-                                           rev integer, gid integer,enabled boolean,source text)""")
+                                           rev integer, gid integer,reference text,
+                                           enabled boolean,source text)""")
 
         last_mtime=0
         all_rule_files = self.listLocal()
@@ -97,6 +100,7 @@ class RuleCache(object):
             data = open(filename)
             for rule in data.read().split('\n'):
                 if rule.find('msg:') != -1:
+                    # define basic record
                     record = {'enabled':True, 'source':filename.split('/')[-1]}
                     if rule.strip()[0] =='#':
                         record['enabled'] = False
@@ -107,13 +111,29 @@ class RuleCache(object):
                         fieldContent = field[field.find(':')+1:].strip()
                         if fieldName in self._rule_fields:
                             if fieldContent[0] == '"':
-                                record[fieldName] = fieldContent[1:-1]
+                                content = fieldContent[1:-1]
                             else:
-                                record[fieldName] = fieldContent
+                                content = fieldContent
+
+                            if fieldName in record:
+                                # if same field repeats, put items in list
+                                if type(record[fieldName]) != list:
+                                    record[fieldName] = [record[fieldName]]
+                                record[fieldName].append(content)
+                            else:
+                                record[fieldName] = content
 
                     for rule_field in self._rule_fields:
                         if rule_field not in record:
-                            record[rule_field] = None
+                            if rule_field in self._rule_defaults:
+                                record[rule_field] = self._rule_defaults[rule_field]
+                            else:
+                                record[rule_field] = None
+
+                    # perform type conversions
+                    for fieldname in record:
+                        if type(record[fieldname]) == list:
+                            record[fieldname] = '\n'.join(record[fieldname])
 
                     rules.append(record)
 
@@ -123,12 +143,11 @@ class RuleCache(object):
         cur.execute('insert into stats (timestamp,files) values (?,?) ',(last_mtime,len(all_rule_files)))
         db.commit()
 
-    def search(self, limit, offset, filter, filter_fields, sort_by):
+    def search(self, limit, offset, filter, sort_by):
         """ search installed rules
         :param limit: limit number of rows
         :param offset: limit offset
-        :param filter: text to search
-        :param filter_fields: list of fields to apply filter
+        :param filter: text to search, used format fieldname1,fieldname2/searchphrase include % to match on a part
         :param sort: order by, list of fields and possible asc/desc parameter
         :return: dict
         """
@@ -139,14 +158,27 @@ class RuleCache(object):
         # construct query including filters
         sql = 'select * from rules '
         sql_filters = {}
-        for field in map(lambda x:x.lower().strip(),filter_fields.split(',')):
-            if field in self._rule_fields:
-                if len(sql_filters) > 0:
-                    sql +=  ' or '
+
+        for filtertag in shlex.split(filter):
+            fieldnames = filtertag.split('/')[0]
+            searchcontent = '/'.join(filtertag.split('/')[1:])
+            if len(sql_filters) > 0:
+                sql += ' and ( '
+            else:
+                sql += ' where ( '
+            for fieldname in map(lambda x: x.lower().strip(), fieldnames.split(',')):
+                if fieldname in self._rule_fields:
+                    if fieldname != fieldnames.split(',')[0].strip():
+                        sql += ' or '
+                    if searchcontent.find('%') == -1:
+                        sql += 'cast('+fieldname + " as text) like :"+fieldname+" "
+                    else:
+                        sql += 'cast('+fieldname + " as text) like '%'|| :"+fieldname+" || '%' "
+                    sql_filters[fieldname] = searchcontent.replace('%', '')
                 else:
-                    sql += ' where '
-                sql += 'cast('+field + " as text) like '%'|| :"+field+" || '%' "
-                sql_filters[field] = filter
+                    # not a valid fieldname, add a tag to make sure our sql statement is valid
+                    sql += ' 1 = 1 '
+            sql += ' ) '
 
         # apply sort order (if any)
         sql_sort =[]
@@ -182,3 +214,17 @@ class RuleCache(object):
             result['rows'].append(record)
 
         return result
+
+    def listClassTypes(self):
+        """
+        :return: list of installed classtypes
+        """
+        result = []
+        db = sqlite3.connect(self.cachefile)
+        cur = db.cursor()
+        cur.execute('select distinct classtype from rules')
+        for record in cur.fetchall():
+            result.append(record[0])
+
+        return sorted(result)
+
