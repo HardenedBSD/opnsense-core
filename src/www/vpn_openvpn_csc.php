@@ -29,6 +29,17 @@
 require_once("guiconfig.inc");
 require_once("openvpn.inc");
 
+function openvpn_cleanup_csc($common_name)
+{
+	@unlink('/var/etc/openvpn-csc/' . basename($common_name));
+}
+
+
+function openvpn_delete_csc(&$settings)
+{
+	@unlink("/var/etc/openvpn-csc/{$settings['common_name']}");
+}
+
 $pgtitle = array(gettext("OpenVPN"), gettext("Client Specific Override"));
 $shortcut_section = "openvpn";
 
@@ -269,7 +280,7 @@ include("head.inc");
 
 ?>
 
-<body onload="<?= $jsevents["body"]["onload"] ?>">
+<body>
 
 <script type="text/javascript">
 //<![CDATA[
@@ -337,10 +348,10 @@ if ($act!="new" && $act!="edit") {
 			<div class="row">
 
 				<?php
-                if ($input_errors) {
+                if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
                 }
-                if ($savemsg) {
+                if (isset($savemsg)) {
                     print_info_box($savemsg);
                 }
                 ?>

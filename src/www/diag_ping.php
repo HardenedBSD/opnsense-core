@@ -26,7 +26,6 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-$allowautocomplete = true;
 $pgtitle = array(gettext("Diagnostics"), gettext("Ping"));
 require_once("guiconfig.inc");
 
@@ -78,7 +77,7 @@ include("head.inc"); ?>
 
 			<section class="col-xs-12">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
                 <div class="content-box">
 
@@ -93,7 +92,7 @@ include("head.inc"); ?>
 					        <tbody>
 						        <tr>
 						          <td><?=gettext("Host"); ?></td>
-						          <td><?=$mandfldhtml;?><input name="host" type="text" class="form-control" id="host" value="<?=htmlspecialchars($host);?>" /></td>
+						          <td><input name="host" type="text" class="form-control" id="host" value="<?=htmlspecialchars($host);?>" /></td>
 						        </tr>
 						        <tr>
 						          <td><?=gettext("IP Protocol"); ?></td>

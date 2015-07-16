@@ -388,7 +388,7 @@ function return_gateways_status($byname = false)
 	foreach($gateways_arr as $gwitem) {
 		if(!isset($gwitem['monitor_disable']))
 			continue;
-		if(!is_ipaddr($gwitem['monitorip'])) {
+		if(!isset($gwitem['monitorip']) || !is_ipaddr($gwitem['monitorip'])) {
 			$realif = $gwitem['interface'];
 			$tgtip = get_interface_gateway($realif);
 			if (!is_ipaddr($tgtip))
@@ -912,20 +912,6 @@ function lookup_gateway_ip_by_name($name) {
 	return false;
 }
 
-function lookup_gateway_monitor_ip_by_name($name) {
-
-	$gateways_arr = return_gateways_array(false, true);
-	if (!empty($gateways_arr[$name])) {
-		$gateway = $gateways_arr[$name];
-		if(!is_ipaddr($gateway['monitor']))
-			return $gateway['gateway'];
-
-		return $gateway['monitor'];
-	}
-
-	return (false);
-}
-
 function lookup_gateway_interface_by_name($name) {
 
 	$gateways_arr = return_gateways_array(false, true);
@@ -943,26 +929,28 @@ function get_interface_gateway($interface, &$dynamic = false)
 
 	$gw = NULL;
 
-	$gwcfg = $config['interfaces'][$interface];
-	if (!empty($gwcfg['gateway']) && is_array($config['gateways']['gateway_item'])) {
-		foreach($config['gateways']['gateway_item'] as $gateway) {
-			if(($gateway['name'] == $gwcfg['gateway']) && (is_ipaddrv4($gateway['gateway']))) {
-				$gw = $gateway['gateway'];
-				break;
+	if (isset($config['interfaces'][$interface])) {
+		$gwcfg = $config['interfaces'][$interface];
+		if (!empty($gwcfg['gateway']) && isset($config['gateways']['gateway_item'])) {
+			foreach($config['gateways']['gateway_item'] as $gateway) {
+				if(($gateway['name'] == $gwcfg['gateway']) && (is_ipaddrv4($gateway['gateway']))) {
+					$gw = $gateway['gateway'];
+					break;
+				}
 			}
 		}
-	}
 
-	// for dynamic interfaces we handle them through the $interface_router file.
-	if (!is_ipaddrv4($gw) && !is_ipaddrv4($gwcfg['ipaddr'])) {
-		$realif = get_real_interface($interface);
-		if (file_exists("/tmp/{$realif}_router")) {
+		// for dynamic interfaces we handle them through the $interface_router file.
+		if (!is_ipaddrv4($gw) && !is_ipaddrv4($gwcfg['ipaddr'])) {
+			$realif = get_real_interface($interface);
+			if (file_exists("/tmp/{$realif}_router")) {
 				$gw = trim(file_get_contents("/tmp/{$realif}_router"), " \n");
-			$dynamic = true;
+				$dynamic = true;
+			}
+			if (file_exists("/tmp/{$realif}_defaultgw")) {
+				$dynamic = "default";
+			}
 		}
-		if (file_exists("/tmp/{$realif}_defaultgw"))
-			$dynamic = "default";
-
 	}
 
 	/* return gateway */
@@ -985,7 +973,7 @@ function get_interface_gateway_v6($interface, &$dynamic = false)
 	}
 
 	// for dynamic interfaces we handle them through the $interface_router file.
-	if (!is_ipaddrv6($gw) && !is_ipaddrv6($gwcfg['ipaddrv6'])) {
+	if (!is_ipaddrv6($gw) && ( !isset($gwcfg['ipaddrv6']) || !is_ipaddrv6($gwcfg['ipaddrv6']))) {
 			$realif = get_real_interface($interface);
 			if (file_exists("/tmp/{$realif}_routerv6")) {
 				$gw = trim(file_get_contents("/tmp/{$realif}_routerv6"), " \n");
@@ -1047,26 +1035,5 @@ function validate_address_family($ipaddr, $gwname) {
 	return false;
 }
 
-function gateway_is_gwgroup_member($name) {
-	global $config;
 
-	if (is_array($config['gateways']['gateway_group']))
-		$groups = $config['gateways']['gateway_group'];
-	else
-		return false;
-
-	$members = array();
-	foreach($groups as $group) {
-		if (is_array($group['item'])) {
-			foreach($group['item'] as $item) {
-				$elements = explode("|", $item);
-				$gwname = $elements[0];
-				if ($name == $elements[0])
-					$members[] = $group['name'];
-			}
-		}
-	}
-
-	return $members;
-}
 ?>

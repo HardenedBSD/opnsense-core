@@ -75,10 +75,7 @@ function dump_clog_vpn($logfile, $tail) {
 
 	$logarr = "";
 
-	if(isset($config['system']['usefifolog']))
-		exec("/usr/sbin/fifolog_reader " . escapeshellarg($logfile) . " | tail {$sor} -n " . $tail, $logarr);
-	else
-		exec("/usr/local/sbin/clog " . escapeshellarg($logfile) . " | tail {$sor} -n " . $tail, $logarr);
+	exec("/usr/local/sbin/clog " . escapeshellarg($logfile) . " | tail {$sor} -n " . $tail, $logarr);
 
 	foreach ($logarr as $logent) {
 		$logent = preg_split("/\s+/", $logent, 6);
@@ -113,7 +110,7 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 

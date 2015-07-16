@@ -61,6 +61,11 @@ abstract class BaseField
     protected $internalDefaultValue = "";
 
     /**
+     * @var null|bool|string initial value of this field (first set)
+     */
+    protected $internalInitialValue = false;
+
+    /**
      * @var string direct reference to this field in the model object
      */
     protected $internalReference = null;
@@ -244,7 +249,32 @@ abstract class BaseField
      */
     public function setValue($value)
     {
+        // if first set, store initial value
+        if ($this->internalInitialValue === false) {
+            $this->internalInitialValue = $value;
+        }
         $this->internalValue = $value;
+    }
+
+    /**
+     * force field to act as changed, used after cloning.
+     */
+    public function setChanged()
+    {
+        $this->internalInitialValue = true;
+    }
+
+    /**
+     * check if field content has changed
+     * @return bool change indicator
+     */
+    public function isFieldChanged()
+    {
+        if ($this->internalInitialValue !==  $this->internalValue) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -435,7 +465,7 @@ abstract class BaseField
     }
 
     /**
-     * (re)Apply default value
+     * (re)Apply default value without changing the initial value of the field
      */
     public function applyDefault()
     {

@@ -30,6 +30,22 @@
 require_once("guiconfig.inc");
 require_once("openvpn.inc");
 
+$openvpn_dh_lengths = array(1024, 2048, 4096 );
+$openvpn_cert_depths = array(
+	1 => "One (Client+Server)",
+	2 => "Two (Client+Intermediate+Server)",
+	3 => "Three (Client+2xIntermediate+Server)",
+	4 => "Four (Client+3xIntermediate+Server)",
+	5 => "Five (Client+4xIntermediate+Server)"
+);
+
+$openvpn_server_modes = array(
+	'p2p_tls' => gettext("Peer to Peer ( SSL/TLS )"),
+	'p2p_shared_key' => gettext("Peer to Peer ( Shared Key )"),
+	'server_tls' => gettext("Remote Access ( SSL/TLS )"),
+	'server_user' => gettext("Remote Access ( User Auth )"),
+	'server_tls_user' => gettext("Remote Access ( SSL/TLS + User Auth )"));
+
 if (!is_array($config['openvpn']['openvpn-server'])) {
     $config['openvpn']['openvpn-server'] = array();
 }
@@ -542,7 +558,7 @@ $main_buttons = array(
 
 ?>
 
-<body onload="<?= $jsevents["body"]["onload"] ?>">
+<body>
 <?php include("fbegin.inc"); ?>
 <script type="text/javascript">
 //<![CDATA[
@@ -801,10 +817,10 @@ function tuntap_change() {
                     $savemsg = "";
                 }
 
-                if ($input_errors) {
+                if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
                 }
-                if ($savemsg) {
+                if (isset($savemsg)) {
                     print_info_box_np($savemsg);
                 }
                 ?>

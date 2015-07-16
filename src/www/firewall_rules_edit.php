@@ -30,9 +30,53 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
+
+$firewall_rules_dscp_types = array("af11",
+				"af12",
+				"af13",
+				"af21",
+				"af22",
+				"af23",
+				"af31",
+				"af32",
+				"af33",
+				"af41",
+				"af42",
+				"af43",
+				"VA",
+				"EF",
+				"cs1",
+				"cs2",
+				"cs3",
+				"cs4",
+				"cs5",
+				"cs6",
+				"cs7",
+				"0x01",
+				"0x02",
+				"0x04");
+
+/* TCP flags */
+$tcpflags = array("syn", "ack", "fin", "rst", "psh", "urg", "ece", "cwr");
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/firewall_rules.php');
+
+/****f* legacy/strncpy
+ * NAME
+ *   strncpy - copy strings
+ * INPUTS
+ *   &$dst, $src, $length
+ * RESULT
+ *   none
+ ******/
+function strncpy(&$dst, $src, $length) {
+        if (strlen($src) > $length) {
+                $dst = substr($src, 0, $length);
+        } else {
+                $dst = $src;
+        }
+}
+
 
 function is_posnumericint($arg) {
 	// Note that to be safe we do not allow any leading zero - "01", "007"
@@ -205,10 +249,6 @@ if (isset($id) && $a_filter[$id]) {
 	/* Multi-WAN next-hop support */
 	$pconfig['gateway'] = $a_filter[$id]['gateway'];
 
-	/* Shaper support */
-	$pconfig['defaultqueue'] = (($a_filter[$id]['ackqueue'] == "none") ? '' : $a_filter[$id]['defaultqueue']);
-	$pconfig['ackqueue'] = (($a_filter[$id]['ackqueue'] == "none") ? '' : $a_filter[$id]['ackqueue']);
-
 	//schedule support
 	$pconfig['sched'] = (($a_filter[$id]['sched'] == "none") ? '' : $a_filter[$id]['sched']);
 	if (!isset($_GET['dup']) || !is_numericint($_GET['dup']))
@@ -229,8 +269,6 @@ $if = $pconfig['interface'];
 if (isset($_GET['dup']) && is_numericint($_GET['dup']))
 	unset($id);
 
-read_altq_config(); /* XXX: */
-$qlist =& get_unique_queue_list();
 $a_gatewaygroups = return_gateway_groups_array();
 
 if ($_POST) {
@@ -469,12 +507,6 @@ if ($_POST) {
 			$input_errors[] = gettext("Invalid OS detection selection. Please select a valid OS.");
 	}
 
-	if ($_POST['ackqueue'] != "") {
-		if ($_POST['defaultqueue'] == "" )
-			$input_errors[] = gettext("You have to select a queue when you select an acknowledge queue too.");
-		else if ($_POST['ackqueue'] == $_POST['defaultqueue'])
-			$input_errors[] = gettext("Acknowledge queue and Queue cannot be the same.");
-	}
 	if (isset($_POST['floating']) && $_POST['gateway'] != "" && (empty($_POST['direction']) || $_POST['direction'] == "any"))
 		$input_errors[] = gettext("You can not use gateways in Floating rules without choosing a direction.");
 	if( !empty($_POST['ruleid']) && !ctype_digit($_POST['ruleid']))
@@ -670,12 +702,6 @@ if ($_POST) {
 			$filterent['gateway'] = $_POST['gateway'];
 		}
 
-		if ($_POST['defaultqueue'] != "") {
-			$filterent['defaultqueue'] = $_POST['defaultqueue'];
-			if ($_POST['ackqueue'] != "")
-				$filterent['ackqueue'] = $_POST['ackqueue'];
-		}
-
 		if ($_POST['sched'] != "") {
 			$filterent['sched'] = $_POST['sched'];
 		}
@@ -734,20 +760,18 @@ $page_filename = "firewall_rules_edit.php";
 include("head.inc");
 
 ?>
-<link rel="stylesheet" href="/javascript/chosen/chosen.css" />
 </head>
 
 <body>
 	<?php include("fbegin.inc"); ?>
 	<script type="text/javascript" src="/javascript/jquery.ipv4v6ify.js"></script>
-	<script src="/javascript/chosen/chosen.jquery.js" type="text/javascript"></script>
 
 	<section class="page-content-main">
 
 		<div class="container-fluid">
 
 			<div class="row">
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 
@@ -864,8 +888,9 @@ include("head.inc");
 													if(have_ruleint_access("enc0"))
 														$interfaces["enc0"] = "IPsec";
 												/* add openvpn/tun interfaces */
-												if  ($config['openvpn']["openvpn-server"] || $config['openvpn']["openvpn-client"])
-													$interfaces["openvpn"] = "OpenVPN";
+												if  (isset($config['openvpn']['openvpn-server']) || isset($config['openvpn']['openvpn-client'])) {
+													$interfaces['openvpn'] = 'OpenVPN';
+												}
 												if (is_array($pconfig['interface']))
 													$pconfig['interface'] = implode(",", $pconfig['interface']);
 												$selected_interfaces = explode(",", $pconfig['interface']);
@@ -1451,61 +1476,6 @@ include("head.inc");
 											</div>
 										</td>
 									</tr>
-									<tr>
-										<td width="22%" valign="top" class="vncell"><?=gettext("Ackqueue/Queue");?></td>
-										<td width="78%" class="vtable">
-										<div id="showadvackqueuebox" <?php if (!empty($pconfig['defaultqueue'])) echo "style='display:none'"; ?>>
-											<input type="button" onclick="show_advanced_ackqueue()" class="btn btn-default" value="<?=gettext("Advanced"); ?>" /> - <?=gettext("Show advanced option");?>
-										</div>
-										<div id="showackqueueadv" <?php if (empty($pconfig['defaultqueue'])) echo "style='display:none'"; ?>>
-											<select name="ackqueue">
-							<?php
-										if (!is_array($qlist))
-											$qlist = array();
-										echo "<option value=\"\"";
-										if (!$qselected) echo " selected=\"selected\"";
-										echo " >none</option>";
-										foreach ($qlist as $q => $qkey) {
-											if($q == "")
-												continue;
-											echo "<option value=\"$q\"";
-											if ($q == $pconfig['ackqueue']) {
-												$qselected = 1;
-												echo " selected=\"selected\"";
-											}
-											if (isset($ifdisp[$q]))
-												echo ">{$ifdisp[$q]}</option>";
-											else
-												echo ">{$q}</option>";
-										}
-							?>
-											</select> /
-											<select name="defaultqueue">
-							<?php
-										$qselected = 0;
-										echo "<option value=\"\"";
-										if (!$qselected) echo " selected=\"selected\"";
-										echo " >none</option>";
-										foreach ($qlist as $q => $qkey) {
-											if($q == "")
-												continue;
-											echo "<option value=\"$q\"";
-											if ($q == $pconfig['defaultqueue']) {
-												$qselected = 1;
-												echo " selected=\"selected\"";
-											}
-											if (isset($ifdisp[$q]))
-												echo ">{$ifdisp[$q]}</option>";
-											else
-												echo ">{$q}</option>";
-										}
-							?>
-											</select>
-												<br />
-												<span class="vexpl"><?=gettext("Choose the Acknowledge Queue only if you have selected Queue.");?></span>
-												</div>
-											</td>
-										</tr>
 
 							<?php
 							$has_created_time = (isset($a_filter[$id]['created']) && is_array($a_filter[$id]['created']));

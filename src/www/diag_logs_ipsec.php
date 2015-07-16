@@ -31,6 +31,24 @@
 require_once("guiconfig.inc");
 require_once("ipsec.inc");
 
+function return_clog($logfile, $tail, $withorig = true, $grepfor = "", $grepinvert = "", $grepreverse = false) {
+	global $g, $config;
+	$sor = (isset($config['syslog']['reverse']) || $grepreverse) ? "-r" : "";
+	$logarr = "";
+	$grepline = "  ";
+	if(is_array($grepfor))
+		$grepline .= " | /usr/bin/egrep " . escapeshellarg(implode("|", $grepfor));
+	if(is_array($grepinvert))
+		$grepline .= " | /usr/bin/egrep -v " . escapeshellarg(implode("|", $grepinvert));
+	if($config['system']['disablesyslogclog']) {
+		exec("cat " . escapeshellarg($logfile) . "{$grepline} | /usr/bin/tail {$sor} -n " . escapeshellarg($tail), $logarr);
+	} else {
+		exec("/usr/local/sbin/clog " . escapeshellarg($logfile) . "{$grepline}| grep -v \"CLOG\" | grep -v \"\033\" | /usr/bin/tail {$sor} -n " . escapeshellarg($tail), $logarr);
+	}
+	return($logarr);
+}
+
+
 $ipsec_logfile = '/var/log/ipsec.log';
 
 $nentries = $config['syslog']['nentries'];
@@ -58,7 +76,7 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 

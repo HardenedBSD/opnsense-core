@@ -4,6 +4,7 @@
     Copyright (C) 2014 Deciso B.V.
     Copyright (C) 2004, 2005 Scott Ullrich
     Copyright (C) 2007 Sam Wenham
+    (from service-utils.inc) Copyright (C) 2005-2006 Colin Smith (ethethlay@gmail.com)
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -32,7 +33,7 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("captiveportal.inc");
-require_once("service-utils.inc");
+require_once("services.inc");
 require_once("ipsec.inc");
 require_once("vpn.inc");
 require_once("widgets/include/services_status.inc");

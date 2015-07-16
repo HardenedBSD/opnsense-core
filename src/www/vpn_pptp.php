@@ -30,7 +30,6 @@
 require_once('guiconfig.inc');
 require_once('functions.inc');
 require_once('filter.inc');
-require_once('shaper.inc');
 require_once('vpn.inc');
 
 if (!is_array($config['pptpd']['radius'])) {
@@ -63,7 +62,7 @@ $pconfig['radius_acct_update'] = $pptpcfg['radius']['acct_update'];
 $pconfig['radius_nasip'] = $pptpcfg['radius']['nasip'];
 
 if ($_POST) {
-    if (isset($input_errors)) {
+    if (isset($input_errors) && count($input_errors) > 0) {
         unset($input_errors);
     }
     $pconfig = $_POST;
@@ -303,10 +302,10 @@ function enable_change(enable_over) {
 			<div class="row">
 
 
-				<?php if ($input_errors) {
+				<?php if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
 } ?>
-				<?php if ($savemsg) {
+				<?php if (isset($savemsg)) {
                     print_info_box($savemsg);
 } ?>
 				<?php print_info_box(gettext("PPTP is no longer considered a secure VPN technology because it relies upon MS-CHAPv2 which has been compromised. If you continue to use PPTP be aware that intercepted traffic can be decrypted by a third party, so it should be considered unencrypted. We advise migrating to another VPN type such as OpenVPN or IPsec.<br /><br /><a href=\"https://isc.sans.edu/diary/End+of+Days+for+MS-CHAPv2/13807\">Read More</a>")); ?>
@@ -347,8 +346,7 @@ function enable_change(enable_over) {
 										<tr>
 										  <td width="22%" valign="top" class="vncellreq"><?=gettext("PPTP redirection");?></td>
 						                  <td width="78%" class="vtable">
-						                    <?=$mandfldhtml;
-?><input name="redir" type="text" class="form-control unknown" id="redir" size="20" value="<?=htmlspecialchars($pconfig['redir']);?>" />
+						                    <input name="redir" type="text" class="form-control unknown" id="redir" size="20" value="<?=htmlspecialchars($pconfig['redir']);?>" />
 						                    <br />
 						                    <?=gettext("Enter the IP address of a host which will accept incoming " .
                                             "PPTP connections"); ?>.</td>
@@ -383,8 +381,7 @@ function enable_change(enable_over) {
 						                <tr>
 						                  <td width="22%" valign="top" class="vncellreq"><?=gettext("Server address"); ?></td>
 						                  <td width="78%" class="vtable">
-						                    <?=$mandfldhtml;
-?><input name="localip" type="text" class="form-control unknown" id="localip" size="20" value="<?=htmlspecialchars($pconfig['localip']);?>" />
+						                    <input name="localip" type="text" class="form-control unknown" id="localip" size="20" value="<?=htmlspecialchars($pconfig['localip']);?>" />
 									<br />
 									<?=gettext("Enter the IP address the PPTP server should give to clients for use as their \"gateway\""); ?>.
 									<br />
@@ -397,8 +394,7 @@ function enable_change(enable_over) {
 						                  <td width="22%" valign="top" class="vncellreq"><?=gettext("Remote address " .
                                             "range"); ?></td>
 						                  <td width="78%" class="vtable">
-						                    <?=$mandfldhtml;
-?><input name="remoteip" type="text" class="form-control unknown" id="remoteip" size="20" value="<?=htmlspecialchars($pconfig['remoteip']);?>" />
+						                    <input name="remoteip" type="text" class="form-control unknown" id="remoteip" size="20" value="<?=htmlspecialchars($pconfig['remoteip']);?>" />
 						                    <br />
 						                    <?=gettext("Specify the starting address for the client IP subnet"); ?>.<br />
 						                  </td>
@@ -406,8 +402,7 @@ function enable_change(enable_over) {
 						                <tr>
 						                  <td width="22%" valign="top" class="vncell"><?=gettext("PPTP DNS Servers"); ?></td>
 						                  <td width="78%" class="vtable">
-						                    <?=$mandfldhtml;
-?><input name="pptp_dns1" type="text" class="form-control unknown" id="pptp_dns1" size="20" value="<?=htmlspecialchars($pconfig['pptp_dns1']);?>" />
+						                    <input name="pptp_dns1" type="text" class="form-control unknown" id="pptp_dns1" size="20" value="<?=htmlspecialchars($pconfig['pptp_dns1']);?>" />
 						                    <br />
 											<input name="pptp_dns2" type="text" class="form-control unknown" id="pptp_dns2" size="20" value="<?=htmlspecialchars($pconfig['pptp_dns2']);?>" />
 						                    <br />

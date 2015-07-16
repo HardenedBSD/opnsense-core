@@ -3,6 +3,7 @@
 	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) 2004 Scott Ullrich
 	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
+	(from itemid.inc) Copyright (C) 2009 Janne Enberg <janne.enberg@lietu.net>)
 	All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without
@@ -30,8 +31,58 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
-require_once("itemid.inc");
+
+/****f* legacy/have_natpfruleint_access
+ * NAME
+ *   have_natpfruleint_access
+ * INPUTS
+ *      none
+ * RESULT
+ *   returns true if user has access to edit a specific firewall nat port forward interface
+ ******/
+function have_natpfruleint_access($if) {
+        $security_url = "firewall_nat_edit.php?if=". strtolower($if);
+        if(isAllowedPage($security_url))
+                return true;
+        return false;
+}
+
+/****f* itemid/delete_id (duplicate to remove itemid.inc)
+ * NAME
+ *   delete_id - delete an item with ['id'] = $id from $array
+ * INPUTS
+ *   $id       - int: The ID to delete
+ *   $array    - array to delete the item from
+ * RESULT
+ *   boolean   - true if item was found and deleted
+ ******/
+function delete_id($id, &$array){
+	// Index to delete
+	$delete_index = NULL;
+
+	if (!is_array($array))
+		return false;
+
+	// Search for the item in the array
+	foreach ($array as $key => $item){
+		// If this item is the one we want to delete
+		if(isset($item['associated-rule-id']) && $item['associated-rule-id']==$id ){
+			$delete_index = $key;
+			break;
+		}
+	}
+
+	// If we found the item, unset it
+	if( $delete_index!==NULL ){
+		unset($array[$delete_index]);
+		return true;
+	} else {
+		return false;
+	}
+
+}
+
+
 
 if (!is_array($config['nat']['rule']))
 	$config['nat']['rule'] = array();
@@ -189,7 +240,7 @@ $main_buttons = array(
 			<div class="row">
 
 
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('natconf')): ?>
 				<?php print_info_box_np(gettext("The NAT configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>

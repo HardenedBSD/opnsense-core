@@ -31,6 +31,188 @@
 
 include_once("auth.inc");
 include_once("priv.inc");
+require_once("filter.inc");
+
+function getPrivPages(& $entry, & $allowed_pages) {
+	global $priv_list;
+
+	if (!isset($entry['priv']) || !is_array($entry['priv']))
+		return;
+
+	foreach ($entry['priv'] as $pname) {
+		if (strncmp($pname, "page-", 5))
+			continue;
+		$priv = &$priv_list[$pname];
+		if (!is_array($priv))
+			continue;
+		$matches = &$priv['match'];
+		if (!is_array($matches))
+			continue;
+		foreach ($matches as $match)
+			$allowed_pages[] = $match;
+	}
+}
+
+
+
+function getAllowedPages($username) {
+	global $config, $_SESSION;
+
+	if (!function_exists("ldap_connect"))
+		return;
+
+	$allowed_pages = array();
+	$allowed_groups = array();
+
+	if (isset($config['system']['webgui']['authmode'])) {
+		$authcfg = auth_get_authserver($config['system']['webgui']['authmode']);
+	} else {
+		$authcfg['type'] = 'local';
+	}
+	// obtain ldap groups if we are in ldap mode
+	if ($authcfg['type'] == "ldap")
+		$allowed_groups = @ldap_get_groups($username, $authcfg);
+	else {
+		// search for a local user by name
+		$local_user = getUserEntry($username);
+		getPrivPages($local_user, $allowed_pages);
+
+		// obtain local groups if we have a local user
+		$allowed_groups = local_user_get_groups($local_user);
+	}
+
+	// build a list of allowed pages
+	if (is_array($config['system']['group']) && is_array($allowed_groups)) {
+		foreach ($config['system']['group'] as $group) {
+			if (in_array($group['name'], $allowed_groups)) {
+				getPrivPages($group, $allowed_pages);
+			}
+		}
+	}
+
+	$_SESSION['page-match'] = $allowed_pages;
+
+	return $allowed_pages;
+}
+
+
+function session_auth() {
+	global $config, $_SESSION;
+
+	// Handle HTTPS httponly and secure flags
+	$currentCookieParams = session_get_cookie_params();
+	session_set_cookie_params(
+		$currentCookieParams["lifetime"],
+		$currentCookieParams["path"],
+		NULL,
+		($config['system']['webgui']['protocol'] == "https"),
+		true
+	);
+
+	if (session_status() == PHP_SESSION_NONE) {
+		session_start();
+	}
+
+	// Detect protocol change
+	if (!isset($_POST['login']) && !empty($_SESSION['Logged_In']) && $_SESSION['protocol'] != $config['system']['webgui']['protocol'])
+		return false;
+
+	/* Validate incoming login request */
+	if (isset($_POST['login']) && !empty($_POST['usernamefld']) && !empty($_POST['passwordfld'])) {
+		if (isset($config['system']['webgui']['authmode'])) {
+			$authcfg = auth_get_authserver($config['system']['webgui']['authmode']);
+		} else {
+			$authcfg = null;
+		}
+		if (authenticate_user($_POST['usernamefld'], $_POST['passwordfld'], $authcfg) ||
+		    authenticate_user($_POST['usernamefld'], $_POST['passwordfld'])) {
+			// Generate a new id to avoid session fixation
+			session_regenerate_id();
+			$_SESSION['Logged_In'] = "True";
+			$_SESSION['Username'] = $_POST['usernamefld'];
+			$_SESSION['last_access'] = time();
+			$_SESSION['protocol'] = $config['system']['webgui']['protocol'];
+			if (!isset($config['system']['webgui']['quietlogin'])) {
+				log_error(sprintf(gettext("Successful login for user '%1\$s' from: %2\$s"), $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
+			}
+			if (isset($_POST['postafterlogin']))
+				return true;
+			else {
+				header("Location: {$_SERVER['REQUEST_URI']}");
+			}
+			exit;
+		} else {
+			/* give the user an error message */
+			$_SESSION['Login_Error'] = _('Wrong username or password.');
+			log_error("webConfigurator authentication error for '{$_POST['usernamefld']}' from {$_SERVER['REMOTE_ADDR']}");
+			if (isAjax()) {
+				echo "showajaxmessage('{$_SESSION['Login_Error']}');";
+				return;
+			}
+		}
+	}
+
+	/* Show login page if they aren't logged in */
+	if (empty($_SESSION['Logged_In']))
+		return false;
+
+	/* If session timeout isn't set, we don't mark sessions stale */
+	if (!isset($config['system']['webgui']['session_timeout'])) {
+		/* Default to 4 hour timeout if one is not set */
+		if ($_SESSION['last_access'] < (time() - 14400)) {
+			$_GET['logout'] = true;
+			$_SESSION['Logout'] = true;
+		} else
+			$_SESSION['last_access'] = time();
+	} else if (intval($config['system']['webgui']['session_timeout']) == 0) {
+		/* only update if it wasn't ajax */
+		if (!isAjax())
+			$_SESSION['last_access'] = time();
+	} else {
+		/* Check for stale session */
+		if ($_SESSION['last_access'] < (time() - ($config['system']['webgui']['session_timeout'] * 60))) {
+			$_GET['logout'] = true;
+			$_SESSION['Logout'] = true;
+		} else {
+			/* only update if it wasn't ajax */
+			if (!isAjax())
+				$_SESSION['last_access'] = time();
+		}
+	}
+
+	/* user hit the logout button */
+	if (isset($_GET['logout'])) {
+
+		if (isset($_SESSION['Logout']))
+			log_error(sprintf(gettext("Session timed out for user '%1\$s' from: %2\$s"), $_SESSION['Username'], $_SERVER['REMOTE_ADDR']));
+		else
+			log_error(sprintf(gettext("User logged out for user '%1\$s' from: %2\$s"), $_SESSION['Username'], $_SERVER['REMOTE_ADDR']));
+
+		/* wipe out $_SESSION */
+		$_SESSION = array();
+
+		if (isset($_COOKIE[session_name()]))
+			setcookie(session_name(), '', time()-42000, '/');
+
+		/* and destroy it */
+		session_destroy();
+
+		$scriptName = explode("/", $_SERVER["SCRIPT_FILENAME"]);
+		$scriptElms = count($scriptName);
+		$scriptName = $scriptName[$scriptElms-1];
+
+		if (isAjax())
+			return false;
+
+		/* redirect to page the user is on, it'll prompt them to login again */
+		header("Location: {$scriptName}");
+
+		return false;
+	}
+
+	return true;
+}
+
 
 /* Authenticate user - exit if failed */
 if (!session_auth()) {
@@ -51,7 +233,6 @@ $allowedpages = getAllowedPages($_SESSION['Username']);
 if (!isAllowedPage($_SERVER['REQUEST_URI'])) {
     if (count($allowedpages) > 0) {
         $page = str_replace('*', '', $allowedpages[0]);
-        $_SESSION['Post_Login'] = true;
         require_once("functions.inc");
         redirectHeader("/{$page}");
 
@@ -66,19 +247,6 @@ if (!isAllowedPage($_SERVER['REQUEST_URI'])) {
         display_error_form("201", gettext("No page assigned to this user! Click here to logout."));
         exit;
     }
-} else {
-    $_SESSION['Post_Login'] = true;
-}
-
-/*
- * redirect browsers post-login to avoid pages
- * taking action in reponse to a POST request
- */
-if (!$_SESSION['Post_Login']) {
-    $_SESSION['Post_Login'] = true;
-    require_once("functions.inc");
-    redirectHeader($_SERVER['REQUEST_URI']);
-    exit;
 }
 
 /*
@@ -144,35 +312,20 @@ function display_login_form()
 
     unset($input_errors);
 
+
     if (isAjax()) {
-        if (isset($_POST['login'])) {
-            if ($_SESSION['Logged_In'] <> "True") {
-                isset($_SESSION['Login_Error']) ? $login_error = $_SESSION['Login_Error'] : $login_error = gettext("unknown reason");
-                printf("showajaxmessage('" . gettext("Invalid login (%s).") . "')", $login_error);
-            }
-            if (file_exists('/tmp/webconfigurator.lock')) {
-                // TODO: add the IP from the user who did lock the device
-                $whom = file_get_contents('/tmp/webconfigurator.lock');
-                printf("showajaxmessage('" . gettext("This device is currently being maintained by: %s.") . "');", $whom);
-            }
-        }
         exit;
     }
 
     /* Check against locally configured IP addresses, which will catch when someone
-	   port forwards WebGUI access from WAN to an internal IP on the router. */
-    global $FilterIflist, $nifty_background;
+	   port forwards WebGUI access from WAN to an internal IP on the router. */    
+    $FilterIflist = filter_generate_optcfg_array() ;
     $local_ip = false;
     if (strstr($_SERVER['HTTP_HOST'], ":")) {
         $http_host_port = explode(":", $_SERVER['HTTP_HOST']);
         $http_host = $http_host_port[0];
     } else {
         $http_host = $_SERVER['HTTP_HOST'];
-    }
-    if (empty($FilterIflist)) {
-        require_once('filter.inc');
-        require_once('shaper.inc');
-        filter_generate_optcfg_array();
     }
     foreach ($FilterIflist as $iflist) {
         if ($iflist['ip'] == $http_host) {
@@ -182,9 +335,8 @@ function display_login_form()
             $local_ip = true;
         }
     }
-    unset($FilterIflist);
 
-    if ($config['virtualip']) {
+    if (isset($config['virtualip'])) {
         if ($config['virtualip']['vip']) {
             foreach ($config['virtualip']['vip'] as $vip) {
                 if ($vip['subnet'] == $http_host) {
@@ -237,7 +389,6 @@ function display_login_form()
 	<div class="container">
 		<?php
         if (is_ipaddr($http_host) && !$local_ip && !isset($config['system']['webgui']['nohttpreferercheck'])) {
-            $nifty_background = "#999";
             print_info_box(gettext("You are accessing this router by an IP address not configured locally, which may be forwarded by NAT or other means. <br /><br />If you did not setup this forwarding, you may be the target of a man-in-the-middle attack."));
         }
                 $loginautocomplete = isset($config['system']['webgui']['loginautocomplete']) ? '' : 'autocomplete="off"';
@@ -262,7 +413,7 @@ function display_login_form()
 
 			  <div class="form-group">
 			    <label for="usernamefld"><?=gettext("Username:"); ?></label>
-			    <input id="usernamefld" type="text" name="usernamefld" class="form-control user" tabindex="1" autofocus="autofocus" />
+			    <input id="usernamefld" type="text" name="usernamefld" class="form-control user" tabindex="1" autofocus="autofocus" autocapitalize="off" autocorrect="off" />
 			  </div>
 
 			  <div class="form-group">

@@ -29,7 +29,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 if (!is_array($config['nat']['npt'])) {
 	$config['nat']['npt'] = array();
@@ -80,7 +79,7 @@ $main_buttons = array(
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('natconf')): ?>
 				<?php print_info_box_np(gettext("The NAT configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>

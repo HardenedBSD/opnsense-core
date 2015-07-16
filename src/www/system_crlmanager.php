@@ -30,6 +30,64 @@ require_once("guiconfig.inc");
 require_once("certs.inc");
 require_once('openvpn.inc');
 
+function openvpn_refresh_crls() {
+	global $g, $config;
+
+	openvpn_create_dirs();
+
+	if (isset($config['openvpn']['openvpn-server']) && is_array($config['openvpn']['openvpn-server'])) {
+		foreach ($config['openvpn']['openvpn-server'] as $settings) {
+			if (empty($settings))
+				continue;
+			if (isset($settings['disable']))
+				continue;
+			// Write the settings for the keys
+			switch($settings['mode']) {
+				case 'p2p_tls':
+				case 'server_tls':
+				case 'server_tls_user':
+				case 'server_user':
+					if (!empty($settings['crlref'])) {
+						$crl = lookup_crl($settings['crlref']);
+						crl_update($crl);
+						$fpath = "/var/etc/openvpn/server{$settings['vpnid']}.crl-verify";
+						file_put_contents($fpath, base64_decode($crl['text']));
+						@chmod($fpath, 0644);
+					}
+					break;
+			}
+		}
+	}
+}
+
+
+
+function cert_unrevoke($cert, & $crl) {
+	global $config;
+	if (!is_crl_internal($crl))
+		return false;
+	foreach ($crl['cert'] as $id => $rcert) {
+		if (($rcert['refid'] == $cert['refid']) || ($rcert['descr'] == $cert['descr'])) {
+			unset($crl['cert'][$id]);
+			if (count($crl['cert']) == 0) {
+				// Protect against accidentally switching the type to imported, for older CRLs
+				if (!isset($crl['method']))
+					$crl['method'] = "internal";
+				crl_update($crl);
+			} else
+				crl_update($crl);
+			return true;
+		}
+	}
+	return false;
+}
+
+// Keep this general to allow for future expansion. See cert_in_use() above.
+function crl_in_use($crlref) {
+	return (is_openvpn_server_crl($crlref));
+}
+
+
 global $openssl_crl_status;
 
 $pgtitle = array(gettext("System"), gettext("Certificate Revocation List Manager"));
@@ -38,10 +96,9 @@ $crl_methods = array(
     "internal" => gettext("Create an internal Certificate Revocation List"),
     "existing" => gettext("Import an existing Certificate Revocation List"));
 
-if (ctype_alnum($_GET['id'])) {
+if (isset($_GET['id']) && ctype_alnum($_GET['id'])) {
     $id = $_GET['id'];
-}
-if (isset($_POST['id']) && ctype_alnum($_POST['id'])) {
+} elseif (isset($_POST['id']) && ctype_alnum($_POST['id'])) {
     $id = $_POST['id'];
 }
 
@@ -57,7 +114,7 @@ if (!is_array($config['cert'])) {
 
 $a_cert =& $config['cert'];
 
-if (!is_array($config['crl'])) {
+if (!isset($config['crl']) || !is_array($config['crl'])) {
     $config['crl'] = array();
 }
 
@@ -69,9 +126,11 @@ foreach ($a_crl as $cid => $acrl) {
     }
 }
 
-$act = $_GET['act'];
-if ($_POST['act']) {
-    $act = $_POST['act'];
+$act=null;
+if (isset($_GET['act'])) {
+	$act = $_GET['act'];
+} elseif (isset($_POST['act'])) {
+	$act = $_POST['act'];
 }
 
 if (!empty($id)) {
@@ -79,7 +138,7 @@ if (!empty($id)) {
 }
 
 // If we were given an invalid crlref in the id, no sense in continuing as it would only cause errors.
-if (!$thiscrl && (($act != "") && ($act != "new"))) {
+if (!isset($thiscrl) && (($act != "") && ($act != "new"))) {
     redirectHeader("system_crlmanager.php");
     $act="";
     $savemsg = gettext("Invalid CRL reference.");
@@ -101,8 +160,16 @@ if ($act == "del") {
 }
 
 if ($act == "new") {
-    $pconfig['method'] = $_GET['method'];
-    $pconfig['caref'] = $_GET['caref'];
+    if (isset($_GET['method'])) {
+        $pconfig['method'] = $_GET['method'];
+    } else {
+        $pconfig['method'] = null;
+    }
+    if (isset($_GET['caref'])) {
+        $pconfig['caref'] = $_GET['caref'];
+    } else {
+        $pconfig['caref'] = null;
+    }
     $pconfig['lifetime'] = "9999";
     $pconfig['serial'] = "0";
 }
@@ -122,7 +189,7 @@ if ($act == "exp") {
 
 if ($act == "addcert") {
     if ($_POST) {
-        unset($input_errors);
+        $input_errors = array();
         $pconfig = $_POST;
 
         if (!$pconfig['crlref'] || !$pconfig['certref']) {
@@ -145,7 +212,7 @@ if ($act == "addcert") {
             $input_errors[] = gettext("Cannot revoke certificates for an imported/external CRL.");
         }
 
-        if (!$input_errors) {
+        if (!count($input_errors)) {
             $reason = (empty($pconfig['crlreason'])) ? OCSP_REVOKED_STATUS_UNSPECIFIED : $pconfig['crlreason'];
             cert_revoke($cert, $crl, $reason);
             openvpn_refresh_crls();
@@ -216,7 +283,7 @@ if ($_POST) {
     if (!$input_errors) {
         $result = false;
 
-        if ($thiscrl) {
+        if (isset($thiscrl)) {
             $crl =& $thiscrl;
         } else {
             $crl = array();
@@ -239,7 +306,7 @@ if ($_POST) {
             $crl['cert'] = array();
         }
 
-        if (!$thiscrl) {
+        if (!isset($thiscrl)) {
             $a_crl[] = $crl;
         }
 
@@ -252,7 +319,7 @@ if ($_POST) {
 include("head.inc");
 ?>
 
-<body onload="<?= $jsevents["body"]["onload"] ?>">
+<body>
     <?php include("fbegin.inc"); ?>
     <script type="text/javascript">
     //<![CDATA[
@@ -283,10 +350,10 @@ include("head.inc");
 
         <div class="row">
             <?php
-            if ($input_errors) {
+            if (isset($input_errors) && count($input_errors) > 0) {
                 print_input_errors($input_errors);
             }
-            if ($savemsg) {
+            if (isset($savemsg)) {
                 print_info_box($savemsg);
             }
             ?>
@@ -296,7 +363,7 @@ include("head.inc");
 
                 <div class="content-box tab-content">
 
-				<?php if ($act == "new" || $act == gettext("Save") || $input_errors) :
+				<?php if ($act == "new" || $act == gettext("Save") || (isset($input_errors) && count($input_errors)) ) :
 ?>
 
 				<form action="system_crlmanager.php" method="post" name="iform" id="iform">
@@ -310,11 +377,11 @@ include("head.inc");
 								<?php
                                     $rowIndex = 0;
                                 foreach ($crl_methods as $method => $desc) :
-                                    if (($_GET['importonly'] == "yes") && ($method != "existing")) {
+                                    if (isset($_GET['importonly']) && ($_GET['importonly'] == "yes") && ($method != "existing")) {
                                         continue;
                                     }
                                     $selected = "";
-                                    if ($pconfig['method'] == $method) {
+                                    if (isset($pconfig['method']) && $pconfig['method'] == $method) {
                                         $selected = "selected=\"selected\"";
                                     }
                                     $rowIndex++;
@@ -336,7 +403,7 @@ endif; ?>
 						<tr>
 							<td width="22%" valign="top" class="vncellreq"><?=gettext("Descriptive name");?></td>
 							<td width="78%" class="vtable">
-								<input name="descr" type="text" class="formfld unknown" id="descr" size="20" value="<?=htmlspecialchars($pconfig['descr']);?>"/>
+								<input name="descr" type="text" class="formfld unknown" id="descr" size="20" value="<?php if (isset($pconfig['descr'])) echo htmlspecialchars($pconfig['descr']);?>"/>
 							</td>
 						</tr>
 						<tr>
@@ -378,7 +445,7 @@ endif; ?>
 							<tr>
 								<td width="22%" valign="top" class="vncellreq"><?=gettext("CRL data");?></td>
 								<td width="78%" class="vtable">
-									<textarea name="crltext" id="crltext" cols="65" rows="7" class="formfld_crl"><?=$pconfig['crltext'];?></textarea>
+									<textarea name="crltext" id="crltext" cols="65" rows="7" class="formfld_crl"><?php if (isset($pconfig['crltext'])) echo $pconfig['crltext'];?></textarea>
 									<br />
 									<?=gettext("Paste a Certificate Revocation List in X.509 CRL format here.");?>
 								</td>
@@ -483,7 +550,7 @@ elseif ($act == "edit") :
 					</thead>
 					<tbody>
                         <?php /* List Certs on CRL */
-                        if (!is_array($crl['cert']) || (count($crl['cert']) == 0)) :
+                        if (!isset($crl['cert']) || !is_array($crl['cert']) || (count($crl['cert']) == 0)) :
 ?>
                         <tr>
                             <td colspan="4">
@@ -521,7 +588,7 @@ elseif ($act == "edit") :
                     // Map Certs to CAs in one pass
                     $ca_certs = array();
                 foreach ($a_cert as $cert) {
-                    if ($cert['caref'] == $crl['caref']) {
+                    if (isset($cert['caref']) && isset($crl['caref'])  && $cert['caref'] == $crl['caref']) {
                         $ca_certs[] = $cert;
                     }
                 }
@@ -650,7 +717,7 @@ endif; ?>
 					</tr>
 
                     <?php
-                    if (is_array($ca_crl_map[$ca['refid']])) :
+                    if (isset($ca_crl_map[$ca['refid']]) && is_array($ca_crl_map[$ca['refid']])) :
                         foreach ($ca_crl_map[$ca['refid']] as $crl) :
                             $tmpcrl = lookup_crl($crl);
                             $internal = is_crl_internal($tmpcrl);
@@ -659,7 +726,7 @@ endif; ?>
 					<tr>
 						<td class="listlr"><?php echo $tmpcrl['descr']; ?></td>
 						<td class="listr"><?php echo ($internal) ? "YES" : "NO"; ?></td>
-						<td class="listr"><?php echo ($internal) ? count($tmpcrl['cert']) : "Unknown (imported)"; ?></td>
+						<td class="listr"><?php echo ($internal) ? (isset($tmpcrl['cert']) && count($tmpcrl['cert'])) : "Unknown (imported)"; ?></td>
 						<td class="listr"><?php echo ($inuse) ? "YES" : "NO"; ?></td>
 						<td valign="middle" class="list nowrap">
                         <a href="system_crlmanager.php?act=exp&amp;id=<?=$tmpcrl['refid'];?>" class="btn btn-default btn-xs">

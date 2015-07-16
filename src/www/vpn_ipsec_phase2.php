@@ -32,6 +32,11 @@ require_once("guiconfig.inc");
 require_once("ipsec.inc");
 require_once("vpn.inc");
 
+$p2_modes = array(
+	'tunnel' => 'Tunnel IPv4',
+	'tunnel6' => 'Tunnel IPv6',
+	'transport' => 'Transport');
+
 if (!is_array($config['ipsec'])) {
         $config['ipsec'] = array();
 }
@@ -510,7 +515,7 @@ function change_protocol() {
 
 
 <?php
-if ($input_errors) {
+if (isset($input_errors) && count($input_errors) > 0) {
     print_input_errors($input_errors);
 }
 ?>
@@ -600,7 +605,7 @@ if ($input_errors) {
 															</tr>
 															<tr>
 																<td><?=gettext("Address:");?>&nbsp;&nbsp;</td>
-																<td><?=$mandfldhtmlspc;?></td>
+																<td></td>
 																<td>
 																	<input name="localid_address" type="text" class="formfld unknown ipv4v6" id="localid_address" size="28" value="<?=htmlspecialchars($pconfig['localid_address']);?>" />
 																	/
@@ -653,7 +658,7 @@ endfor; ?>
 															</tr>
 															<tr>
 																<td><?=gettext("Address:");?>&nbsp;&nbsp;</td>
-																<td><?=$mandfldhtmlspc;?></td>
+																<td></td>
 																<td>
 																	<input name="natlocalid_address" type="text" class="formfld unknown ipv4v6" id="natlocalid_address" size="28" value="<?=htmlspecialchars($pconfig['natlocalid_address']);?>" />
 																	/
@@ -699,7 +704,7 @@ endfor; ?>
 															</tr>
 															<tr>
 																<td><?=gettext("Address"); ?>:&nbsp;&nbsp;</td>
-																<td><?=$mandfldhtmlspc;?></td>
+																<td></td>
 																<td>
 																	<input name="remoteid_address" type="text" class="formfld unknown ipv4v6" id="remoteid_address" size="28" value="<?=htmlspecialchars($pconfig['remoteid_address']);?>" />
 																	/

@@ -30,7 +30,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("ipsec.inc");
 require_once("vpn.inc");
 
@@ -247,7 +246,7 @@ include("head.inc");
 			<div class="row">
 
 				<?php
-                if ($savemsg) {
+                if (isset($savemsg)) {
                     print_info_box($savemsg);
                 }
                 if ($pconfig['enable'] && is_subsystem_dirty('ipsec')) {

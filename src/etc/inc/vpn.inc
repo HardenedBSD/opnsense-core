@@ -36,16 +36,20 @@ function vpn_ipsec_configure_loglevels($forconfig = false)
 	global $config, $ipsec_loglevels;
 
 	$cfgtext = array();
-	foreach ($ipsec_loglevels as $lkey => $ldescr) {
-		if (!isset($config['ipsec']["ipsec_{$lkey}"]) && !$forconfig)
-			mwexec("/usr/local/sbin/ipsec stroke loglevel {$lkey} -- -1", false);
-		else if (is_numeric($config['ipsec']["ipsec_{$lkey}"]) &&
-		    intval($config['ipsec']["ipsec_{$lkey}"]) >= 1 && intval($config['ipsec']["ipsec_{$lkey}"]) <= 5)
-			$forconfig ? $cfgtext[] = "${lkey} " . (intval($config['ipsec']["ipsec_{$lkey}"]) - 1) :
-				mwexec("/usr/local/sbin/ipsec stroke loglevel {$lkey} " . (intval($config['ipsec']["ipsec_{$lkey}"]) - 1) , false);
+	if (isset($ipsec_loglevels)) {
+		foreach ($ipsec_loglevels as $lkey => $ldescr) {
+			if (!isset($config['ipsec']["ipsec_{$lkey}"]) && !$forconfig)
+				mwexec("/usr/local/sbin/ipsec stroke loglevel {$lkey} -- -1", false);
+			else if (is_numeric($config['ipsec']["ipsec_{$lkey}"]) &&
+			    intval($config['ipsec']["ipsec_{$lkey}"]) >= 1 && intval($config['ipsec']["ipsec_{$lkey}"]) <= 5)
+				$forconfig ? $cfgtext[] = "${lkey} " . (intval($config['ipsec']["ipsec_{$lkey}"]) - 1) :
+					mwexec("/usr/local/sbin/ipsec stroke loglevel {$lkey} " . (intval($config['ipsec']["ipsec_{$lkey}"]) - 1) , false);
+		}
 	}
-	if ($forconfig)
+
+	if ($forconfig) {
 		return implode(',', $cfgtext);
+	}
 }
 
 /* include all configuration functions */
@@ -1128,7 +1132,7 @@ EOD;
 function vpn_pppoes_configure() {
 	global $config;
 
-	if (is_array($config['pppoes']['pppoe'])) {
+	if (isset($config['pppoes']['pppoe']) && is_array($config['pppoes']['pppoe'])) {
 		foreach ($config['pppoes']['pppoe'] as $pppoe)
 			vpn_pppoe_configure($pppoe);
 	}
@@ -1348,10 +1352,14 @@ function vpn_l2tp_configure()
 	global $config, $g;
 
 	$syscfg = $config['system'];
-	$l2tpcfg = $config['l2tp'];
+	if (isset($config['l2tp'])) {
+		$l2tpcfg = $config['l2tp'];
+	} else {
+		return 0;
+	}
 
 	if (file_exists("/var/run/booting")) {
-		if (!$l2tpcfg['mode'] || ($l2tpcfg['mode'] == "off"))
+		if (!isset($l2tpcfg['mode']) || $l2tpcfg['mode'] == "off")
 			return 0;
 
 		echo gettext("Configuring l2tp VPN service... ");

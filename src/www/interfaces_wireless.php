@@ -81,7 +81,7 @@ $main_buttons = array(
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 
@@ -133,12 +133,9 @@ $main_buttons = array(
 						                    <?=htmlspecialchars($clone['descr']);?>&nbsp;
 						                  </td>
 						                  <td valign="middle" class="list nowrap">
-
 							                   <a href="interfaces_wireless_edit.php?id=<?=$i;?>" class="btn btn-default"><span class="glyphicon glyphicon-edit" title="<?=gettext("edit group");?>"></span></a>
 
 											   <a href="interfaces_wireless.php?act=del&amp;id=<?=$i;?>" class="btn btn-default"  onclick="return confirm('<?=gettext("Do you really want to delete this wireless clone?");?>')"><span class="glyphicon glyphicon-remove"></span></a>
-
-							                   <a href="interfaces_wireless_edit.php?id=<?=$i;?>"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_e.gif" width="17" height="17" border="0" alt="edit" ></a>
 							                </td>
 										</tr>
 									  <?php $i++; endforeach; ?>

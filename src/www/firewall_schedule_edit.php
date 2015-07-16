@@ -27,6 +27,37 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
+/****f* legacy/is_schedule_inuse
+ * NAME
+ *   checks to see if a schedule is currently in use by a rule
+ * INPUTS
+ *
+ * RESULT
+ *   true or false
+ * NOTES
+ *
+ ******/
+function is_schedule_inuse($schedule)
+{
+        global $config;
+
+        if ($schedule == '') {
+                return false;
+        }
+
+        /* loop through firewall rules looking for schedule in use */
+        if (isset($config['filter']['rule'])) {
+                foreach ($config['filter']['rule'] as $rule) {
+                        if ($rule['sched'] == $schedule) {
+                                return true;
+                        }
+                }
+        }
+
+        return false;
+}
+
+
 function schedulecmp($a, $b) {
 	return strcmp($a['name'], $b['name']);
 }
@@ -43,7 +74,6 @@ function schedule_sort(){
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 $pgtitle = array(gettext("Firewall"),gettext("Schedules"),gettext("Edit"));
 
@@ -755,7 +785,7 @@ function removeRow(el) {
 EOD;
 ?>
 
-<body onload="<?= $jsevents["body"]["onload"] ?>">
+<body>
 
 
 <?php include("fbegin.inc");	echo $jscriptstr; ?>
@@ -765,7 +795,7 @@ EOD;
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<div id="inputerrors"></div>
 
 

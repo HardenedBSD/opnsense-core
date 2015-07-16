@@ -29,6 +29,21 @@
 
 require_once("guiconfig.inc");
 
+function lookup_gateway_monitor_ip_by_name($name) {
+
+	$gateways_arr = return_gateways_array(false, true);
+	if (!empty($gateways_arr[$name])) {
+		$gateway = $gateways_arr[$name];
+		if(!is_ipaddr($gateway['monitor']))
+			return $gateway['gateway'];
+
+		return $gateway['monitor'];
+	}
+
+	return (false);
+}
+
+
 if (!is_array($config['gateways'])) {
 	$config['gateways'] = array();
 }
@@ -56,7 +71,7 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 

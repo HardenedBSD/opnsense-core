@@ -30,7 +30,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 if (!is_array($config['staticroutes'])) {
     $config['staticroutes'] = array();
@@ -220,7 +219,7 @@ $main_buttons = array(
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($savemsg) {
+				<?php if (isset($savemsg)) {
                     print_info_box($savemsg);
 } ?>
 				<?php if (is_subsystem_dirty('staticroutes')) :

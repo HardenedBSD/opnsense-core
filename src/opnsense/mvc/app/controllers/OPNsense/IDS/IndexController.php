@@ -36,9 +36,13 @@ class IndexController extends \OPNsense\Base\IndexController
 {
     public function indexAction()
     {
-        $this->view->title = "IDS";
-        // link dialog
+        $this->view->title = "Intrusion Detection";
+        // link rule dialog
         $this->view->formDialogRule = $this->getForm("dialogRule");
+        // link alert info dialog
+        $this->view->formDialogAlert = $this->getForm("dialogAlert");
+        // link IDS general settings
+        $this->view->formGeneralSettings = $this->getForm("generalSettings");
         // choose template
         $this->view->pick('OPNsense/IDS/index');
     }

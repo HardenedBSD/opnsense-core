@@ -34,9 +34,17 @@ if ($_POST['postafterlogin']) {
 require_once('guiconfig.inc');
 require_once('functions.inc');
 require_once('filter.inc');
-require_once('shaper.inc');
 require_once('captiveportal.inc');
 require_once('voucher.inc');
+
+function voucher_unlink_db($roll)
+{
+	global $cpzone;
+
+	@unlink("/var/db/voucher_{$cpzone}_used_{$roll}.db");
+	@unlink("/var/db/voucher_{$cpzone}_active_{$roll}.db");
+}
+
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/services_captiveportal_vouchers.php');
 
@@ -354,10 +362,10 @@ function enable_change(enable_change) {
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) {
+				<?php if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
 } ?>
-				<?php if ($savemsg) {
+				<?php if (isset($savemsg)) {
                     print_info_box($savemsg);
 } ?>
 

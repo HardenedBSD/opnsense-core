@@ -29,7 +29,6 @@
 
 require_once("guiconfig.inc");
 require_once('rrd.inc');
-require_once("shaper.inc");
 
 if (!is_array($config['ntpd']))
 	$config['ntpd'] = array();
@@ -212,8 +211,8 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 
 			    <section class="col-xs-12">
 

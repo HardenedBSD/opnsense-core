@@ -1,0 +1,16 @@
+<form>
+    <field>
+        <id>ids.general.enabled</id>
+        <label>enabled</label>
+        <type>checkbox</type>
+        <help>enable IDS</help>
+    </field>
+    <field>
+        <id>ids.general.interfaces</id>
+        <label>interfaces</label>
+        <type>select_multiple</type>
+        <style>tokenize</style>
+        <help><![CDATA[Select interface(s) to use.]]></help>
+        <hint>Type or select interface.</hint>
+    </field>
+</form>

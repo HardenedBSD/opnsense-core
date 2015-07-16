@@ -111,7 +111,7 @@ function system_resolvconf_generate($dynupdate = false)
 				$resolvconf .= "nameserver $nameserver\n";
 		}
 	}
-	if (is_array($syscfg['dnsserver'])) {
+	if (isset($syscfg['dnsserver']) && is_array($syscfg['dnsserver'])) {
 		foreach ($syscfg['dnsserver'] as $ns) {
 			if ($ns)
 				$resolvconf .= "nameserver $ns\n";
@@ -168,6 +168,28 @@ function system_resolvconf_generate($dynupdate = false)
 	unlock($dnslock);
 
 	return 0;
+}
+
+function get_country_codes()
+{
+    $dn_cc = array();
+
+    $iso3166_tab = '/usr/local/opnsense/contrib/tzdata/iso3166.tab';
+    if (file_exists($iso3166_tab)) {
+        $dn_cc_file = file($iso3166_tab);
+        foreach ($dn_cc_file as $line) {
+            if (preg_match('/^([A-Z][A-Z])\t(.*)$/', $line, $matches)) {
+                $dn_cc[$matches[1]] = trim($matches[2]);
+            }
+        }
+    }
+
+    return $dn_cc;
+}
+
+function get_zoneinfo()
+{
+	return timezone_identifiers_list(DateTimeZone::ALL ^ DateTimeZone::UTC);
 }
 
 function get_searchdomains()
@@ -236,7 +258,7 @@ function system_hosts_generate()
 	$lhosts = "";
 	$dhosts = "";
 
-	if ($config['interfaces']['lan']) {
+	if (isset($config['interfaces']['lan'])) {
 		$cfgip = get_interface_ip("lan");
 		if (is_ipaddr($cfgip))
 			$hosts .= "{$cfgip}	{$syscfg['hostname']}.{$syscfg['domain']} {$syscfg['hostname']}\n";
@@ -254,7 +276,7 @@ function system_hosts_generate()
 	}
 
 	if (isset($dnsmasqcfg['enable'])) {
-		if (!is_array($dnsmasqcfg['hosts']))
+		if (!isset($dnsmasqcfg['hosts']) || !is_array($dnsmasqcfg['hosts']))
 			$dnsmasqcfg['hosts'] = array();
 
 		foreach ($dnsmasqcfg['hosts'] as $host) {
@@ -423,13 +445,13 @@ function system_routing_configure($interface = '')
 				break;
 		}
 	}
-	if ($foundgw == false) {
+	if (!$foundgw) {
 		$defaultif = get_real_interface("wan");
 		$interfacegw = "wan";
 		$gatewayip = get_interface_gateway("wan");
 		@touch("/tmp/{$defaultif}_defaultgw");
 	}
-	if ($foundgwv6 == false) {
+	if (!$foundgwv6) {
 		$defaultifv6 = get_real_interface("wan");
 		$interfacegwv6 = "wan";
 		$gatewayipv6 = get_interface_gateway_v6("wan");
@@ -459,6 +481,50 @@ function system_routing_configure($interface = '')
 	system_staticroutes_configure($interface, false);
 
 	return 0;
+}
+
+/* Compare the current hostname DNS to the DNS cache we made
+ * if it has changed we return the old records
+ * if no change we return false */
+function compare_hostname_to_dnscache($hostname) {
+        if(!is_dir("/var/db/dnscache")) {
+                mkdir("/var/db/dnscache");
+        }
+        $hostname = trim($hostname);
+        if(is_readable("/var/db/dnscache/{$hostname}")) {
+                $oldcontents = file_get_contents("/var/db/dnscache/{$hostname}");
+        } else {
+                $oldcontents = "";
+        }
+        if((is_fqdn($hostname)) && (!is_ipaddr($hostname))) {
+                $domrecords = array();
+                $domips = array();
+                exec("host -t A " . escapeshellarg($hostname), $domrecords, $rethost);
+                if($rethost == 0) {
+                        foreach($domrecords as $domr) {
+                                $doml = explode(" ", $domr);
+                                $domip = $doml[3];
+                                /* fill array with domain ip addresses */
+                                if(is_ipaddr($domip)) {
+                                        $domips[] = $domip;
+                                }
+                        }
+                }
+                sort($domips);
+                $contents = "";
+                if(! empty($domips)) {
+                        foreach($domips as $ip) {
+                                $contents .= "$ip\n";
+                        }
+                }
+        }
+
+        if(trim($oldcontents) != trim($contents)) {
+                log_error(sprintf(gettext('DNSCACHE: Found old IP %1$s and new IP %2$s'), $oldcontents, $contents));
+                return ($oldcontents);
+        } else {
+                return false;
+        }
 }
 
 function system_staticroutes_configure($interface = '', $update_dns = false)
@@ -605,6 +671,10 @@ function system_syslogd_get_remote_servers($syslogcfg, $facility = "*.*") {
 function system_syslogd_start()
 {
 	global $config, $g;
+	$retval = null;
+
+	/* XXX temporary hook for newsyslog.conf regeneration */
+	configd_run('template reload OPNsense.Syslog');
 
 	mwexec('/etc/rc.d/hostid start');
 
@@ -613,18 +683,11 @@ function system_syslogd_start()
 	if (file_exists("/var/run/booting"))
 		echo gettext("Starting syslog...");
 
-	if (is_process_running("fifolog_writer"))
-		mwexec('/bin/pkill fifolog_writer');
-
 	// Which logging type are we using this week??
 	if (isset($config['system']['disablesyslogclog'])) {
 		$log_directive = "";
 		$log_create_directive = "/usr/bin/touch ";
 		$log_size = "";
-	} else if (isset($config['system']['usefifolog'])) {
-		$log_directive = "|/usr/sbin/fifolog_writer ";
-		$log_size = isset($config['syslog']['logfilesize']) ? $config['syslog']['logfilesize'] : "10240";
-		$log_create_directive = "/usr/sbin/fifolog_create -s ";
 	} else { // Defaults to CLOG
 		$log_directive = "%";
 		$log_size = isset($config['syslog']['logfilesize']) ? $config['syslog']['logfilesize'] : "10240";
@@ -647,7 +710,7 @@ function system_syslogd_start()
 
 		$syslogconf .= "!ppp\n";
 		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/ppp.log\n";
+			$syslogconf .= "*.*								{$log_directive}/var/log/ppps.log\n";
 
 		$syslogconf .= "!pptps\n";
 		if (!isset($syslogcfg['disablelocallogging']))
@@ -858,6 +921,21 @@ function system_webgui_start()
 	return !mwexec("/usr/local/sbin/lighttpd -f /var/etc/lighty-webConfigurator.conf");
 }
 
+/*
+ *     get_memory()
+ *     returns an array listing the amount of
+ *     memory installed in the hardware
+ *     [0] net memory available for the OS (FreeBSD) after some is taken by BIOS, video or whatever - e.g. 235 MBytes
+ *     [1] real (actual) memory of the system, should be the size of the RAM card/s - e.g. 256 MBytes
+ */
+function get_memory() {
+	$physmem = get_single_sysctl("hw.physmem");
+	$realmem = get_single_sysctl("hw.realmem");
+	/* convert from bytes to megabytes */
+	return array(($physmem/1048576),($realmem/1048576));
+}
+
+
 function system_generate_lighty_config(
 	$filename,
 	$cert,
@@ -878,9 +956,12 @@ function system_generate_lighty_config(
 		$captiveportal = ',"mod_evasive"';
 		$http_rewrite_rules = "url.rewrite-once = ( \"(.*captiveportal.*)\" => \"$1\", \"(.*)\" => \"/index.php?zone={$captive_portal}&redirurl=$1\" )\n";
 
-		$maxprocperip = $config['captiveportal'][$captive_portal]['maxprocperip'];
-		if (empty($maxprocperip))
+		if (!isset($config['captiveportal'][$captive_portal]['maxprocperip']) || empty($config['captiveportal'][$captive_portal]['maxprocperip'])) {
 			$maxprocperip = 10;
+		} else {
+			$maxprocperip = $config['captiveportal'][$captive_portal]['maxprocperip'];
+		}
+
 		$captive_portal_mod_evasive = "evasive.max-conns-per-ip = {$maxprocperip}";
 
 		$server_upload_dirs = "server.upload-dirs = ( \"/tmp/captiveportal/\" )\n";
@@ -1177,8 +1258,11 @@ EOD;
 
 	// Add HTTP to HTTPS redirect
 	if ($captive_portal === false && $config['system']['webgui']['protocol'] == "https" && !isset($config['system']['webgui']['disablehttpredirect'])) {
-		if($lighty_port != "443")
+		if($lighty_port != "443") {
 			$redirectport = ":{$lighty_port}";
+		} else {
+			$redirectport = "";
+		}
 		$lighty_config .= <<<EOD
 \$SERVER["socket"] == ":80" {
 	\$HTTP["host"] =~ "(.*)" {
@@ -1216,10 +1300,7 @@ function system_timezone_configure()
 
 	/* extract appropriate timezone file */
 	$timezone = $syscfg['timezone'];
-	$timezones = array_map(
-		function ($path) { return str_replace('/usr/share/zoneinfo/', '', $path); },
-		glob('/usr/share/zoneinfo/*/*')
-	);
+	$timezones = get_zoneinfo();
 
 	// Reset to default if empty or not existend
 	if (empty($timezone) || !in_array($timezone, $timezones)) {
@@ -1313,7 +1394,7 @@ function system_ntp_configure($start_ntpd = true)
 
 	@mkdir($statsdir, 0755);
 
-	if (!is_array($config['ntpd'])) {
+	if (!isset($config['ntpd']) || !is_array($config['ntpd'])) {
 		$config['ntpd'] = array();
 	}
 
@@ -1372,7 +1453,7 @@ function system_ntp_configure($start_ntpd = true)
 	/* End PPS configuration */
 
 	/* Add GPS configuration */
-        if (!empty($config['ntpd']['gps'] && !empty($config['ntpd']['gps']['port']))
+        if (isset($config['ntpd']['gps']['port'])
 		&& file_exists('/dev/'.$config['ntpd']['gps']['port'])
 		&& system_ntp_setup_gps($config['ntpd']['gps']['port'])) {
 		$ntpcfg .= "\n";
@@ -1447,8 +1528,8 @@ function system_ntp_configure($start_ntpd = true)
 	/* foreach through ntp servers and write out to ntpd.conf */
 	foreach (explode(' ', $config['system']['timeservers']) as $ts) {
 		$ntpcfg .= "server {$ts} iburst maxpoll 9";
-		if (substr_count($config['ntpd']['prefer'], $ts)) $ntpcfg .= ' prefer';
-		if (substr_count($config['ntpd']['noselect'], $ts)) $ntpcfg .= ' noselect';
+		if (isset($config['ntpd']['prefer']) && substr_count($config['ntpd']['prefer'], $ts)) $ntpcfg .= ' prefer';
+		if (isset($config['ntpd']['noselect']) && substr_count($config['ntpd']['noselect'], $ts)) $ntpcfg .= ' noselect';
 		$ntpcfg .= "\n";
 	}
 	unset($ts);
@@ -1578,24 +1659,24 @@ function system_ntp_configure($start_ntpd = true)
 
 function system_halt($sync = false)
 {
-	$cmd ='/usr/local/etc/rc.halt > /dev/null 2>&1';
+	$cmd ='/usr/local/etc/rc.halt';
 
 	if (!$sync) {
-		$cmd = sprintf('/usr/bin/nohup %s &', $cmd);
+		mwexec_bg($cmd);
+	} else {
+		mwexec($cmd);
 	}
-
-	mwexec($cmd);
 }
 
 function system_reboot($sync = false)
 {
-	$cmd ='/usr/local/etc/rc.reboot > /dev/null 2>&1';
+	$cmd ='/usr/local/etc/rc.reboot';
 
 	if (!$sync) {
-		$cmd = sprintf('/usr/bin/nohup %s &', $cmd);
+		mwexec_bg($cmd);
+	} else {
+		mwexec($cmd);
 	}
-
-	mwexec($cmd);
 }
 
 function system_console_configure()
@@ -1649,14 +1730,6 @@ function system_disable_arp_wrong_if()
 	set_sysctl(array(
 		"net.link.ether.inet.log_arp_wrong_iface" => "0",
 		"net.link.ether.inet.log_arp_movements" => "0"
-	));
-}
-
-function system_enable_arp_wrong_if()
-{
-	set_sysctl(array(
-		"net.link.ether.inet.log_arp_wrong_iface" => "1",
-		"net.link.ether.inet.log_arp_movements" => "1"
 	));
 }
 
@@ -1715,7 +1788,7 @@ function get_possible_traffic_source_addresses($include_ipv6_link_local=false) {
 	global $config;
 	$sourceips = get_possible_listen_ips($include_ipv6_link_local);
 	foreach (array('server', 'client') as $mode) {
-		if (is_array($config['openvpn']["openvpn-{$mode}"])) {
+		if (isset($config['openvpn']["openvpn-{$mode}"]) && is_array($config['openvpn']["openvpn-{$mode}"])) {
 			foreach ($config['openvpn']["openvpn-{$mode}"] as $id => $setting) {
 				if (!isset($setting['disable'])) {
 					$vpn = array();

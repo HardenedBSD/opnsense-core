@@ -35,7 +35,7 @@ require_once('notices.inc');
 include_once("includes/functions.inc.php");
 require_once("script/load_phalcon.php");
 
-if ($_REQUEST['getupdatestatus']) {
+if (isset($_REQUEST['getupdatestatus'])) {
     $pkg_json = trim(configd_run('firmware pkgstatus'));
     if ($pkg_json != '') {
         $pkg_status = json_decode($pkg_json, true);
@@ -48,7 +48,7 @@ if ($_REQUEST['getupdatestatus']) {
     } elseif ($pkg_status["updates"]=="0") {
         echo "<span class='text-info'>".gettext("Your system is up to date.")."</span><br/><span class='btn-link' onclick='checkupdate()'>Click to check for updates</span>";
     } else {
-        echo "<span class='text-info'>".gettext("There are ").$pkg_status["updates"].gettext(" update(s) available.")."</span><br/><a href='/ui/core/firmware/'>".gettext("Click to upgrade")."</a> | <span class='btn-link' onclick='checkupdate()'>Re-check now</span>";
+        echo "<span class='text-info'>".gettext("There are ").$pkg_status["updates"].gettext(" update(s) available.")."</span><br/><a href='/ui/core/firmware/#checkupdate'>".gettext("Click to upgrade")."</a> | <span class='btn-link' onclick='checkupdate()'>Re-check now</span>";
     }
 
     exit;
@@ -128,7 +128,7 @@ endif; ?>
         endif; ?>
 			</td>
 		</tr>
-		<?php if ($hwcrypto) :
+		<?php if (isset($hwcrypto)) :
 ?>
 		<tr>
 			<td width="25%" class="vncellt"><?=gettext("Hardware crypto");?></td>

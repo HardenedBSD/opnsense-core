@@ -26,21 +26,6 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-function dump_rrd_to_xml($rrddatabase, $xmldumpfile)
-{
-	$rrdtool = '/usr/local/bin/rrdtool';
-
-	@unlink($xmldumpfile);
-
-	exec("$rrdtool dump " . escapeshellarg($rrddatabase) . " {$xmldumpfile} 2>&1", $dumpout, $dumpret);
-	if ($dumpret <> 0) {
-		$dumpout = implode(" ", $dumpout);
-		log_error(sprintf(gettext('RRD dump failed exited with %1$s, the error is: %2$s'), $dumpret, $dumpout));
-	}
-
-	return($dumpret);
-}
-
 function restore_rrd()
 {
 	global $config;
@@ -92,105 +77,10 @@ function create_new_rrd($rrdcreatecmd) {
 	return $rrdcreatereturn;
 }
 
-function migrate_rrd_format($rrdoldxml, $rrdnewxml) {
-	if(!file_exists("/tmp/rrd_notice_sent.txt")) {
-		$_gb = exec("echo 'Converting RRD configuration to new format.  This might take a bit...' | wall");
-		@touch("/tmp/rrd_notice_sent.txt");
-	}
-	$numrraold = count($rrdoldxml['rra']);
-	$numrranew = count($rrdnewxml['rra']);
-	$numdsold = count($rrdoldxml['ds']);
-	$numdsnew = count($rrdnewxml['ds']);
-	log_error(sprintf(gettext('Import RRD has %1$s DS values and %2$s RRA databases, new format RRD has %3$s DS values and %4$s RRA databases'), $numdsold, $numrraold, $numdsnew ,$numrranew));
 
-	/* add data sources not found in the old array from the new array */
-	$i = 0;
-	foreach($rrdnewxml['ds'] as $ds) {
-		if(!is_array($rrdoldxml['ds'][$i])) {
-			$rrdoldxml['ds'][$i] = $rrdnewxml['ds'][$i];
-			/* set unknown values to 0 */
-			$rrdoldxml['ds'][$i]['last_ds'] = " 0.0000000000e+00 ";
-			$rrdoldxml['ds'][$i]['value'] = " 0.0000000000e+00 ";
-			$rrdoldxml['ds'][$i]['unknown_sec'] = "0";
-		}
-		$i++;
-	}
-
-	$i = 0;
-	$rracountold = count($rrdoldxml['rra']);
-	$rracountnew = count($rrdnewxml['rra']);
-	/* process each RRA, which contain a database */
-	foreach($rrdnewxml['rra'] as $rra) {
-		if(!is_array($rrdoldxml['rra'][$i])) {
-			$rrdoldxml['rra'][$i] = $rrdnewxml['rra'][$i];
-		}
-
-		$d = 0;
-		/* process cdp_prep */
-		$cdp_prep = $rra['cdp_prep'];
-		foreach($cdp_prep['ds'] as $ds) {
-			if(!is_array($rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d])) {
-				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d] = $rrdnewxml['rra'][$i]['cdp_prep']['ds'][$d];
-				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d]['primary_value'] = " 0.0000000000e+00 ";
-				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d]['secondary_value'] = " 0.0000000000e+00 ";
-				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d]['value'] = " 0.0000000000e+00 ";
-				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d]['unknown_datapoints'] = "0";
-			}
-			$d++;
-		}
-
-		/* process database */
-		$rows = $rra['database'];
-		$k = 0;
-		$rowcountold = count($rrdoldxml['rra'][$i]['database']['row']);
-		$rowcountnew = count($rrdnewxml['rra'][$i]['database']['row']);
-		$rowcountdiff = $rowcountnew - $rowcountold;
-		/* save old rows for a bit before we put the required empty rows before it */
-		$rowsdata = $rows;
-		$rowsempty = array();
-		$r = 0;
-		while($r < $rowcountdiff) {
-			$rowsempty[] = $rrdnewxml['rra'][$i]['database']['row'][$r];
-			$r++;
-		}
-		$rows = $rowsempty + $rowsdata;
-		/* now foreach the rows in the database */
-		foreach($rows['row'] as $row) {
-			if(!is_array($rrdoldxml['rra'][$i]['database']['row'][$k])) {
-				$rrdoldxml['rra'][$i]['database']['row'][$k] = $rrdnewxml['rra'][$i]['database']['row'][$k];
-			}
-			$m = 0;
-			$vcountold = count($rrdoldxml['rra'][$i]['database']['row'][$k]['v']);
-			$vcountnew = count($rrdnewxml['rra'][$i]['database']['row'][$k]['v']);
-			foreach($row['v'] as $value) {
-				if(empty($rrdoldxml['rra'][$i]['database']['row'][$k]['v'][$m])) {
-					if(isset($valid)) {
-						$rrdoldxml['rra'][$i]['database']['row'][$k]['v'][$m] = "0.0000000000e+00 ";
-					} else {
-						$rrdoldxml['rra'][$i]['database']['row'][$k]['v'][$m] = $rrdnewxml['rra'][$i]['database']['row'][$k]['v'][$m];
-					}
-				} else {
-					if($value <> " NaN ") {
-						$valid = true;
-					} else {
-						$valid = false;
-					}
-				}
-				$m++;
-			}
-			$k++;
-		}
-		$i++;
-	}
-
-	$numrranew = count($rrdoldxml['rra']);
-	$numdsnew = count($rrdoldxml['ds']);
-	log_error(sprintf(gettext('The new RRD now has %1$s DS values and %2$s RRA databases'), $numdsnew, $numrranew));
-	return $rrdoldxml;
-}
-
-function enable_rrd_graphing() {
-	global $config, $altq_list_queues;
+function enable_rrd_graphing()
+{
+	global $config;
 
 	if(file_exists("/var/run/booting"))
 		echo gettext("Generating RRD graphs...");
@@ -202,8 +92,6 @@ function enable_rrd_graphing() {
 	$packets = "-packets.rrd";
 	$states = "-states.rrd";
 	$wireless = "-wireless.rrd";
-	$queues = "-queues.rrd";
-	$queuesdrop = "-queuedrops.rrd";
 	$spamd = "-spamd.rrd";
 	$proc = "-processor.rrd";
 	$mem = "-memory.rrd";
@@ -224,13 +112,11 @@ function enable_rrd_graphing() {
 	$cpustats = "/usr/local/sbin/cpustats";
 	$spamd_gather = "/usr/local/bin/spamd_gather_stats.php";
 	$ifconfig = "/sbin/ifconfig";
-	$captiveportal_gather = "/usr/local/bin/captiveportal_gather_stats.php";
+	$captiveportal_gather = "/usr/local/sbin/captiveportal_gather_stats.php";
 	$ntpq = "/usr/local/sbin/ntpq";
 
 	$rrdtrafficinterval = 60;
 	$rrdwirelessinterval = 60;
-	$rrdqueuesinterval = 60;
-	$rrdqueuesdropinterval = 60;
 	$rrdpacketsinterval = 60;
 	$rrdstatesinterval = 60;
 	$rrdspamdinterval = 60;
@@ -245,8 +131,6 @@ function enable_rrd_graphing() {
 
 	$trafficvalid = $rrdtrafficinterval * 2;
 	$wirelessvalid = $rrdwirelessinterval * 2;
-	$queuesvalid = $rrdqueuesinterval * 2;
-	$queuesdropvalid = $rrdqueuesdropinterval * 2;
 	$packetsvalid = $rrdpacketsinterval * 2;
 	$statesvalid = $rrdstatesinterval*2;
 	$spamdvalid = $rrdspamdinterval * 2;
@@ -262,9 +146,6 @@ function enable_rrd_graphing() {
 	/* Assume 2*10GigE for now */
 	$downstream = 2500000000;
 	$upstream = 2500000000;
-
-	/* read the shaper config */
-	read_altq_config();
 
 	if (isset ($config['rrd']['enable'])) {
 
@@ -376,7 +257,7 @@ function enable_rrd_graphing() {
 			$rrdupdatesh .= "END {print b4pi \":\" b4po \":\" b4bi \":\" b4bo \":\" b6pi \":\" b6po \":\" b6bi \":\" b6bo};'`\n";
 
 			/* WIRELESS, set up the rrd file */
-			if($config['interfaces'][$ifname]['wireless']['mode'] == "bss") {
+			if(isset($config['interfaces'][$ifname]['wireless']['mode']) && $config['interfaces'][$ifname]['wireless']['mode'] == "bss") {
 				if (!file_exists("$rrddbpath$ifname$wireless")) {
 					$rrdcreate = "$rrdtool create $rrddbpath$ifname$wireless --step $rrdwirelessinterval ";
 					$rrdcreate .= "DS:snr:GAUGE:$wirelessvalid:0:1000 ";
@@ -439,116 +320,6 @@ function enable_rrd_graphing() {
 				$rrdupdatesh .= "}\n";
 				$rrdupdatesh .= "OVPN=`list_current_users | nc -U /var/etc/openvpn/server{$vpnid}.sock | awk -F\",\" '/^CLIENT_LIST/ {print \$2}' | wc -l | awk '{print $1}'`\n";
 				$rrdupdatesh .= "$rrdtool update $rrddbpath$ifname$vpnusers N:\${OVPN}\n";
-			}
-
-			/* QUEUES, set up the queues databases */
-			if ($altq_list_queues[$ifname]) {
-				$altq =& $altq_list_queues[$ifname];
-				/* NOTE: Is it worth as its own function?! */
-				switch ($altq->GetBwscale()) {
-					case "Gb":
-						$factor = 1024 * 1024 * 1024;
-							break;
-					case "Mb":
-							$factor = 1024 * 1024;
-							break;
-					case "Kb":
-							$factor = 1024;
-							break;
-					case "b":
-					default:
-							$factor = 1;
-							break;
-				}
-				$qbandwidth = $altq->GetBandwidth() * $factor;
-				if ($qbandwidth <=0) {
-					$qbandwidth = 100 * 1000 * 1000; /* 100Mbit */
-				}
-				$qlist =& $altq->get_queue_list($notused);
-				if (!file_exists("$rrddbpath$ifname$queues")) {
-					$rrdcreate = "$rrdtool create $rrddbpath$ifname$queues --step $rrdqueuesinterval ";
-					/* loop list of shaper queues */
-					$q = 0;
-					foreach ($qlist as $qname => $q) {
-						$rrdcreate .= "DS:$qname:COUNTER:$queuesvalid:0:$qbandwidth ";
-					}
-
-					$rrdcreate .= "RRA:AVERAGE:0.5:1:1200 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:5:720 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:60:1860 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:1440:2284 ";
-
-					create_new_rrd($rrdcreate);
-					unset($rrdcreate);
-				}
-
-				if (!file_exists("$rrddbpath$ifname$queuesdrop")) {
-					$rrdcreate = "$rrdtool create $rrddbpath$ifname$queuesdrop --step $rrdqueuesdropinterval ";
-					/* loop list of shaper queues */
-					$q = 0;
-					foreach ($qlist as $qname => $q) {
-						$rrdcreate .= "DS:$qname:COUNTER:$queuesdropvalid:0:$qbandwidth ";
-					}
-
-					$rrdcreate .= "RRA:AVERAGE:0.5:1:1200 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:5:720 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:60:1860 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:1440:2284 ";
-
-					create_new_rrd($rrdcreate);
-					unset($rrdcreate);
-				}
-
-				if(file_exists("/var/run/booting")) {
-					$rrdqcommand = "-t ";
-					$rrducommand = "N";
-					$qi = 0;
-					foreach ($qlist as $qname => $q) {
-						if($qi == 0) {
-							$rrdqcommand .= "{$qname}";
-						} else {
-							$rrdqcommand .= ":{$qname}";
-						}
-						$qi++;
-						$rrducommand .= ":U";
-					}
-					mwexec("$rrdtool update $rrddbpath$ifname$queues $rrdqcommand $rrducommand");
-					mwexec("$rrdtool update $rrddbpath$ifname$queuesdrop $rrdqcommand $rrducommand");
-				}
-
-				/* awk function to gather shaper data */
-				/* yes, it's special */
-				$rrdupdatesh .= "` pfctl -vsq -i {$realif} | awk 'BEGIN {printf \"$rrdtool update $rrddbpath$ifname$queues \" } ";
-				$rrdupdatesh .= "{ ";
-				$rrdupdatesh .= "if ((\$1 == \"queue\") && ( \$2 ~ /^q/ )) { ";
-				$rrdupdatesh .= " dsname = dsname \":\" \$2 ; ";
-				$rrdupdatesh .= " q=1; ";
-				$rrdupdatesh .= "} ";
-				$rrdupdatesh .= " else if ((\$4 == \"bytes:\") && ( q == 1 ) ) { ";
-				$rrdupdatesh .= " dsdata = dsdata \":\" \$5 ; ";
-				$rrdupdatesh .= " q=0; ";
-				$rrdupdatesh .= "} ";
-				$rrdupdatesh .= "} END { ";
-				$rrdupdatesh .= " dsname = substr(dsname,2); ";
-				$rrdupdatesh .= " dsdata = substr(dsdata,2); ";
-				$rrdupdatesh .= " printf \"-t \" dsname \" N:\" dsdata }' ";
-				$rrdupdatesh .= " dsname=\"\" dsdata=\"\"`\n\n";
-
-				$rrdupdatesh .= "` pfctl -vsq -i {$realif} | awk 'BEGIN {printf \"$rrdtool update $rrddbpath$ifname$queuesdrop \" } ";
-				$rrdupdatesh .= "{ ";
-				$rrdupdatesh .= "if ((\$1 == \"queue\") && ( \$2 ~ /^q/ )) { ";
-				$rrdupdatesh .= " dsname = dsname \":\" \$2 ; ";
-				$rrdupdatesh .= " q=1; ";
-				$rrdupdatesh .= "} ";
-				$rrdupdatesh .= " else if ((\$4 == \"bytes:\") && ( q == 1 ) ) { ";
-				$rrdupdatesh .= " dsdata = dsdata \":\" \$8 ; ";
-				$rrdupdatesh .= " q=0; ";
-				$rrdupdatesh .= "} ";
-				$rrdupdatesh .= "} END { ";
-				$rrdupdatesh .= " dsname = substr(dsname,2); ";
-				$rrdupdatesh .= " dsdata = substr(dsdata,2); ";
-				$rrdupdatesh .= " printf \"-t \" dsname \" N:\" dsdata }' ";
-				$rrdupdatesh .= " dsname=\"\" dsdata=\"\"`\n\n";
 			}
 
 			/* 3G interfaces */

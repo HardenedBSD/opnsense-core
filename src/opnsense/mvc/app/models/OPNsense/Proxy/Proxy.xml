@@ -125,8 +125,14 @@
             </traffic>
         </general>
         <forward>
-            <interfaces type="CSVListField">
+            <interfaces type="InterfaceField">
                 <Required>N</Required>
+                <multiple>Y</multiple>
+                <default>lan</default>
+                <filters>
+                    <enable>/^(?!0).*$/</enable>
+                    <ipaddr>/^((?!dhcp).)*$/</ipaddr>
+                </filters>
             </interfaces>
             <port type="IntegerField">
                 <default>3128</default>
@@ -135,8 +141,13 @@
                 <ValidationMessage>Proxy port needs to be an integer value between 1 and 65535</ValidationMessage>
                 <Required>Y</Required>
             </port>
-            <ftpInterfaces type="CSVListField">
+            <ftpInterfaces type="InterfaceField">
                 <Required>N</Required>
+                <multiple>Y</multiple>
+                <filters>
+                    <enable>/^(?!0).*$/</enable>
+                    <ipaddr>/^((?!dhcp).)*$/</ipaddr>
+                </filters>
             </ftpInterfaces>
             <ftpPort type="IntegerField">
                 <default>2121</default>
@@ -187,6 +198,43 @@
                     <default>443:https</default>
                     <Required>N</Required>
                 </sslPorts>
+                <remoteACLs>
+                    <blacklists>
+                        <blacklist type="ArrayField">
+                            <enabled type="BooleanField">
+                                <default>0</default>
+                                <Required>Y</Required>
+                            </enabled>
+                            <filename type="TextField">
+                                <Required>Y</Required>
+                                <Mask>/^[a-zA-Z0-9]{1,245}\.?[a-zA-z0-9]{1,10}$/</Mask>
+                                <ValidationMessage>The filename may only contain letters,digits and one dot (not required).</ValidationMessage>
+                            </filename>
+                            <url type="UrlField">
+                                <Required>Y</Required>
+                                <ValidationMessage>This does not look like a valid url.</ValidationMessage>
+                            </url>
+                            <description type="TextField">
+                                <Required>Y</Required>
+                                <Mask>/^(.){1,255}$/</Mask>
+                            </description>
+                        </blacklist>
+                    </blacklists>
+                    <UpdateCron type="ModelRelationField">
+                        <Model>
+                            <queues>
+                                <source>OPNsense.Cron.Cron</source>
+                                <items>jobs.job</items>
+                                <display>description</display>
+                                <filters>
+                                    <origin>/Proxy/</origin>
+                                </filters>
+                            </queues>
+                        </Model>
+                        <ValidationMessage>Related cron not found</ValidationMessage>
+                        <Required>N</Required>
+                    </UpdateCron>
+                </remoteACLs>
             </acl>
             <authentication>
                 <method type="OptionField">

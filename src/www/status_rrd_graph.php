@@ -28,7 +28,6 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("rrd.inc");
 
 unset($input_errors);
@@ -74,12 +73,6 @@ if ($_GET['option']) {
 	switch($curcat) {
 		case "system":
 			$curoption = "processor";
-			break;
-		case "queues":
-			$curoption = "queues";
-			break;
-		case "queuedrops":
-			$curoption = "queuedrops";
 			break;
 		case "quality":
 			foreach($databases as $database) {
@@ -212,9 +205,6 @@ $dbheader_custom = array("system-throughput.rrd");
 foreach($databases as $database) {
 	if(stristr($database, "-wireless")) {
 		$wireless = true;
-	}
-	if(stristr($database, "-queues")) {
-		$queues = true;
 	}
 	if(stristr($database, "-cellular") && !empty($config['ppps'])) {
 		$cellular = true;
@@ -524,7 +514,7 @@ function get_dates($curperiod, $graph) {
 													$id = preg_replace('/\./', '_', $id);
 													$img_date = date('YmdGis'); /* Add a way to let the browser know we have refreshed the image */
 													echo "<tr><td colspan=\"100%\" class=\"list\">\n";
-													echo "<img border=\"0\" width=\"100%;\" name=\"{$id}\"";
+													echo "<img border=\"0\" style=\"max-width:100%; height:auto\" name=\"{$id}\"";
 													echo "id=\"{$id}\" alt=\"$prettydb Graph\" ";
 													echo "src=\"status_rrd_graph_img.php?start={$start}&amp;end={$end}&amp;database={$curdatabase}&amp;style={$curstyle}&amp;graph={$graph}-{$img_date}\" />\n";
 													echo "<br /><hr /><br />\n";
@@ -593,7 +583,7 @@ function get_dates($curperiod, $graph) {
 															$start = $dates['start'];
 															$end = $dates['end'];
 															echo "<tr><td colspan=\"100%\" class=\"list\">\n";
-															echo "<img border=\"0\" width=\"100%;\" name=\"{$id}\" ";
+															echo "<img border=\"0\" style=\"max-width:100%; height:auto\" name=\"{$id}\" ";
 															echo "id=\"{$id}\" alt=\"$prettydb Graph\" ";
 															echo "src=\"status_rrd_graph_img.php?start={$start}&amp;end={$end}&amp;database={$curdatabase}&amp;style={$curstyle}&amp;graph={$graph}-{$img_date}\" />\n";
 															echo "<br /><hr /><br />\n";

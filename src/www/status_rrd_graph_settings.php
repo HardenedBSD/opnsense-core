@@ -28,7 +28,6 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("rrd.inc");
 
 $pconfig['enable'] = isset($config['rrd']['enable']);
@@ -41,7 +40,6 @@ $categories = array('system' => gettext("System"),
 		'traffic' => gettext("Traffic"),
 		'packets' => gettext("Packets"),
 		'quality' => gettext("Quality"),
-		'queues' => gettext("Queues"),
 		'captiveportal' => gettext("Captive Portal"));
 
 if(isset($config['ntpd']['statsgraph'])) {
@@ -89,9 +87,6 @@ foreach($databases as $database) {
 	if(stristr($database, "wireless")) {
 		$wireless = true;
 	}
-	if(stristr($database, "queues")) {
-		$queues = true;
-	}
 	if(stristr($database, "-cellular") && !empty($config['ppps'])) {
 		$cellular = true;
 	}
@@ -116,8 +111,8 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 
 			    <section class="col-xs-12">
 

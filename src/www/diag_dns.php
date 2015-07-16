@@ -175,7 +175,7 @@ include("head.inc"); ?>
 				<section class="col-xs-12">
 	                <div class="content-box">
 
-						<?php if ($input_errors) print_input_errors($input_errors); ?>
+						<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 	                    <header class="content-box-head container-fluid">
 					        <h3><?=gettext("Resolve DNS hostname or IP");?></h3>
@@ -187,7 +187,7 @@ include("head.inc"); ?>
 							        <tbody>
 							        <tr>
 							          <td><?=gettext("Hostname or IP");?></td>
-							          <td><?=$mandfldhtml;?><input name="host" type="text" class="form-control" id="host" size="20" value="<?=htmlspecialchars($host);?>" /></td>
+							          <td><input name="host" type="text" class="form-control" id="host" size="20" value="<?=htmlspecialchars($host);?>" /></td>
 							          <?php if ($resolved && $type): ?>
 							          <td>
 								      <?php

@@ -33,7 +33,6 @@ $reserved_keywords = array("all", "pass", "block", "out", "queue", "max", "min",
 require_once("guiconfig.inc");
 require_once("util.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 $pgtitle = array(gettext("Firewall"),gettext("Aliases"),gettext("Bulk import"));
 
@@ -158,7 +157,7 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<div id="inputerrors"></div>
 
 

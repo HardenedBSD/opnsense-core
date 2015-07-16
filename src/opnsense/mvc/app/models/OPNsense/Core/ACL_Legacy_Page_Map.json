@@ -7,10 +7,6 @@
         "name": "User - Services - Captive portal login",
         "descr": "Indicates whether the user is able to login on the captive portal."
     },
-    "user-copy-files": {
-        "name": "User - System - Copy files",
-        "descr": "Indicates whether the user is allowed to copy files onto the  appliance via SCP\/SFTP. If you are going to use this privilege, you must install scponly on the appliance (Hint: pkg_add -r scponly)."
-    },
     "user-shell-access": {
         "name": "User - System - Shell account access",
         "descr": "Indicates whether the user is able to login for example via SSH."
@@ -444,23 +440,8 @@
         "name": "WebCfg - Firewall: Traffic Shaper page",
         "descr": "Allow access to the 'Firewall: Traffic Shaper' page.",
         "match": [
-            "firewall_shaper.php*",
             "ui/trafficshaper/*",
             "api/trafficshaper/*"
-        ]
-    },
-    "page-firewall-trafficshaper-queues": {
-        "name": "WebCfg - Firewall: Traffic Shaper: Queues page",
-        "descr": "Allow access to the 'Firewall: Traffic Shaper: Queues' page.",
-        "match": [
-            "firewall_shaper_queues.php*"
-        ]
-    },
-    "page-firewall-trafficshaper-wizard": {
-        "name": "WebCfg - Firewall: Traffic Shaper: Wizard page",
-        "descr": "Allow access to the 'Firewall: Traffic Shaper: Wizard' page.",
-        "match": [
-            "firewall_shaper_wizards.php*"
         ]
     },
     "page-firewall-virtualipaddress-edit": {
@@ -664,27 +645,6 @@
         "descr": "Allow access to the 'Lobby: Login \/ Logout\/ Dashboard' page.",
         "match": [
             "index.php*"
-        ]
-    },
-    "page-package-edit": {
-        "name": "WebCfg - Package: Edit page",
-        "descr": "Allow access to the 'Package: Edit' page.",
-        "match": [
-            "pkg_edit.php*"
-        ]
-    },
-    "page-package-settings": {
-        "name": "WebCfg - Package: Settings page",
-        "descr": "Allow access to the 'Package: Settings' page.",
-        "match": [
-            "pkg.php*"
-        ]
-    },
-    "page-pkg-mgr-settings": {
-        "name": "WebCfg - Packages: Settings page",
-        "descr": "Allow access to the 'Packages: Settings' page.",
-        "match": [
-            "pkg_mgr_settings.php*"
         ]
     },
     "page-pfsensewizardsubsystem": {
@@ -1191,13 +1151,6 @@
             "status_openvpn.php*"
         ]
     },
-    "page-status-packagelogs": {
-        "name": "WebCfg - Status: Package logs page",
-        "descr": "Allow access to the 'Status: Package logs' page.",
-        "match": [
-            "diag_pkglogs.php*"
-        ]
-    },
     "page-status-rrdgraphs": {
         "name": "WebCfg - Status: RRD Graphs page",
         "descr": "Allow access to the 'Status: RRD Graphs' page.",
@@ -1286,16 +1239,16 @@
             "ifstats.php*"
         ]
     },
-    "page-status-trafficshaper-queues": {
-        "name": "WebCfg - Status: Traffic shaper: Queues page",
-        "descr": "Allow access to the 'Status: Traffic shaper: Queues' page.",
+    "page-service-upnp": {
+        "name": "WebCfg - Service: Univeral Plug and Play page",
+        "descr": "Allow access to the 'Service: Univeral Plug and Play' page.",
         "match": [
-            "status_queues.php*"
+            "services_upnp.php*"
         ]
     },
     "page-status-upnpstatus": {
-        "name": "WebCfg - Status: UPnP Status page",
-        "descr": "Allow access to the 'Status: UPnP Status' page.",
+        "name": "WebCfg - Status: Univeral Plug and Play Status page",
+        "descr": "Allow access to the 'Status: Univeral Plug and Play Status' page.",
         "match": [
             "status_upnp.php*"
         ]
@@ -1467,27 +1420,6 @@
         "descr": "Allow access to the 'System: License' page.",
         "match": [
             "license.php*"
-        ]
-    },
-    "page-system-packagemanager": {
-        "name": "WebCfg - System: Package Manager page",
-        "descr": "Allow access to the 'System: Package Manager' page.",
-        "match": [
-            "pkg_mgr.php*"
-        ]
-    },
-    "page-system-packagemanager-installpackage": {
-        "name": "WebCfg - System: Package Manager: Install Package page",
-        "descr": "Allow access to the 'System: Package Manager: Install Package' page.",
-        "match": [
-            "pkg_mgr_install.php*"
-        ]
-    },
-    "page-system-packagemanager-installed": {
-        "name": "WebCfg - System: Package Manager: Installed page",
-        "descr": "Allow access to the 'System: Package Manager: Installed' page.",
-        "match": [
-            "pkg_mgr_installed.php*"
         ]
     },
     "page-system-staticroutes": {
@@ -1671,6 +1603,14 @@
       "match": [
         "ui/proxy/*",
         "api/proxy/*"
+      ]
+    },
+    "page-services-ids": {
+      "name": "WebCfg - Services: Intrusion Detection page",
+      "descr": "Allow access to the 'Services: Intrusion Detection' page'",
+       "match": [
+           "ui/ids/*",
+           "api/ids/*"
       ]
     }
 }

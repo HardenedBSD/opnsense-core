@@ -86,11 +86,12 @@ function get_shortcut_main_link($shortcut_section, $addspace = true, $service = 
 			$link = $shortcuts[$shortcut_section]['main'];
 			break;
 	}
-	if(!empty($link) && ($_SERVER['REQUEST_URI'] != "/{$link}"))
+	if (!empty($link)) {
 		if (strtok($_SERVER['REQUEST_URI'],'?') != "/status_services.php")
 			return "{$space}<a href=\"{$link}\" title=\"" . gettext("Main page for this section") . "\">Main page</a>";
 		else
 			return "{$space}<a href=\"{$link}\" class=\"btn btn-default\" data-toggle=\"tooltip\" data-placement=\"bottom\" title=\"" . gettext("Main page for this section") . "\"><span class=\"glyphicon glyphicon-home\"></span></a>";
+	}
 }
 
 function get_shortcut_status_link($shortcut_section, $addspace = true, $service = array()) {
@@ -110,7 +111,11 @@ function get_shortcut_status_link($shortcut_section, $addspace = true, $service 
 				$link = $shortcuts[$shortcut_section]['status'];
 			break;
 		default:
-			$link = $shortcuts[$shortcut_section]['status'];
+			if (isset($shortcuts[$shortcut_section]['status'])) {
+				$link = $shortcuts[$shortcut_section]['status'];
+			} else {
+				$link = null;
+			}
 			break;
 	}
 	if(!empty($link))
@@ -132,7 +137,7 @@ function get_shortcut_log_link($shortcut_section, $addspace = true) {
 }
 
 $shortcuts['upnp'] = array();
-$shortcuts['upnp']['main'] = "pkg_edit.php?xml=miniupnpd.xml";
+$shortcuts['upnp']['main'] = "services_upnp.php";
 $shortcuts['upnp']['log'] = "diag_logs_routing.php";
 $shortcuts['upnp']['status'] = "status_upnp.php";
 $shortcuts['upnp']['service'] = "miniupnpd";
@@ -209,10 +214,6 @@ $shortcuts['gateway-groups']['status'] = "status_gateway_groups.php";
 $shortcuts['interfaces'] = array();
 $shortcuts['interfaces']['main'] = "interfaces_assign.php";
 $shortcuts['interfaces']['status'] = "status_interfaces.php";
-
-$shortcuts['trafficshaper'] = array();
-$shortcuts['trafficshaper']['main'] = "firewall_shaper.php";
-$shortcuts['trafficshaper']['status'] = "status_queues.php";
 
 $shortcuts['forwarder'] = array();
 $shortcuts['forwarder']['main'] = "services_dnsmasq.php";

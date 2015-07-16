@@ -29,7 +29,6 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/firewall_nat_out.php');
 
@@ -433,7 +432,7 @@ function poolopts_change() {
 		<div class="container-fluid">
 
 			<div class="row">
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 

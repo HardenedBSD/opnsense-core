@@ -42,7 +42,6 @@ function passthrumacs_sort()
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("captiveportal.inc");
 
 global $cpzone;
@@ -180,7 +179,7 @@ include("head.inc");
 
 			<div class="row">
 
-				<?php if ($input_errors) {
+				<?php if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
 } ?>
 
@@ -219,8 +218,7 @@ include("head.inc");
 									<tr>
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("MAC address"); ?></td>
 										<td width="78%" class="vtable">
-											<?=$mandfldhtml;
-?><input name="mac" type="text" class="formfld unknown" id="mac" size="17" value="<?=htmlspecialchars($pconfig['mac']);?>" />
+										<input name="mac" type="text" class="formfld unknown" id="mac" size="17" value="<?=htmlspecialchars($pconfig['mac']);?>" />
 							<?php
                                             $ip = getenv('REMOTE_ADDR');
                                             $mac = `/usr/sbin/arp -an | grep {$ip} | cut -d" " -f4`;

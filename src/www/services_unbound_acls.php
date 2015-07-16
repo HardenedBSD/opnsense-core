@@ -29,6 +29,26 @@
 require_once("guiconfig.inc");
 require_once("unbound.inc");
 
+function unbound_acl_id_used($id) {
+    global $config;
+
+    if (is_array($config['unbound']['acls']))
+        foreach($config['unbound']['acls'] as & $acls)
+            if ($id == $acls['aclid'])
+                return true;
+
+    return false;
+}
+
+function unbound_get_next_id() {
+    $aclid = 0;
+    while(unbound_acl_id_used($aclid))
+        $aclid++;
+    return $aclid;
+}
+
+
+
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/services_unbound_acls.php');
 
 if (!is_array($config['unbound']['acls']))
@@ -166,10 +186,10 @@ include("head.inc");
 					if (!$savemsg)
 						$savemsg = "";
 
-					if ($input_errors)
+					if (isset($input_errors) && count($input_errors) > 0)
 						print_input_errors($input_errors);
 
-					if ($savemsg)
+					if (isset($savemsg))
 						print_info_box($savemsg);
 
 					if (is_subsystem_dirty("unbound"))

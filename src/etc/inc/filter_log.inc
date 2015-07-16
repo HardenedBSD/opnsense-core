@@ -43,34 +43,34 @@ function conv_log_filter($logfile, $nentries, $tail = 50, $filtertext = '', $fil
 	if (!(is_numeric($tail)))
 		return;
 
-	if ($filtertext)
+	if ($filtertext!=""){
 		$tail = 5000;
+	}
 
 	/* Always do a reverse tail, to be sure we're grabbing the 'end' of the log. */
 	$logarr = "";
 
-	if(isset($config['system']['usefifolog']))
-		exec("/usr/sbin/fifolog_reader " . escapeshellarg($logfile) . " | /usr/bin/grep 'filterlog:' | /usr/bin/tail -r -n {$tail}", $logarr);
-	else
-		exec("/usr/local/sbin/clog " . escapeshellarg($logfile) . " | grep -v \"CLOG\" | grep -v \"\033\" | /usr/bin/grep 'filterlog:' | /usr/bin/tail -r -n {$tail}", $logarr);
+	exec("/usr/local/sbin/clog " . escapeshellarg($logfile) . " | grep -v \"CLOG\" | grep -v \"\033\" | /usr/bin/grep 'filterlog:' | /usr/bin/tail -r -n {$tail}", $logarr);
 
 	$filterlog = array();
 	$counter = 0;
 
-	$filterinterface = strtoupper($filterinterface);
 	foreach ($logarr as $logent) {
 		if($counter >= $nentries)
 			break;
 
 		$flent = parse_filter_line($logent);
-		if (!$filterinterface || ($filterinterface == $flent['interface']))
-		{
-			if ( ( ($flent != "") && (!is_array($filtertext)) && (match_filter_line ($flent, $filtertext))) ||
-			     ( ($flent != "") && ( is_array($filtertext)) && (match_filter_field($flent, $filtertext)) ) ) {
-				$counter++;
-				$filterlog[] = $flent;
+		if (isset($flent) && is_array($flent)) {
+			if ($filterinterface == null || strtoupper($filterinterface) == $flent['interface']) {
+				if ( (!is_array($filtertext) && match_filter_line ($flent, $filtertext)) ||
+					( is_array($filtertext) && match_filter_field($flent, $filtertext))
+				) {
+					$counter++;
+					$filterlog[] = $flent;
+				}
 			}
 		}
+
 	}
 	/* Since the lines are in reverse order, flip them around if needed based on the user's preference */
 	return isset($config['syslog']['reverse']) ? $filterlog : array_reverse($filterlog);
@@ -251,7 +251,9 @@ function parse_filter_line($line)
 			$flent['icmp_ttime'] = $rule_data[$field++];
 			break;
 		default :
-			$flent['icmp_descr'] = $rule_data[$field++];
+			if (isset($rule_data[$field++])) {
+				$flent['icmp_descr'] = $rule_data[$field++];
+			}
 			break;
 		}
 	} elseif ($flent['protoid'] == '112') { // CARP
@@ -266,126 +268,14 @@ function parse_filter_line($line)
 	return $flent;
 }
 
-function get_port_with_service($port, $proto) {
-	if (!$port)
-		return '';
-
-	$service = getservbyport($port, $proto);
-	$portstr = "";
-	if ($service) {
-		$portstr = sprintf('<span title="' . gettext('Service %1$s/%2$s: %3$s') . '">' . htmlspecialchars($port) . '</span>', $port, $proto, $service);
-	} else {
-		$portstr = htmlspecialchars($port);
-	}
-	return ':' . $portstr;
-}
-
-function find_rule_by_number($rulenum, $type = 'block')
-{
-	/* Passing arbitrary input to grep could be a Very Bad Thing(tm) */
-	if (!is_numeric($rulenum) || !in_array($type, array('pass', 'block', 'match', 'rdr')))
-		return;
-
-	$lookup_pattern = "^@{$rulenum}[[:space:]]{$type}[[:space:]].*[[:space:]]log[[:space:]]";
-	/* At the moment, miniupnpd is the only thing I know of that
-	   generates logging rdr rules */
-	unset($buffer);
-	if ($type == "rdr")
-		$_gb = exec("/sbin/pfctl -vvPsn -a \"miniupnpd\" | /usr/bin/egrep " . escapeshellarg("^@{$rulenum}"), $buffer);
-	else {
-		if (file_exists('/tmp/rules.debug')) {
-			$_gb = exec('/sbin/pfctl -vvPnf /tmp/rules.debug 2>/dev/null | /usr/bin/egrep ' . escapeshellarg($lookup_pattern), $buffer);
-		} else {
-			$_gb = exec('/sbin/pfctl -vvPsr | /usr/bin/egrep ' . escapeshellarg($lookup_pattern), $buffer);
-		}
-	}
-	if (is_array($buffer))
-		return $buffer[0];
-
-	return "";
-}
-
-function buffer_rules_load()
-{
-	global $buffer_rules_rdr, $buffer_rules_normal;
-	unset($buffer, $buffer_rules_rdr, $buffer_rules_normal);
-	/* Redeclare globals after unset to work around PHP */
-	global $buffer_rules_rdr, $buffer_rules_normal;
-	$buffer_rules_rdr = array();
-	$buffer_rules_normal = array();
-
-	$_gb = exec("/sbin/pfctl -vvPsn -a \"miniupnpd\" | grep '^@'", $buffer);
-	if (is_array($buffer)) {
-		foreach ($buffer as $line) {
-			list($key, $value) = explode (" ", $line, 2);
-			$buffer_rules_rdr[$key] = $value;
-		}
-	}
-	unset($buffer, $_gb);
-	if (file_exists('/tmp/rules.debug')) {
-		$_gb = exec("/sbin/pfctl -vvPnf /tmp/rules.debug 2>/dev/null | /usr/bin/egrep '^@[0-9]+\([0-9]+\)[[:space:]].*[[:space:]]log[[:space:]]' | /usr/bin/egrep -v '^@[0-9]+\([0-9]+\)[[:space:]](nat|rdr|binat|no|scrub)'", $buffer);
-	} else {
-		$_gb = exec("/sbin/pfctl -vvPsr | /usr/bin/egrep '^@[0-9]+\([0-9]+\)[[:space:]].*[[:space:]]log[[:space:]]'", $buffer);
-	}
-
-	if (is_array($buffer)) {
-		foreach ($buffer as $line) {
-			list($key, $value) = explode (" ", $line, 2);
-			$matches = array();
-			if (preg_match('/\@(?P<rulenum>\d+)\)/', $key, $matches) == 1) {
-				$key = "@{$matches['rulenum']}";
-			}
-			$buffer_rules_normal[$key] = $value;
-		}
-	}
-	unset($_gb, $buffer);
-}
-
-function buffer_rules_clear()
-{
-	unset($GLOBALS['buffer_rules_normal']);
-	unset($GLOBALS['buffer_rules_rdr']);
-}
-
-function find_rule_by_number_buffer($rulenum, $type)
-{
-	global $buffer_rules_rdr, $buffer_rules_normal;
-
-	$lookup_key = "@{$rulenum}";
-
-	if ($type == "rdr")	{
-		$ruleString = $buffer_rules_rdr[$lookup_key];
-		//TODO: get the correct 'description' part of a RDR log line. currently just first 30 characters..
-		$rulename = substr($ruleString,0,30);
-	} else {
-		$ruleString = $buffer_rules_normal[$lookup_key];
-		list(,$rulename,) = explode("\"",$ruleString);
-		$rulename = str_replace("USER_RULE: ",'<span class="glyphicon glyphicon-user" title="USER_RULE" alt="USER_RULE"></span>',$rulename);
-	}
-	return "{$rulename} ({$lookup_key})";
-}
-
-function find_action_image($action)
-{
-	if ((strstr(strtolower($action), 'p')) || (strtolower($action) == 'rdr')) {
-		return 'glyphicon glyphicon-play text-success';
-	}
-
-	if (strstr(strtolower($action), 'r')) {
-		return 'glyphicon glyphicon-remove text-warning';
-	}
-
-	return 'glyphicon glyphicon-remove text-danger';
-}
-
 /* AJAX specific handlers */
 function handle_ajax($nentries, $tail = 50) {
 	global $config;
-	if($_GET['lastsawtime'] or $_POST['lastsawtime']) {
+	if(isset($_GET['lastsawtime']) || isset($_POST['lastsawtime'])) {
 		global $filter_logfile,$filterent;
-		if($_GET['lastsawtime'])
+		if(isset($_GET['lastsawtime']))
 			$lastsawtime = $_GET['lastsawtime'];
-		if($_POST['lastsawtime'])
+		if(isset($_POST['lastsawtime']))
 			$lastsawtime = $_POST['lastsawtime'];
 		/*  compare lastsawrule's time stamp to filter logs.
 		 *  afterwards return the newer records so that client
@@ -397,7 +287,6 @@ function handle_ajax($nentries, $tail = 50) {
 		$filterlog = isset($config['syslog']['reverse']) ? array_reverse($filterlog) : $filterlog;
 		foreach($filterlog as $log_row) {
 			$row_time = strtotime($log_row['time']);
-			//$img = "<img border='0' src='" . find_action_image($log_row['act']) . "' alt={$log_row['act']} title={$log_row['act']} />";
 			if ($log_row['act']=="pass") {
 				$img="<span class='glyphicon glyphicon-play text-success' alt={$log_row['act']}></span>";
 			} elseif ($log_row['act']=="block") {

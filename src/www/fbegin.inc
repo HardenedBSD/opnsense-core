@@ -3,6 +3,7 @@
 /*
 	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) 2008 Scott Ullrich <sullrich@gmail.com>
+	(from service-utils.inc) Copyright (C) 2005-2006 Colin Smith (ethethlay@gmail.com)
 	All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without
@@ -30,8 +31,25 @@
 require_once("globals.inc");
 require_once("functions.inc");
 require_once("shortcuts.inc");
-require_once("service-utils.inc");
+require_once("services.inc");
 require_once("script/load_phalcon.php");
+
+function find_service_by_name($name) {
+	$services = get_services();
+	foreach ($services as $service)
+		if ($service["name"] == $name)
+			return $service;
+	return array();
+}
+
+function find_service_by_cp_zone($zone) {
+	$services = get_services();
+	foreach ($services as $service)
+		if (($service["name"] == "captiveportal") && isset($service["zone"]) && ($service["zone"] == $zone))
+			return $service;
+	return array();
+}
+
 
 /* Determine automated help URL. Should output the page name and
    parameters separately */
@@ -50,9 +68,8 @@ if (empty($pagename)) {
 	$pagename = "index.php";
 }
 
-/* If the filename is pkg_edit.php or wizard.php, reparse looking
-	for the .xml filename */
-if (($pagename == "pkg.php") || ($pagename == "pkg_edit.php") || ($pagename == "wizard.php")) {
+/* If the filename is wizard.php, reparse looking for the .xml filename */
+if ($pagename == 'wizard.php') {
 	$param_split = explode('&', $uri_split[2]);
 	foreach ($param_split as $param) {
 		if (substr($param, 0, 4) == "xml=") {
@@ -62,19 +79,25 @@ if (($pagename == "pkg.php") || ($pagename == "pkg_edit.php") || ($pagename == "
 	}
 }
 
-/* Build the full help URL. */
-$helpurl .= "/help.php?page={$pagename}";
-
 // link menu system
 $menu = new OPNsense\Base\Menu\MenuSystem();
 
 // add interfaces to "Interfaces" menu tab... kind of a hack, may need some improvement.
 $cnf = OPNsense\Core\Config::getInstance();
-$ordid = 0;
+$ifarr = array();
 foreach ($cnf->object()->interfaces->children() as $key => $node) {
-    $menu->appendItem("Interfaces", $key, array("url"=>"/interfaces.php?if=".$key,"order"=>($ordid++),
-                      "visiblename"=>$node->descr?$node->descr:strtoupper($key)));
+    $ifarr[$key] = $node;
 }
+ksort($ifarr);
+$ordid = 0;
+foreach ($ifarr as $key => $node) {
+    $menu->appendItem('Interfaces', $key, array(
+        'url' => '/interfaces.php?if=' . $key,
+        'order' => ($ordid++),
+        'visiblename' => $node->descr ? $node->descr : strtoupper($key)
+    ));
+}
+unset($ifarr);
 $menuSystem = $menu->getItems($_SERVER['REQUEST_URI']);
 
 $aclObj = new \OPNsense\Core\ACL();
@@ -93,7 +116,6 @@ if($need_alert_display == true) {
     echo "<div class=\"col-xs-12\"><div class=\"alert alert-info\"><p>".$display_text."</p></div></div>";
 }
 
-$pgtitle_output = true;
 ?>
 
 <header class="page-head">
@@ -122,14 +144,13 @@ $pgtitle_output = true;
 					?>
 					</li>
 					<?php
-
-
-						echo '<li>'.get_shortcut_main_link($shortcut_section, false).'</li>';
-						echo '<li>'.get_shortcut_status_link($shortcut_section, false).'</li>';
-						echo '<li>'.get_shortcut_log_link($shortcut_section, false).'</li>';
-
+						if (isset($shortcut_section)) {
+							echo '<li>'.get_shortcut_main_link($shortcut_section, false).'</li>';
+							echo '<li>'.get_shortcut_status_link($shortcut_section, false).'</li>';
+							echo '<li>'.get_shortcut_log_link($shortcut_section, false).'</li>';
+						}
 					?>
-					<li><a href="<?php echo $helpurl; ?>" target="_blank" title="<?php echo gettext("Help for items on this page"); ?>">Help</a></li>
+					<li><a href="<?php echo "/help.php?page={$pagename}"; ?>" target="_blank" title="<?php echo gettext("Help for items on this page"); ?>">Help</a></li>
 					<li class="active"><a href="/index.php?logout">Logout</a></li>
 				</ul>
 
@@ -170,13 +191,13 @@ $pgtitle_output = true;
 			<div class="container-fluid">
 			    <form action="<?=$_SERVER['REQUEST_URI'];?>" method="post">
 				<ul class="list-inline">
-					<li class="__mb"><h1><?=genhtmltitle($pgtitle);?></h1></li>
+					<li class="__mb"><h1><?=gentitle($pgtitle);?></h1></li>
 
 					<li class="btn-group-container">
 
 						<?php
 
-						if (!$hide_service_status && !empty($shortcuts[$shortcut_section]['service'])) {
+						if (isset($shortcut_section) && !empty($shortcuts[$shortcut_section]['service'])) {
 							$ssvc = array();
 							switch ($shortcut_section) {
 								case "openvpn":

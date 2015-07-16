@@ -34,10 +34,40 @@ require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("ipsec.inc");
 
+//function to create widget tabs when called
+function display_widget_tabs(& $tab_array) {
+	echo "<div id=\"tabs\">";
+	$tabscounter = 0;
+	foreach ($tab_array as $ta) {
+	$dashpos = strpos($ta[2],'-');
+	$tabname = $ta[2] . "-tab";
+	$tabclass = substr($ta[2],0,$dashpos);
+	$tabclass = $tabclass . "-class";
+		if ($ta[1] == true) {
+			$tabActive = "table-cell";
+			$tabNonActive = "none";
+		}
+		else {
+			$tabActive = "none";
+			$tabNonActive = "table-cell";
+		}
+		echo "<div id=\"{$ta[2]}-active\" class=\"{$tabclass}-tabactive\" style=\"display:{$tabActive}; background-color:#EEEEEE; color:black;\">";
+		echo "<b>&nbsp;&nbsp;&nbsp;{$ta[0]}";
+		echo "&nbsp;&nbsp;&nbsp;</b>";
+		echo "</div>";
+
+		echo "<div id=\"{$ta[2]}-deactive\" class=\"{$tabclass}-tabdeactive\" style=\"display:{$tabNonActive}; background-color:#777777; color:white; cursor: pointer;\" onclick=\"return changeTabDIV('{$ta[2]}')\">";
+		echo "<b>&nbsp;&nbsp;&nbsp;{$ta[0]}";
+		echo "&nbsp;&nbsp;&nbsp;</b>";
+		echo "</div>";
+	}
+
+}
+
+
+
 if (isset($config['ipsec']['phase1'])) {
-?>
-	<div>&nbsp;</div>
-	<?php
+    echo "<div>&nbsp;</div>\n";
     $tab_array = array();
     $tab_array[0] = array("Overview", true, "ipsec-Overview");
     $tab_array[1] = array("Tunnels", false, "ipsec-tunnel");
@@ -53,37 +83,41 @@ if (isset($config['ipsec']['phase1'])) {
     $inactivecounter = 0;
 
     $ipsec_detail_array = array();
-    foreach ($config['ipsec']['phase2'] as $ph2ent) {
-        if ($ph2ent['remoteid']['type'] == "mobile") {
-            continue;
-        }
-        ipsec_lookup_phase1($ph2ent, $ph1ent);
-        $ipsecstatus = false;
+    if (isset($config['ipsec']['phase2'])) {
+        foreach ($config['ipsec']['phase2'] as $ph2ent) {
+            if ($ph2ent['remoteid']['type'] == "mobile") {
+                continue;
+            }
+            ipsec_lookup_phase1($ph2ent, $ph1ent);
+            $ipsecstatus = false;
 
-        $tun_disabled = "false";
-        $foundsrc = false;
-        $founddst = false;
+            $tun_disabled = "false";
+            $foundsrc = false;
+            $founddst = false;
 
-        if (isset($ph1ent['disabled']) || isset($ph2ent['disabled'])) {
-            $tun_disabled = "true";
-            continue;
-        }
-        if (isset($ipsec_status['query']['ikesalist']['ikesa']) && isset($ph1ent['ikeid']) &&  ipsec_phase1_status($ipsec_status['query']['ikesalist']['ikesa'], $ph1ent['ikeid'])) {
-            /* tunnel is up */
-            $iconfn = "true";
-            $activecounter++;
-        } else {
-            /* tunnel is down */
-            $iconfn = "false";
-            $inactivecounter++;
-        }
+            if (isset($ph1ent['disabled']) || isset($ph2ent['disabled'])) {
+                $tun_disabled = "true";
+                continue;
+            }
+            if (isset($ipsec_status['query']['ikesalist']['ikesa']) && isset($ph1ent['ikeid']) &&  ipsec_phase1_status($ipsec_status['query']['ikesalist']['ikesa'], $ph1ent['ikeid'])) {
+                /* tunnel is up */
+                $iconfn = "true";
+                $activecounter++;
+            } else {
+                /* tunnel is down */
+                $iconfn = "false";
+                $inactivecounter++;
+            }
 
-        $ipsec_detail_array[] = array('src' => convert_friendly_interface_to_friendly_descr($ph1ent['interface']),
-                    'dest' => $ph1ent['remote-gateway'],
-                    'remote-subnet' => ipsec_idinfo_to_text($ph2ent['remoteid']),
-                    'descr' => $ph2ent['descr'],
-                    'status' => $iconfn,
-                    'disabled' => $tun_disabled);
+            $ipsec_detail_array[] = array(
+                'src' => convert_friendly_interface_to_friendly_descr($ph1ent['interface']),
+                'dest' => $ph1ent['remote-gateway'],
+                'remote-subnet' => ipsec_idinfo_to_text($ph2ent['remoteid']),
+                'descr' => $ph2ent['descr'],
+                'status' => $iconfn,
+                'disabled' => $tun_disabled
+            );
+        }
     }
 }
 

@@ -57,10 +57,7 @@ class SettingsController extends ApiControllerBase
             // replace absolute path to attribute for relative one at uuid.
             if ($node != null) {
                 $fieldnm = str_replace($node->__reference, $reference, $msg->getField());
-                if ($fieldnm != $msg->getField()) {
-                    // only collect validation errors for the item we're currently editing.
-                    $result["validations"][$fieldnm] = $msg->getMessage();
-                }
+                $result["validations"][$fieldnm] = $msg->getMessage();
             } else {
                 $result["validations"][$msg->getField()] = $msg->getMessage();
             }
@@ -68,10 +65,9 @@ class SettingsController extends ApiControllerBase
 
         // serialize model to config and save when there are no validation errors
         if (count($result['validations']) == 0) {
-            // we've already performed a validation, prevent issues from other items in the model reflecting back to us.
-            $mdlShaper->serializeToConfig($disable_validation = true);
-
             // save config if validated correctly
+            $mdlShaper->serializeToConfig();
+
             Config::getInstance()->save();
             $result = array("result" => "saved");
         }
@@ -151,11 +147,43 @@ class SettingsController extends ApiControllerBase
             if ($uuid != null) {
                 if ($mdlShaper->pipes->pipe->del($uuid)) {
                     // if item is removed, serialize to config and save
-                    $mdlShaper->serializeToConfig($disable_validation = true);
+                    $mdlShaper->serializeToConfig();
                     Config::getInstance()->save();
                     $result['result'] = 'deleted';
                 } else {
                     $result['result'] = 'not found';
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * toggle pipe by uuid (enable/disable)
+     * @param $uuid item unique id
+     * @param $enabled desired state enabled(1)/disabled(1), leave empty for toggle
+     * @return array status
+     */
+    public function togglePipeAction($uuid, $enabled = null)
+    {
+
+        $result = array("result" => "failed");
+        if ($this->request->isPost()) {
+            $mdlShaper = new TrafficShaper();
+            if ($uuid != null) {
+                $node = $mdlShaper->getNodeByReference('pipes.pipe.' . $uuid);
+                if ($node != null) {
+                    if ($enabled == "0" || $enabled == "1") {
+                        $node->enabled = (string)$enabled;
+                    } elseif ($node->enabled->__toString() == "1") {
+                        $node->enabled = "0";
+                    } else {
+                        $node->enabled = "1";
+                    }
+                    $result['result'] = $node->enabled;
+                    // if item has toggled, serialize to config and save
+                    $mdlShaper->serializeToConfig();
+                    Config::getInstance()->save();
                 }
             }
         }
@@ -186,7 +214,7 @@ class SettingsController extends ApiControllerBase
             $searchPhrase = $this->request->getPost('searchPhrase', 'string', '');
 
             // create model and fetch query resuls
-            $fields = array("number", "bandwidth","bandwidthMetric","description","mask","origin");
+            $fields = array("enabled","number", "bandwidth","bandwidthMetric","burst","description","mask","origin");
             $mdlShaper = new TrafficShaper();
             $grid = new UIModelGrid($mdlShaper->pipes->pipe);
             return $grid->fetch($fields, $itemsPerPage, $currentPage, $sortBy, $sortDescending, $searchPhrase);
@@ -220,7 +248,7 @@ class SettingsController extends ApiControllerBase
             $searchPhrase = $this->request->getPost('searchPhrase', 'string', '');
 
             // create model and fetch query resuls
-            $fields = array("number", "pipe","weight","description","mask","origin");
+            $fields = array("enabled","number", "pipe","weight","description","mask","origin");
             $mdlShaper = new TrafficShaper();
             $grid = new UIModelGrid($mdlShaper->queues->queue);
             return $grid->fetch($fields, $itemsPerPage, $currentPage, $sortBy, $sortDescending, $searchPhrase);
@@ -302,11 +330,43 @@ class SettingsController extends ApiControllerBase
             if ($uuid != null) {
                 if ($mdlShaper->queues->queue->del($uuid)) {
                     // if item is removed, serialize to config and save
-                    $mdlShaper->serializeToConfig($disable_validation = true);
+                    $mdlShaper->serializeToConfig();
                     Config::getInstance()->save();
                     $result['result'] = 'deleted';
                 } else {
                     $result['result'] = 'not found';
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * toggle queue by uuid (enable/disable)
+     * @param $uuid item unique id
+     * @param $enabled desired state enabled(1)/disabled(1), leave empty for toggle
+     * @return array status
+     */
+    public function toggleQueueAction($uuid, $enabled = null)
+    {
+
+        $result = array("result" => "failed");
+        if ($this->request->isPost()) {
+            $mdlShaper = new TrafficShaper();
+            if ($uuid != null) {
+                $node = $mdlShaper->getNodeByReference('queues.queue.'.$uuid);
+                if ($node != null) {
+                    if ($enabled == "0" || $enabled == "1") {
+                        $node->enabled = (string)$enabled;
+                    } elseif ($node->enabled->__toString() == "1") {
+                        $node->enabled = "0";
+                    } else {
+                        $node->enabled = "1";
+                    }
+                    $result['result'] = $node->enabled;
+                    // if item has toggled, serialize to config and save
+                    $mdlShaper->serializeToConfig();
+                    Config::getInstance()->save();
                 }
             }
         }
@@ -363,6 +423,7 @@ class SettingsController extends ApiControllerBase
         } else {
             // generate new node, but don't save to disc
             $node = $mdlShaper->rules->rule->add() ;
+            $node->sequence = $mdlShaper->getMaxRuleSequence() + 10;
             return array("rule" => $node->getNodes());
         }
         return array();
@@ -418,7 +479,7 @@ class SettingsController extends ApiControllerBase
             if ($uuid != null) {
                 if ($mdlShaper->rules->rule->del($uuid)) {
                     // if item is removed, serialize to config and save
-                    $mdlShaper->serializeToConfig($disable_validation = true);
+                    $mdlShaper->serializeToConfig();
                     Config::getInstance()->save();
                     $result['result'] = 'deleted';
                 } else {

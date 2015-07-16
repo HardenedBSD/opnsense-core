@@ -40,9 +40,21 @@ $nocsrf = true;
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("services.inc");
 require_once("util.inc");
+
+/**
+ * check if cron exists
+ */
+function cron_job_exists($command) {
+	global $config;
+	foreach($config['cron']['item'] as $item) {
+		if(strstr($item['command'], $command)) {
+			return true;
+		}
+	}
+	return false;
+}
 
 $rrddbpath = '/var/db/rrd';
 $rrdtool = '/usr/local/bin/rrdtool';
@@ -155,7 +167,6 @@ function spit_out_select_items($name, $showall) {
 		       "staticroutes" => gettext("Static routes"),
 		       "sysctl" => gettext("System tunables"),
 		       "snmpd" => gettext("SNMP Server"),
-		       "shaper" => gettext("Traffic Shaper"),
 		       "vlans" => gettext("VLANS"),
 		       "wol" => gettext("Wake on LAN")
 		);
@@ -343,7 +354,6 @@ if ($_POST) {
 								if($m0n0wall_upgrade == true) {
 									if($config['system']['gateway'] <> "")
 										$config['interfaces']['wan']['gateway'] = $config['system']['gateway'];
-									unset($config['shaper']);
 									/* optional if list */
 									$ifdescrs = get_configured_interface_list(true, true);
 									/* remove special characters from interface descriptions */
@@ -445,20 +455,6 @@ if ($_POST) {
 									}
 								}
 								setup_serial_port();
-								if(is_interface_mismatch() == true) {
-									touch("/var/run/interface_mismatch_reboot_needed");
-									clear_subsystem_dirty("restore");
-									convert_config();
-									header("Location: interfaces_assign.php");
-									exit;
-								}
-								if (is_interface_vlan_mismatch() == true) {
-									touch("/var/run/interface_mismatch_reboot_needed");
-									clear_subsystem_dirty("restore");
-									convert_config();
-									header("Location: interfaces_assign.php");
-									exit;
-								}
 							} else {
 								$input_errors[] = gettext("The configuration could not be restored.");
 							}
@@ -577,7 +573,7 @@ function backuparea_change(obj) {
 </script>
 
 
-<?php if ($savemsg) print_info_box($savemsg); ?>
+<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 <?php if (is_subsystem_dirty('restore')): ?><br/>
 <form action="reboot.php" method="post">
 <input name="Submit" type="hidden" value="Yes" />
@@ -591,7 +587,7 @@ function backuparea_change(obj) {
 		<div class="container-fluid">
 			<div class="row">
 			        <?php if ($input_messages) print_info_box($input_messages); ?>
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 

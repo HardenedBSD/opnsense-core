@@ -67,7 +67,7 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 
@@ -86,7 +86,6 @@ include("head.inc");
 								<?php echo $status; ?>
 							</div>
 
-							<div id="doneurl">
 							</div>
 
 							<br/>
@@ -122,8 +121,6 @@ function update_data(obj) {
 	} else if(result_text == "Done") {
 		jQuery('#status').html('Done. The filter rules have been reloaded.');
 		jQuery('#reloadinfo').css("visibility","hidden");
-		jQuery('#doneurl').css("visibility","visible");
-		jQuery('#doneurl').html("<p><a href='status_queues.php'>Queue Status<\/a><\/p>");
 	}
 	window.setTimeout('update_status_thread()', 2500);
 }

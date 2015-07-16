@@ -31,7 +31,43 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
+
+function rule_popup($src,$srcport,$dst,$dstport){
+	global $config,$g;
+	$aliases_array = array();
+	if (isset($config['aliases']['alias'])) {
+		$descriptions = array ();
+		foreach ($config['aliases']['alias'] as $alias_id=>$alias_name){
+			if ($alias_name['name'] == $src) {
+				//var_dump($config['aliases']['alias'][$alias_id]);
+				$aliases_array['src']=$config['aliases']['alias'][$alias_id];
+				$aliases_array['src']['aliasid']=$alias_id;
+				//$descriptions['src'] = $span_begin;
+				//$descriptions['src_end'] = $span_end;
+			}
+			if ($alias_name['name'] == $srcport) {
+				$aliases_array['srcport']=$config['aliases']['alias'][$alias_id];
+				$aliases_array['srcport']['aliasid']=$alias_id;
+				//$descriptions['srcport'] = $span_begin;
+				//$descriptions['srcport_end'] = $span_end;
+			}
+			if ($alias_name['name'] == $dst ) {
+				$aliases_array['dst']=$config['aliases']['alias'][$alias_id];
+				$aliases_array['dst']['aliasid']=$alias_id;
+				//$descriptions['dst'] = $span_begin;
+				//$descriptions['dst_end'] = $span_end;
+			}
+			if ($alias_name['name'] == $dstport) {
+				$aliases_array['dstport']=$config['aliases']['alias'][$alias_id];
+				$aliases_array['dstport']['aliasid']=$alias_id;
+				//$descriptions['dstport'] = $span_begin;
+				//$descriptions['dstport_end'] = $span_end;
+			}
+		}
+		return $aliases_array;//$descriptions;
+	}
+}
+
 
 $pgtitle = array(gettext("Firewall"),gettext("Rules"));
 $shortcut_section = "firewall";
@@ -349,7 +385,7 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('filter')): ?><p>
 				<?php
 				if($_REQUEST['undodrag']) {
@@ -752,20 +788,7 @@ include("head.inc");
 											<span class="<?=$textse;?>"><?php if (isset($config['interfaces'][$filterent['gateway']]['descr'])) echo htmlspecialchars($config['interfaces'][$filterent['gateway']]['descr']); else  echo htmlspecialchars(pprint_port($filterent['gateway'])); ?></span>
 										</td>
 										<td class="listr" id="frd<?=$nrules;?>" ondblclick="document.location='firewall_rules_edit.php?id=<?=$i;?>';">
-										<span class="<?=$textse;?>">
-										<?php
-											if (isset($filterent['ackqueue']) && isset($filterent['defaultqueue'])) {
-												$desc = $filterent['ackqueue'] ;
-												echo "<a href=\"firewall_shaper_queues.php?queue={$filterent['ackqueue']}&amp;action=show\">{$desc}</a>";
-												$desc = $filterent['defaultqueue'];
-												echo "/<a href=\"firewall_shaper_queues.php?queue={$filterent['defaultqueue']}&amp;action=show\">{$desc}</a>";
-											} else if (isset($filterent['defaultqueue'])) {
-												$desc = $filterent['defaultqueue'];
-												echo "<a href=\"firewall_shaper_queues.php?queue={$filterent['defaultqueue']}&amp;action=show\">{$desc}</a>";
-											} else
-												echo gettext("none");
-										?>
-										</span>
+										<span class="<?=$textse;?>"><?=gettext('none');?></span>
 										</td>
 										<td class="listr" id="frd<?=$nrules;?>" ondblclick="document.location='firewall_rules_edit.php?id=<?=$i;?>';"><font color="black">
 											<?php if ($printicon) { ?><span class="glyphicon <?php echo $image; ?>" title="<?php echo $alttext;?>"></span><?php } ?><span class="<?=$textse;?>"><?php echo $schedule_span_begin;?><?=htmlspecialchars($filterent['sched']);?>&nbsp;<?php echo $schedule_span_end; ?></span>

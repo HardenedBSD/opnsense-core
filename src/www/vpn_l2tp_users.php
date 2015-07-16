@@ -73,14 +73,14 @@ $main_buttons = array(
 
 ?>
 
-<body onload="<?= $jsevents["body"]["onload"] ?>">
+<body>
 <?php include("fbegin.inc"); ?>
 
 	<section class="page-content-main">
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($savemsg) {
+				<?php if (isset($savemsg)) {
                     print_info_box($savemsg);
 } ?>
 				<?php if (isset($config['l2tp']['radius']['enable'])) {

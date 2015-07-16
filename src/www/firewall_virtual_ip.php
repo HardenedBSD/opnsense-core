@@ -32,7 +32,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 if (!is_array($config['virtualip']['vip'])) {
 	$config['virtualip']['vip'] = array();
@@ -191,10 +190,10 @@ $main_buttons = array(
 			<div class="row">
 
 				<?php
-					if ($input_errors)
+					if (isset($input_errors) && count($input_errors) > 0)
 						print_input_errors($input_errors);
 					else
-					if ($savemsg)
+					if (isset($savemsg))
 						print_info_box($savemsg);
 					else
 					if (is_subsystem_dirty('vip'))

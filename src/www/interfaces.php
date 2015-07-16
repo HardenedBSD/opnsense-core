@@ -4,6 +4,7 @@
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2004-2008 Scott Ullrich
 	Copyright (C) 2006 Daniel S. Haischt.
+	(from xmlparse_attr.inc) Copyright (C) 2010 Erik Fonnesbeck
 	Copyright (C) 2008-2010 Ermal Luçi
 	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
 	All rights reserved.
@@ -35,10 +36,278 @@ require_once("ipsec.inc");
 require_once("functions.inc");
 require_once("captiveportal.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("rrd.inc");
 require_once("vpn.inc");
-require_once("xmlparse_attr.inc");
+
+/***************************************************************************************************************
+ * imported from xmlparse_attr.inc
+ ***************************************************************************************************************/
+/* The following items will be treated as arrays in regdomain.xml */
+function listtags_rd() {
+	$ret = explode(" ",
+		"band country flags freqband netband rd"
+		);
+	return $ret;
+}
+
+function startElement_attr($parser, $name, $attrs) {
+	global $parsedcfg, $depth, $curpath, $havedata, $listtags, $parsedattrs;
+
+	array_push($curpath, strtolower($name));
+
+	$ptr =& $parsedcfg;
+	if (!empty($attrs)) {
+		$attrptr =& $parsedattrs;
+		$writeattrs = true;
+	}
+	foreach ($curpath as $path) {
+		$ptr =& $ptr[$path];
+		if (isset($writeattrs))
+			$attrptr =& $attrptr[$path];
+	}
+
+	/* is it an element that belongs to a list? */
+	if (in_array(strtolower($name), $listtags)) {
+
+		/* is there an array already? */
+		if (!is_array($ptr)) {
+			/* make an array */
+			$ptr = array();
+		}
+
+		array_push($curpath, count($ptr));
+
+		if (isset($writeattrs)) {
+			if (!is_array($attrptr))
+				$attrptr = array();
+			$attrptr[count($ptr)] = $attrs;
+		}
+
+	} else if (isset($ptr)) {
+		/* multiple entries not allowed for this element, bail out */
+		die(sprintf(gettext('XML error: %1$s at line %2$d cannot occur more than once') . "\n",
+				$name,
+				xml_get_current_line_number($parser)));
+	} else if (isset($writeattrs)) {
+		$attrptr = $attrs;
+	}
+
+	$depth++;
+	$havedata = $depth;
+}
+
+function endElement_attr($parser, $name) {
+	global $depth, $curpath, $parsedcfg, $havedata, $listtags;
+
+	if ($havedata == $depth) {
+		$ptr =& $parsedcfg;
+		foreach ($curpath as $path) {
+			$ptr =& $ptr[$path];
+		}
+		$ptr = "";
+	}
+
+	array_pop($curpath);
+
+	if (in_array(strtolower($name), $listtags))
+		array_pop($curpath);
+
+	$depth--;
+}
+
+function cData_attr($parser, $data) {
+	global $depth, $curpath, $parsedcfg, $havedata;
+
+	$data = trim($data, "\t\n\r");
+
+	if ($data != "") {
+		$ptr =& $parsedcfg;
+		foreach ($curpath as $path) {
+			$ptr =& $ptr[$path];
+		}
+
+		if (is_string($ptr)) {
+			$ptr .= html_entity_decode($data);
+		} else {
+			if (trim($data, " ") != "") {
+				$ptr = html_entity_decode($data);
+				$havedata++;
+			}
+		}
+	}
+}
+
+function parse_xml_regdomain(&$rdattributes, $rdfile = '', $rootobj = 'regulatory-data')
+{
+	global $listtags;
+
+	if (empty($rdfile)) {
+		$rdfile = '/etc/regdomain.xml';
+	}
+
+	$listtags = listtags_rd();
+	$parsed_xml = array();
+
+	if (file_exists('/tmp/regdomain.cache')) {
+		$parsed_xml = unserialize(file_get_contents('/tmp/regdomain.cache'));
+		if (!empty($parsed_xml)) {
+			$rdmain = $parsed_xml['main'];
+			$rdattributes = $parsed_xml['attributes'];
+		}
+	}
+	if (empty($parsed_xml) && file_exists('/etc/regdomain.xml')) {
+		$rdmain = parse_xml_config_raw_attr($rdfile, $rootobj, $rdattributes);
+
+		// unset parts that aren't used before making cache
+		foreach ($rdmain['regulatory-domains']['rd'] as $rdkey => $rdentry) {
+			if (isset($rdmain['regulatory-domains']['rd'][$rdkey]['netband']))
+				unset($rdmain['regulatory-domains']['rd'][$rdkey]['netband']);
+			if (isset($rdattributes['regulatory-domains']['rd'][$rdkey]['netband']))
+				unset($rdattributes['regulatory-domains']['rd'][$rdkey]['netband']);
+		}
+		if (isset($rdmain['shared-frequency-bands']))
+			unset($rdmain['shared-frequency-bands']);
+		if (isset($rdattributes['shared-frequency-bands']))
+			unset($rdattributes['shared-frequency-bands']);
+
+		$parsed_xml = array('main' => $rdmain, 'attributes' => $rdattributes);
+		$rdcache = fopen('/tmp/regdomain.cache', 'w');
+		fwrite($rdcache, serialize($parsed_xml));
+		fclose($rdcache);
+	}
+
+	return $rdmain;
+}
+
+function parse_xml_config_raw_attr($cffile, $rootobj, &$parsed_attributes, $isstring = "false") {
+
+	global $depth, $curpath, $parsedcfg, $havedata, $listtags, $parsedattrs;
+	$parsedcfg = array();
+	$curpath = array();
+	$depth = 0;
+	$havedata = 0;
+
+	if (isset($parsed_attributes))
+		$parsedattrs = array();
+
+	$xml_parser = xml_parser_create();
+
+	xml_set_element_handler($xml_parser, "startElement_attr", "endElement_attr");
+	xml_set_character_data_handler($xml_parser, "cData_attr");
+	xml_parser_set_option($xml_parser,XML_OPTION_SKIP_WHITE, 1);
+
+	if (!($fp = fopen($cffile, "r"))) {
+		log_error(gettext("Error: could not open XML input") . "\n");
+		if (isset($parsed_attributes)) {
+			$parsed_attributes = array();
+			unset($parsedattrs);
+		}
+		return -1;
+	}
+
+	while ($data = fread($fp, 4096)) {
+		if (!xml_parse($xml_parser, $data, feof($fp))) {
+			log_error(sprintf(gettext('XML error: %1$s at line %2$d') . "\n",
+						xml_error_string(xml_get_error_code($xml_parser)),
+						xml_get_current_line_number($xml_parser)));
+			if (isset($parsed_attributes)) {
+				$parsed_attributes = array();
+				unset($parsedattrs);
+			}
+			return -1;
+		}
+	}
+	xml_parser_free($xml_parser);
+
+	if (!$parsedcfg[$rootobj]) {
+		log_error(sprintf(gettext("XML error: no %s object found!") . "\n", $rootobj));
+		if (isset($parsed_attributes)) {
+			$parsed_attributes = array();
+			unset($parsedattrs);
+		}
+		return -1;
+	}
+
+	if (isset($parsed_attributes)) {
+		if ($parsedattrs[$rootobj])
+			$parsed_attributes = $parsedattrs[$rootobj];
+		unset($parsedattrs);
+	}
+
+	return $parsedcfg[$rootobj];
+}
+
+/***************************************************************************************************************
+ * End of import
+ ***************************************************************************************************************/
+
+function get_wireless_modes($interface) {
+	/* return wireless modes and channels */
+	$wireless_modes = array();
+
+	$cloned_interface = get_real_interface($interface);
+
+	if($cloned_interface && is_interface_wireless($cloned_interface)) {
+		$chan_list = "/sbin/ifconfig {$cloned_interface} list chan";
+		$stack_list = "/usr/bin/awk -F\"Channel \" '{ gsub(/\\*/, \" \"); print \$2 \"\\\n\" \$3 }'";
+		$format_list = "/usr/bin/awk '{print \$5 \" \" \$6 \",\" \$1}'";
+
+		$interface_channels = "";
+		exec("$chan_list | $stack_list | sort -u | $format_list 2>&1", $interface_channels);
+		$interface_channel_count = count($interface_channels);
+
+		$c = 0;
+		while ($c < $interface_channel_count) {
+			$channel_line = explode(",", $interface_channels["$c"]);
+			$wireless_mode = trim($channel_line[0]);
+			$wireless_channel = trim($channel_line[1]);
+			if(trim($wireless_mode) != "") {
+				/* if we only have 11g also set 11b channels */
+				if($wireless_mode == "11g") {
+					if(!isset($wireless_modes["11b"]))
+						$wireless_modes["11b"] = array();
+				} else if($wireless_mode == "11g ht") {
+					if(!isset($wireless_modes["11b"]))
+						$wireless_modes["11b"] = array();
+					if(!isset($wireless_modes["11g"]))
+						$wireless_modes["11g"] = array();
+					$wireless_mode = "11ng";
+				} else if($wireless_mode == "11a ht") {
+					if(!isset($wireless_modes["11a"]))
+						$wireless_modes["11a"] = array();
+					$wireless_mode = "11na";
+				}
+				$wireless_modes["$wireless_mode"]["$c"] = $wireless_channel;
+			}
+			$c++;
+		}
+	}
+	return($wireless_modes);
+}
+
+/* return channel numbers, frequency, max txpower, and max regulation txpower */
+function get_wireless_channel_info($interface) {
+	$wireless_channels = array();
+
+	$cloned_interface = get_real_interface($interface);
+
+	if($cloned_interface && is_interface_wireless($cloned_interface)) {
+		$chan_list = "/sbin/ifconfig {$cloned_interface} list txpower";
+		$stack_list = "/usr/bin/awk -F\"Channel \" '{ gsub(/\\*/, \" \"); print \$2 \"\\\n\" \$3 }'";
+		$format_list = "/usr/bin/awk '{print \$1 \",\" \$3 \" \" \$4 \",\" \$5 \",\" \$7}'";
+
+		$interface_channels = "";
+		exec("$chan_list | $stack_list | sort -u | $format_list 2>&1", $interface_channels);
+
+		foreach ($interface_channels as $channel_line) {
+			$channel_line = explode(",", $channel_line);
+			if(!isset($wireless_channels[$channel_line[0]]))
+				$wireless_channels[$channel_line[0]] = $channel_line;
+		}
+	}
+	return($wireless_channels);
+}
+
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/interfaces.php');
 
@@ -1562,11 +1831,11 @@ $types6 = array("none" => gettext("None"), "staticv6" => gettext("Static IPv6"),
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (is_subsystem_dirty('interfaces')): ?><p>
 				<?php print_info_box_np(sprintf(gettext("The %s configuration has been changed."),$wancfg['descr'])."<p>".gettext("You must apply the changes in order for them to take effect.")."</p><p>".gettext("Don't forget to adjust the DHCP Server range if needed after applying."));?><br />
 				<?php endif; ?>
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 
 			    <section class="col-xs-12">
 

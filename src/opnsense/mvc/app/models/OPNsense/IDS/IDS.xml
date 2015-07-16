@@ -16,5 +16,45 @@
                 </enabled>
             </rule>
         </rules>
+        <files>
+            <file type="ArrayField">
+                <filename type="TextField">
+                    <Required>Y</Required>
+                    <Mask>/^(.){1,255}$/</Mask>
+                </filename>
+                <enabled type="BooleanField">
+                    <default>0</default>
+                    <Required>Y</Required>
+                </enabled>
+            </file>
+        </files>
+        <general>
+            <enabled type="BooleanField">
+                <default>0</default>
+                <Required>Y</Required>
+            </enabled>
+            <interfaces type="InterfaceField">
+                <Required>Y</Required>
+                <default>wan</default>
+                <multiple>Y</multiple>
+                <filters>
+                    <enable>/^(?!0).*$/</enable>
+                </filters>
+            </interfaces>
+            <UpdateCron type="ModelRelationField">
+                <Model>
+                    <queues>
+                        <source>OPNsense.Cron.Cron</source>
+                        <items>jobs.job</items>
+                        <display>description</display>
+                        <filters>
+                            <origin>/IDS/</origin>
+                        </filters>
+                    </queues>
+                </Model>
+                <ValidationMessage>Related cron not found</ValidationMessage>
+                <Required>N</Required>
+            </UpdateCron>
+        </general>
     </items>
 </model>

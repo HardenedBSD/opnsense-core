@@ -36,9 +36,6 @@ $after_filter_configure_run = array();
 /* For installing cron job of schedules */
 $time_based_rules = false;
 
-/* Used to hold the interface list that will be used on ruleset creation. */
-$FilterIflist = array();
-
 /* Create a global array to avoid errors on rulesets. */
 $GatewaysList = array();
 
@@ -47,6 +44,24 @@ $filterdns = array();
 
 /* Used for aliases and interface macros */
 $aliases = "";
+
+function alias_expand_urltable($name) {
+	global $config;
+	$urltable_prefix = "/var/db/aliastables/";
+	$urltable_filename = $urltable_prefix . $name . ".txt";
+
+	if (is_array($config['aliases']['alias'])) {
+		foreach ($config['aliases']['alias'] as $alias) {
+			if (preg_match("/urltable/i", $alias['type']) && ($alias['name'] == $name)) {
+				if (is_URL($alias["url"]) && file_exists($urltable_filename) && filesize($urltable_filename))
+					return $urltable_filename;
+				else if (process_alias_urltable($name, $alias["url"], 0, true))
+					return $urltable_filename;
+			}
+		}
+	}
+	return null;
+}
 
 
 
@@ -62,7 +77,7 @@ function is_bogonsv6_used() {
 	global $config, $g;
 	# Only use bogonsv6 table if IPv6 Allow is on, and at least 1 enabled interface also has "blockbogons" enabled.
 	$usebogonsv6 = false;
-	if (isset($config['system']['ipv6allow'])) {
+	if (isset($config['system']['ipv6allow']) && isset($config['interfaces'])) {
 		foreach ($config['interfaces'] as $ifacedata) {
 			if(isset($ifacedata['enable']) && isset($ifacedata['blockbogons'])) {
 				$usebogonsv6 = true;
@@ -71,33 +86,6 @@ function is_bogonsv6_used() {
 		}
 	}
 	return $usebogonsv6;
-}
-
-function flowtable_configure() {
-	global $config, $g;
-
-	if (empty($config['system']['flowtable'])) {
-		set_single_sysctl("net.inet.flowtable.enable", "0");
-		return;
-	}
-
-	// Figure out how many flows we should reserve
-	// sized 2x larger than the number of unique connection destinations.
-	if($config['system']['maximumstates'] <> "" && is_numeric($config['system']['maximumstates']))
-		$maxstates = $config['system']['maximumstates'];
-	else
-		$maxstates = 150000;
-	// nmbflows cpu count * ($maxstates * 2)
-	$cpus = get_single_sysctl('kern.smp.cpus');
-	$nmbflows = ($cpus*($maxstates*2));
-	// Flowtable currently only works on 8.0
-	if(get_freebsd_version() == "8") {
-		set_sysctl(array(
-			"net.inet.flowtable.nmbflows" => $nmbflows,
-			"net.inet.ip.output_flowtable_size" => $maxstates,
-			"net.inet.flowtable.enable" => "1")
-		);
-	}
 }
 
 function filter_pflog_start()
@@ -158,8 +146,10 @@ function filter_delete_states_for_down_gateways() {
 /* reload filter sync */
 function filter_configure_sync($delete_states_if_needed = true)
 {
-	global $config, $g, $after_filter_configure_run, $FilterIflist;
+	global $config, $g, $after_filter_configure_run;
 	global $time_based_rules, $filterdns, $aliases;
+
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	/* Use filter lock to not allow concurrent filter reloads during this run. */
 	$filterlck = lock('filter', LOCK_EX);
@@ -193,11 +183,6 @@ function filter_configure_sync($delete_states_if_needed = true)
 	update_filter_reload_status(gettext("Generating filter rules"));
 	/* generate pfctl rules */
 	$pfrules = filter_rules_generate();
-	/* generate altq, limiter */
-	if(file_exists("/var/run/booting"))
-		echo ".";
-	update_filter_reload_status(gettext("Generating ALTQ queues"));
-	$altq_queues = filter_generate_altq_queues();
 	if(file_exists("/var/run/booting"))
 		echo ".";
 	update_filter_reload_status(gettext("Loading filter rules"));
@@ -216,7 +201,7 @@ function filter_configure_sync($delete_states_if_needed = true)
 
 	$limitrules = "";
 	/* User defined maximum table entries in Advanced menu. */
-	if ($config['system']['maximumtableentries'] <> "" && is_numeric($config['system']['maximumtableentries']))
+	if (!empty($config['system']['maximumtableentries']) && is_numeric($config['system']['maximumtableentries']))
 		$limitrules .= "set limit table-entries {$config['system']['maximumtableentries']}\n";
 
 	if ($config['system']['optimization'] <> "") {
@@ -232,7 +217,7 @@ function filter_configure_sync($delete_states_if_needed = true)
 	else
 		$limitrules .= "set timeout { adaptive.start 0, adaptive.end 0 }\n";
 
-	if ($config['system']['maximumstates'] <> "" && is_numeric($config['system']['maximumstates'])) {
+	if (!empty($config['system']['maximumstates']) && is_numeric($config['system']['maximumstates'])) {
 		/* User defined maximum states in Advanced menu. */
 		$limitrules .= "set limit states {$config['system']['maximumstates']}\n";
 		$limitrules .= "set limit src-nodes {$config['system']['maximumstates']}\n";
@@ -244,9 +229,6 @@ function filter_configure_sync($delete_states_if_needed = true)
 
 	if (isset($config['system']['lb_use_sticky']) && is_numeric($config['system']['srctrack']) && ($config['system']['srctrack'] > 0))
 		$limitrules .= "set timeout src.track {$config['system']['srctrack']}\n";
-
-	// Configure flowtable support if enabled.
-	flowtable_configure();
 
 	$rules = "";
 	$rules = "{$limitrules}\n";
@@ -260,11 +242,10 @@ function filter_configure_sync($delete_states_if_needed = true)
 	update_filter_reload_status(gettext("Setting up SCRUB information"));
 	$rules .= filter_generate_scrubing();
 	$rules .= "\n";
-	$rules .= "{$altq_queues}\n";
 	$rules .= "{$natrules}\n";
 	$rules .= "{$pfrules}\n";
 
-	unset($aliases, $gateways, $altq_queues, $natrules, $pfrules);
+	unset($aliases, $gateways, $natrules, $pfrules);
 
 	// Copy rules.debug to rules.debug.old
 	if (file_exists('/tmp/rules.debug')) {
@@ -291,11 +272,17 @@ function filter_configure_sync($delete_states_if_needed = true)
 	if($rules_loading <> 0) {
 		$saved_line_error = $rules_error[0];
 		$line_error = explode(":", $rules_error[0]);
-		$line_number = $line_error[1];
-		$line_split = file('/tmp/rules.debug');
-		if(is_array($line_split))
-			$line_error = sprintf(gettext('The line in question reads [%1$d]: %2$s'), $line_number, $line_split[$line_number-1]);
-		unset($line_split);
+		if (isset($line_error[1])) {
+			// only report issues with line numbers
+			$line_number = $line_error[1];
+			$line_split = file('/tmp/rules.debug');
+			if(is_array($line_split)) {
+				$line_error = sprintf(gettext('The line in question reads [%1$d]: %2$s'), $line_number, $line_split[$line_number-1]);
+			}
+			unset($line_split);
+		} else {
+			$line_number = null;
+		}
 
 		/* Brutal ugly hack but required -- PF is stuck, unwedge */
 		if (strstr("$rules_error[0]", "busy")) {
@@ -384,7 +371,8 @@ function filter_configure_sync($delete_states_if_needed = true)
 }
 
 function filter_generate_scrubing() {
-	global $config, $FilterIflist;
+	global $config;
+	$FilterIflist = filter_generate_optcfg_array() ;
 	$scrubrules = "";
 
 	if (isset($config['system']['maxmss_enable'])) {
@@ -405,11 +393,11 @@ function filter_generate_scrubing() {
 		else
 			$mssclamp = "";
 		/* configure no-df for linux nfs and others */
-		if($config['system']['scrubnodf'])
+		if(!empty($config['system']['scrubnodf']))
 			$scrubnodf = "no-df";
 		else
 			$scrubnodf = "";
-		if($config['system']['scrubrnid'])
+		if(!empty($config['system']['scrubrnid']))
 			$scrubrnid = "random-id";
 		else
 			$scrubrnid = "";
@@ -495,26 +483,27 @@ function filter_expand_alias_array($alias_name) {
 
 function filter_generate_aliases()
 {
-	global $config, $FilterIflist, $after_filter_configure_run;
+	global $config, $after_filter_configure_run;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	$alias = "#System aliases\n ";
 	$aliases = "loopback = \"{ lo0 }\"\n";
 
 	foreach ($FilterIflist as $if => $ifcfg) {
-		if (is_array($ifcfg[0])) {
+		if (isset($ifcfg[0]) && is_array($ifcfg[0])) {
 			if ($ifcfg[0]['if'] == 'pppoe') {
 				$aliases .= "{$ifcfg[0]['descr']} = \"{ {$ifcfg[0]['if']}";
 				$aliases .= " }\"\n";
 			}
 		} elseif (!empty($ifcfg['descr']) && !empty($ifcfg['if'])) {
-			if ($ifcfg['type6'] == '6rd')
+			if (isset($ifcfg['type6']) && $ifcfg['type6'] == '6rd')
 				$aliases .= "{$ifcfg['descr']} = \"{ {$ifcfg['if']} {$if}_stf";
-			else if ($ifcfg['type6'] == '6to4')
+			else if (isset($ifcfg['type6']) && $ifcfg['type6'] == '6to4')
 				$aliases .= "{$ifcfg['descr']} = \"{ {$ifcfg['if']} {$if}_stf";
 			else {
 				$aliases .= "{$ifcfg['descr']} = \"{ {$ifcfg['if']}";
 
-				if ($ifcfg['type'] == 'pptp') {
+				if (isset($ifcfg['type']) && $ifcfg['type'] == 'pptp') {
 					foreach (get_parent_interface($ifcfg['if']) as $parent_if) {
 						if ($parent_if != $ifcfg['if']) {
 							$aliases .= " {$parent_if}";
@@ -746,7 +735,7 @@ function filter_get_vpns_list() {
 		}
 	}
 	/* pppoe */
-	if (is_array($config['pppoes']['pppoe'])) {
+	if (isset($config['pppoes']['pppoe']) && is_array($config['pppoes']['pppoe'])) {
 		foreach($config['pppoes']['pppoe'] as $pppoe) {
 			if ($pppoe['mode'] == "server") {
 				if(is_ipaddr($pppoe['remoteip'])) {
@@ -768,13 +757,12 @@ function filter_get_vpns_list() {
  * optionally returns an array instead, including friendly interface and gateway (if applicable)
  */
 function filter_get_direct_networks_list($returnsubnetsonly = true) {
-	global $config, $FilterIflist, $GatewaysList;
+	global $config, $GatewaysList;
+	$FilterIflist = filter_generate_optcfg_array() ;
 	/* build list of directly connected interfaces and networks */
 	$networks = "";
 	$networks_arr = array();
-	if(empty($FilterIflist)) {
-		filter_generate_optcfg_array();
-	}
+
 	foreach ($FilterIflist as $ifent => $ifcfg) {
 		$subnet = "{$ifcfg['sa']}/{$ifcfg['sn']}";
 		if(is_subnet($subnet)) {
@@ -831,6 +819,14 @@ function filter_generate_optcfg_array()
 {
 	global $config, $FilterIflist;
 
+	// Nasty hack to avoid unkown status of $FilterIflist, every piece of code using $FilterIflist should use
+	// this function to retrieve it's content.
+	if (isset($FilterIflist) && is_array($FilterIflist) && count($FilterIflist) > 0) {
+		return $FilterIflist;
+	}
+
+	$FilterIflist = array();
+
 	/* if list */
 	$iflist = get_configured_interface_with_descr();
 	foreach ($iflist as $if => $ifdetail) {
@@ -844,8 +840,13 @@ function filter_generate_optcfg_array()
 		$oic['ipv6'] = get_interface_ipv6($if);
 		if(!is_ipaddrv4($oc['ipaddr']) && !empty($oc['ipaddr']))
 			$oic['type'] = $oc['ipaddr'];
-		if(!is_ipaddrv6($oc['ipaddrv6']) && !empty($oc['ipaddrv6']))
-			$oic['type6'] = $oc['ipaddrv6'];
+		if (isset($oc['ipaddrv6'])) {
+			if( !is_ipaddrv6($oc['ipaddrv6']) && !empty($oc['ipaddrv6'])) {
+				$oic['type6'] = $oc['ipaddrv6'];
+			}
+		} else {
+			$oic['type6'] = null;
+		}
 		if (!empty($oc['track6-interface']))
 			$oic['track6-interface'] = $oc['track6-interface'];
 		$oic['sn'] = get_interface_subnet($if);
@@ -855,11 +856,31 @@ function filter_generate_optcfg_array()
 		$oic['descr'] = $ifdetail;
 		$oic['sa'] = gen_subnet($oic['ip'], $oic['sn']);
 		$oic['sav6'] = gen_subnetv6($oic['ipv6'], $oic['snv6']);
-		$oic['nonat'] = $oc['nonat'];
-		$oic['alias-address'] = $oc['alias-address'];
-		$oic['alias-subnet'] = $oc['alias-subnet'];
-		$oic['gateway'] = $oc['gateway'];
-		$oic['gatewayv6'] = $oc['gatewayv6'];
+		if (isset($oc['nonat'])) {
+			$oic['nonat'] = $oc['nonat'];
+		} else {
+			$oic['nonat'] = null;
+		}
+		if (isset($oc['alias-address'])) {
+			$oic['alias-address'] = $oc['alias-address'];
+		} else {
+			$oic['alias-address'] = null;
+		}
+		if (isset($oc['alias-subnet'])) {
+			$oic['alias-subnet'] = $oc['alias-subnet'];
+		} else {
+			$oc['alias-subnet'] = null;
+		}
+		if (isset($oc['gateway'])) {
+			$oic['gateway'] = $oc['gateway'];
+		} else {
+			$oic['gateway'] = null ;
+		}
+		if (isset($oc['gatewayv6'])) {
+			$oic['gatewayv6'] = $oc['gatewayv6'];
+		} else {
+			$oic['gatewayv6'] = null;
+		}
 		$oic['spoofcheck'] = "yes";
 		$oic['bridge'] = link_interface_to_bridge($if);
 		$vips = link_interface_to_vips($if);
@@ -902,7 +923,7 @@ function filter_generate_optcfg_array()
 			$oic['sn'] = "32";
 		$FilterIflist['pptp'] = $oic;
 	}
-	if($config['l2tp']['mode'] == "server") {
+	if(isset($config['l2tp']['mode']) && $config['l2tp']['mode'] == "server") {
 		$oic = array();
 		$oic['if'] = 'l2tp';
 		$oic['descr'] = 'L2TP';
@@ -916,7 +937,7 @@ function filter_generate_optcfg_array()
 		$oic['virtual'] = true;
 		$FilterIflist['l2tp'] = $oic;
 	}
-	if (is_array($config['pppoes']['pppoe']) && (count($config['pppoes']['pppoe']) > 0)) {
+	if (isset($config['pppoes']['pppoe']) && is_array($config['pppoes']['pppoe']) && (count($config['pppoes']['pppoe']) > 0)) {
 		$pppoeifs = array();
 		foreach($config['pppoes']['pppoe'] as $pppoe) {
 			if ($pppoe['mode'] == "server") {
@@ -965,15 +986,13 @@ function filter_generate_optcfg_array()
 			$FilterIflist[$ifgen['ifname']] = $oc;
 		}
 	}
+
+	return $FilterIflist ;
 }
 
-function filter_flush_state_table()
-{
-	return mwexec('/sbin/pfctl -F state');
-}
 
 function filter_get_reflection_interfaces($natif = "") {
-	global $FilterIflist;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	$nat_if_list = array();
 
@@ -992,7 +1011,8 @@ function filter_get_reflection_interfaces($natif = "") {
 }
 
 function filter_generate_reflection_nat($rule, &$route_table, $nat_ifs, $protocol, $target, $target_ip, $target_subnet = "") {
-	global $config, $FilterIflist;
+	global $config;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	if(!isset($config['system']['enablenatreflectionhelper']))
 		return "";
@@ -1077,7 +1097,8 @@ function filter_generate_reflection_nat($rule, &$route_table, $nat_ifs, $protoco
 }
 
 function filter_generate_reflection_proxy($rule, $nordr, $rdr_ifs, $srcaddr, $dstaddr_port, &$starting_localhost_port, &$reflection_txt) {
-	global $FilterIflist, $config;
+	global $config;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	// Initialize natrules holder string
 	$natrules = "";
@@ -1269,7 +1290,8 @@ function filter_generate_reflection_proxy($rule, $nordr, $rdr_ifs, $srcaddr, $ds
 }
 
 function filter_nat_rules_automatic_tonathosts($with_descr = false) {
-	global $config, $FilterIflist, $GatewaysList;
+	global $config, $GatewaysList;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	$tonathosts = array("127.0.0.0/8");
 	$descriptions = array(gettext("localhost"));
@@ -1333,7 +1355,7 @@ function filter_nat_rules_automatic_tonathosts($with_descr = false) {
 	}
 
 	/* PPPoE subnet */
-	if (is_array($FilterIflist['pppoe']))
+	if (isset($FilterIflist['pppoe']) && is_array($FilterIflist['pppoe']))
 		foreach ($FilterIflist['pppoe'] as $pppoe)
 			if(is_private_ip($pppoe['ip'])) {
 				$tonathosts[] = "{$pppoe['sa']}/{$pppoe['sn']}";
@@ -1392,7 +1414,8 @@ function filter_nat_rules_automatic_tonathosts($with_descr = false) {
 
 function filter_nat_rules_outbound_automatic($src)
 {
-	global $config, $FilterIflist;
+	global $config ;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	$rules = array();
 
@@ -1434,7 +1457,8 @@ function filter_nat_rules_outbound_automatic($src)
 
 /* Generate a 'nat on' or 'no nat on' rule for given interface */
 function filter_nat_rules_generate_if($if, $src = "any", $srcport = "", $dst = "any", $dstport = "", $natip = "", $natport = "", $nonat = false, $staticnatport = false, $proto = "", $poolopts = "") {
-	global $config, $FilterIflist;
+	global $config;
+	$FilterIflist = filter_generate_optcfg_array() ;
 	/* XXX: billm - any idea if this code is needed? */
 	if($src == "/32" || $src{0} == "/")
 		return "# src incorrectly specified\n";
@@ -1515,7 +1539,8 @@ function filter_nat_rules_generate_if($if, $src = "any", $srcport = "", $dst = "
 }
 
 function filter_nat_rules_generate() {
-	global $config, $g, $after_filter_configure_run, $FilterIflist, $GatewaysList, $aliases;
+	global $config, $g, $after_filter_configure_run, $GatewaysList, $aliases;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	$natrules = "no nat proto carp\n";
 	$natrules .= "no rdr proto carp\n";
@@ -1528,7 +1553,7 @@ function filter_nat_rules_generate() {
 	$route_table = "";
 
 	/* any 1:1 mappings? */
-	if(is_array($config['nat']['onetoone'])) {
+	if(isset($config['nat']['onetoone']) && is_array($config['nat']['onetoone'])) {
 		foreach ($config['nat']['onetoone'] as $rule) {
 			if (isset($rule['disabled']))
 				continue;
@@ -1588,7 +1613,7 @@ function filter_nat_rules_generate() {
 	}
 
 	/* Add binat rules for Network Prefix translation */
-	if(is_array($config['nat']['npt'])) {
+	if(isset($config['nat']['npt']) && is_array($config['nat']['npt'])) {
 		foreach ($config['nat']['npt'] as $rule) {
 			if (isset($rule['disabled']))
 				continue;
@@ -1726,11 +1751,11 @@ function filter_nat_rules_generate() {
 			foreach ($a_outs as $a_out) {
 				$natrules .= filter_nat_rules_generate_if($a_out['interface'],
 					$a_out['source']['network'],
-					$a_out['sourceport'],
-					$a_out['destination']['address'],
-					$a_out['dstport'],
-					$a_out['target'],
-					$a_out['natport'],
+					isset($a_out['sourceport']) ? $a_out['sourceport'] : null,
+					isset($a_out['destination']['address']) ? $a_out['destination']['address'] : null,
+					isset($a_out['dstport']) ? $a_out['dstport'] : null,
+					isset($a_out['target']) ? $a_out['target'] : null,
+					isset($a_out['natport']) ? $a_out['natport'] : null,
 					isset($a_out['nonat']),
 					isset($a_out['staticnatport']));
 			}
@@ -1987,14 +2012,16 @@ function filter_generate_port(& $rule, $target = "source", $isnat = false) {
 
 	$src = "";
 
-	$rule['protocol'] = strtolower($rule['protocol']);
-	if(in_array($rule['protocol'], array("tcp","udp","tcp/udp"))) {
-		if($rule[$target]['port']) {
+	if (isset($rule['protocol'])) {
+		$rule['protocol'] = strtolower($rule['protocol']);
+	}
+	if(isset($rule['protocol']) && in_array($rule['protocol'], array("tcp","udp","tcp/udp"))) {
+		if(!empty($rule[$target]['port'])) {
 			$srcport = explode("-", $rule[$target]['port']);
 			$srcporta = alias_expand($srcport[0]);
 			if (!$srcporta) {
 				log_error(sprintf( _('filter_generate_port: %s is not a valid %s port.'), $srcport[0], $target));
-			} elseif ((!$srcport[1]) || ($srcport[0] == $srcport[1])) {
+			} elseif (empty($srcport[1]) || $srcport[0] == $srcport[1]) {
 				$src .= " port {$srcporta} ";
 			} else if(($srcport[0] == 1) && ($srcport[1] == 65535)) {
 			/* no need for a port statement here */
@@ -2018,7 +2045,7 @@ function filter_generate_port(& $rule, $target = "source", $isnat = false) {
 }
 
 function filter_address_add_vips_subnets(&$subnets, $if, $not) {
-	global $FilterIflist;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	$if_subnets = array($subnets);
 
@@ -2056,12 +2083,13 @@ function filter_address_add_vips_subnets(&$subnets, $if, $not) {
 }
 
 function filter_generate_address(& $rule, $target = "source", $isnat = false) {
-	global $FilterIflist, $config;
+	global $config;
+	$FilterIflist = filter_generate_optcfg_array() ;
 	$src = "";
 
 	if(isset($rule[$target]['any'])) {
 		$src = "any";
-	} else if($rule[$target]['network']) {
+	} else if(!empty($rule[$target]['network'])) {
 		if(strstr($rule[$target]['network'], "opt")) {
 			$optmatch = "";
 			$matches = "";
@@ -2208,7 +2236,8 @@ function filter_generate_address(& $rule, $target = "source", $isnat = false) {
 
 function filter_generate_user_rule($rule)
 {
-	global $config, $g, $FilterIflist, $GatewaysList;
+	global $config, $g, $GatewaysList;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	/* don't include disabled rules */
 	if(isset($rule['disabled'])) {
@@ -2218,6 +2247,10 @@ function filter_generate_user_rule($rule)
 	$pptpdcfg = $config['pptpd'];
 	$int = "";
 	$aline = array();
+	// initialize array with empty tags
+	foreach (array('schedlabel','divert','icmp-type','icmp6-type','tag','tagged','dscp','route','os','reply','prot','log') as $tag) {
+		$aline[$tag] = "";
+	}
 
 	/* Check to see if the interface is in our list */
 	if(isset($rule['floating'])) {
@@ -2239,7 +2272,7 @@ function filter_generate_user_rule($rule)
 				$items .= $oc['descr'] . " ";
 			return "# array key \"{$rule['interface']}\" does not exist for \"" . $rule['descr'] . "\" in array: {{$items}}";
 	} else if((array_key_exists($rule['interface'], $FilterIflist))
-		&& (is_array($FilterIflist[$rule['interface']]))
+		&& (isset($FilterIflist[$rule['interface']][0]))
 		&& (is_array($FilterIflist[$rule['interface']][0]))) {
 		/* Currently this only case for this is the pppoe server. There should be an existing macro with this name. */
 		$aline['interface'] = " on \$" . $rule['interface'] . " ";
@@ -2247,12 +2280,12 @@ function filter_generate_user_rule($rule)
 		$aline['interface'] = " on \$" . $FilterIflist[$rule['interface']]['descr'] . " ";
 	$ifcfg = $FilterIflist[$rule['interface']];
 	if($pptpdcfg['mode'] != "server") {
-		if(($rule['source']['network'] == "pptp") ||
-			($rule['destination']['network'] == "pptp"))
+		if((isset($rule['source']['network']) && $rule['source']['network'] == "pptp") ||
+			(isset($rule['destination']['network']) && $rule['destination']['network'] == "pptp"))
 				return "# source network or destination network == pptp on " . $rule['descr'];
 	}
 
-	switch($rule['ipprotocol']) {
+	switch(isset($rule['ipprotocol']) ? $rule['ipprotocol'] : null) {
 	case "inet":
 		$aline['ipprotocol'] = "inet";
 		break;
@@ -2265,18 +2298,22 @@ function filter_generate_user_rule($rule)
 	}
 
 	/* check for unresolvable aliases */
-	if($rule['source']['address'] && !alias_expand($rule['source']['address'])) {
+	if(isset($rule['source']['address']) && !alias_expand($rule['source']['address'])) {
 		$error_text = "Unresolvable source alias '{$rule['source']['address']}' for rule '{$rule['descr']}'";
 		file_notice("Filter_Reload", $error_text);
 		return "# {$error_text}";
 	}
-	if($rule['destination']['address'] && !alias_expand($rule['destination']['address'])) {
+	if(isset($rule['destination']['address']) && !alias_expand($rule['destination']['address'])) {
 		$error_text = "Unresolvable destination alias '{$rule['destination']['address']}' for rule '{$rule['descr']}'";
 		file_notice("Filter_Reload", $error_text);
 		return "# {$error_text}";
 	}
 	update_filter_reload_status("Setting up pass/block rules");
-	$type = $rule['type'];
+	if (isset($rule['type'])) {
+		$type = $rule['type'];
+	} else {
+		$type = null;
+	}
 	if($type != "pass" && $type != "block" && $type != "reject" && $type != "match") {
 		/* default (for older rules) is pass */
 		$type = "pass";
@@ -2301,8 +2338,8 @@ function filter_generate_user_rule($rule)
 	update_filter_reload_status(sprintf(gettext("Setting up pass/block rules %s"), $rule['descr']));
 
 	/* do not process reply-to for gateway'd rules */
-	if($rule['gateway'] == "" && $aline['direction'] <> "" && (interface_has_gateway($rule['interface']) || interface_has_gatewayv6($rule['interface'])) && !isset($config['system']['disablereplyto']) && !isset($rule['disablereplyto']) && $type != "match") {
-		if ($rule['ipprotocol'] == "inet6") {
+	if( empty($rule['gateway']) && !empty($aline['direction']) && (interface_has_gateway($rule['interface']) || interface_has_gatewayv6($rule['interface'])) && !isset($config['system']['disablereplyto']) && !isset($rule['disablereplyto']) && $type != "match") {
+		if (isset($rule['ipprotocol']) && $rule['ipprotocol'] == "inet6") {
 			$rg = get_interface_gateway_v6($rule['interface']);
 			if (is_ipaddrv6($rg))
 				$aline['reply'] = "reply-to ( {$ifcfg['ifv6']} {$rg} ) ";
@@ -2317,7 +2354,7 @@ function filter_generate_user_rule($rule)
 		}
 	}
 	/* if user has selected a custom gateway, lets work with it */
-	else if($rule['gateway'] <> "" && $type == "pass") {
+	else if(!empty($rule['gateway']) && $type == "pass") {
 		if (isset($GatewaysList[$rule['gateway']]))
 			/* Add the load balanced gateways */
 			$aline['route'] = " \$GW{$rule['gateway']} ";
@@ -2337,7 +2374,7 @@ function filter_generate_user_rule($rule)
 		else
 			$aline['prot'] = " proto {$rule['protocol']} ";
 	} else {
-		if($rule['source']['port'] <> "" || $rule['destination']['port'] <> "")
+		if(!empty($rule['source']['port']) || !empty($rule['destination']['port']))
 			$aline['prot'] = " proto tcp ";
 	}
 	update_filter_reload_status(sprintf(gettext("Creating rule %s"), $rule['descr']));
@@ -2350,8 +2387,9 @@ function filter_generate_user_rule($rule)
 	$aline['src'] = " from $src ";
 
 	/* OS signatures */
-	if(($rule['protocol'] == "tcp") && ($rule['os'] <> ""))
+	if( isset($rule['protocol']) && $rule['protocol'] == "tcp" && !empty($rule['os'])) {
 		$aline['os'] = " os \"{$rule['os']}\" ";
+	}
 
 	/* destination address */
 	$dst = trim(filter_generate_address($rule, "destination"));
@@ -2360,9 +2398,9 @@ function filter_generate_user_rule($rule)
 	}
 	$aline['dst'] = "to $dst ";
 
-	if (($rule['protocol'] == "icmp") && $rule['icmptype'] && ($rule['ipprotocol'] == "inet"))
+	if (isset($rule['protocol']) && $rule['protocol'] == "icmp" && $rule['icmptype'] && $rule['ipprotocol'] == "inet")
 		$aline['icmp-type'] = "icmp-type {$rule['icmptype']} ";
-	if (($rule['protocol'] == "icmp") && $rule['icmptype'] && ($rule['ipprotocol'] == "inet6"))
+	if (isset($rule['protocol']) && $rule['protocol'] == "icmp" && $rule['icmptype'] && $rule['ipprotocol'] == "inet6")
 		$aline['icmp6-type'] = "icmp6-type {$rule['icmptype']} ";
 	if (!empty($rule['tag']))
 		$aline['tag'] = " tag " .$rule['tag']. " ";
@@ -2381,12 +2419,13 @@ function filter_generate_user_rule($rule)
 			default:    $aline['dscp'] = " dscp " . $rule['dscp'] . " "; break;
 		}
 	}
+	$aline['allowopts'] = "";
 	if ($type == "pass") {
 		if (isset($rule['allowopts']))
 			$aline['allowopts'] = " allow-opts ";
 	}
 	$aline['flags'] = "";
-	if ($rule['protocol'] == "tcp") {
+	if (isset($rule['protocol']) && $rule['protocol'] == "tcp") {
 		if (isset($rule['tcpflags_any']))
 			$aline['flags'] = "flags any ";
 		else if (!empty($rule['tcpflags2'])) {
@@ -2462,7 +2501,7 @@ function filter_generate_user_rule($rule)
 			    (isset($rule['max']) and $rule['max'] <> "") or
 			    (isset($rule['max-src-nodes']) and $rule['max-src-nodes'] <> "") or
 			    (isset($rule['max-src-states']) and $rule['max-src-states'] <> "") or
-			    ((in_array($rule['protocol'], array("tcp","tcp/udp"))) and
+			    ((isset($rule['protocol']) && in_array($rule['protocol'], array("tcp","tcp/udp"))) and
 			     ((isset($rule['statetimeout']) and $rule['statetimeout'] <> "") or
 			      (isset($rule['max-src-conn']) and $rule['max-src-conn'] <> "") or
 			      (isset($rule['max-src-conn-rate']) and $rule['max-src-conn-rate'] <> "") or
@@ -2501,16 +2540,9 @@ function filter_generate_user_rule($rule)
 					$aline['flags'] .= " ) ";
 				}
 	}
-	if($rule['defaultqueue'] <> "") {
-		$aline['queue'] = " queue (".$rule['defaultqueue'];
-		if($rule['ackqueue'] <> "")
-			$aline['queue'] .= ",".$rule['ackqueue'];
-		$aline['queue'] .= ") ";
-	}
 
 	/* is a time based rule schedule attached? */
 	if(!empty($rule['sched']) && !empty($config['schedules'])) {
-		$aline['schedlabel'] = "";
 		foreach ($config['schedules']['schedule'] as $sched) {
 			if($sched['name'] == $rule['sched']) {
 				if(!filter_get_time_based_rule_status($sched)) {
@@ -2529,14 +2561,13 @@ function filter_generate_user_rule($rule)
 	$line = "";
 	/* exception(s) to a user rules can go here. */
 	/* rules with a gateway or pool should create another rule for routing to vpns */
-	if((($aline['route'] <> "") && (trim($aline['type']) == "pass") && strstr($dst, "any")) && (!isset($config['system']['disablenegate']))) {
+	if (!empty($aline['route']) && trim($aline['type']) == "pass" && strstr($dst, "any") && !isset($config['system']['disablenegate'])) {
 		/* negate VPN/PPTP/PPPoE/Static Route networks for load balancer/gateway rules */
 		$negate_networks = " to <negate_networks> " . filter_generate_port($rule, "destination");
 		$line .= $aline['type'] . $aline['direction'] . $aline['log'] . $aline['quick'] .
 			$aline['interface'] . $aline['ipprotocol'] . $aline['prot'] . $aline['src'] . $aline['os'] .
 			$negate_networks . $aline['icmp-type'] . $aline['icmp6-type'] . $aline['tag'] . $aline['tagged'] .
-			$aline['dscp']  . $aline['allowopts'] . $aline['flags'] .
-			$aline['queue'] . $aline['schedlabel'] .
+			$aline['dscp']  . $aline['allowopts'] . $aline['flags'] . $aline['schedlabel'] .
 			" label \"NEGATE_ROUTE: Negate policy routing for destination\"\n";
 
 	}
@@ -2544,7 +2575,7 @@ function filter_generate_user_rule($rule)
 	$line .= $aline['type'] . $aline['direction'] . $aline['log'] . $aline['quick'] . $aline['interface'] .
 		$aline['reply'] . $aline['route'] . $aline['ipprotocol'] . $aline['prot'] . $aline['src'] . $aline['os'] . $aline['dst'] .
 		$aline['divert'] . $aline['icmp-type'] . $aline['icmp6-type'] . $aline['tag'] . $aline['tagged'] . $aline['dscp'] .
-		$aline['allowopts'] . $aline['flags'] . $aline['queue'] . $aline['schedlabel'];
+		$aline['allowopts'] . $aline['flags'] . $aline['schedlabel'];
 
 	unset($aline);
 
@@ -2553,7 +2584,8 @@ function filter_generate_user_rule($rule)
 
 function filter_rules_generate()
 {
-	global $config, $g, $FilterIflist, $time_based_rules, $GatewaysList;
+	global $config, $g, $time_based_rules, $GatewaysList;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	$fix_rule_label = 'fix_rule_label';
 
@@ -2577,7 +2609,7 @@ function filter_rules_generate()
 
 	# BEGIN OF firewall rules
 	/* default block logging? */
-	$log = array();
+	$log = array("block"=>null,"pass"=>null);
 	if(!isset($config['syslog']['nologdefaultblock']))
 		$log['block'] = "log";
 	if(isset($config['syslog']['nologdefaultpass']))
@@ -2641,7 +2673,7 @@ EOD;
 		$ipfrules .= $config['system']['ssh']['port'];
 		$ipfrules .= "  label \"sshlockout\"\n";
 	} else {
-		if($config['system']['ssh']['port'] <> "")
+		if(!empty($config['system']['ssh']['port']))
 			$sshport = $config['system']['ssh']['port'];
 		else
 			$sshport = 22;
@@ -2705,8 +2737,8 @@ EOD;
 			if (count($cpiplist) > 0 && count($cpiflist) > 0) {
 				$cpinterface = implode(" ", $cpiflist);
 				$cpaddresses = implode(" ", $cpiplist);
-				$listenporthttps = $cpcfg['listenporthttps'] ? $cpcfg['listenporthttps'] : ($cpcfg['zoneid'] + 1);
-				$listenporthttp  = $cpcfg['listenporthttp']  ? $cpcfg['listenporthttp']  : $cpcfg['zoneid'];
+				$listenporthttps = !empty($cpcfg['listenporthttps']) ? $cpcfg['listenporthttps'] : ($cpcfg['zoneid'] + 1);
+				$listenporthttp  = !empty($cpcfg['listenporthttp'])  ? $cpcfg['listenporthttp']  : $cpcfg['zoneid'];
 				$portalias = $listenporthttps;
 				$portalias .= " {$listenporthttp}";
 				$ipfrules .= "pass in {$log['pass']} quick on { {$cpinterface} } proto tcp from any to { {$cpaddresses} } port { {$portalias} }  keep state(sloppy)\n";
@@ -2744,7 +2776,7 @@ EOD;
 		}
 
 
-		if(isset($config['system']['ipv6allow']) && ($oc['type6'] == "slaac" || $oc['type6'] == "dhcp6")) {
+		if(isset($config['system']['ipv6allow']) && isset($oc['type6']) && ($oc['type6'] == "slaac" || $oc['type6'] == "dhcp6")) {
 			$ipfrules .= <<<EOD
 # allow our DHCPv6 client out to the {$oc['descr']}
 pass in {$log['pass']} quick on \${$oc['descr']} proto udp from fe80::/10 port = 546 to fe80::/10 port = 546  label "{$fix_rule_label("allow dhcpv6 client in {$oc['descr']}")}"
@@ -2788,7 +2820,7 @@ EOD;
 			}
 		}
 
-		switch ($oc['type']) {
+		switch (isset($oc['type']) ? $oc['type'] : null) {
 		case "pptp":
 				$ipfrules .= <<<EOD
 # allow PPTP client
@@ -2840,7 +2872,7 @@ EOD;
 			break;
 		}
 
-		switch($oc['type6']) {
+		switch(isset($oc['type6']) ? $oc['type6'] : null ) {
 		case "6rd":
 			$ipfrules .= <<<EOD
 # allow our proto 41 traffic from the 6RD border relay in
@@ -2876,8 +2908,8 @@ EOD;
 		}
 			break;
 		default:
-			if ((is_array($config['dhcpdv6'][$on]) && isset($config['dhcpdv6'][$on]['enable'])) || isset($oc['track6-interface'])
-				|| (is_array($config['dhcrelay6']) && !empty($config['dhcrelay6']['interface']) && in_array($on, explode(',', $config['dhcrelay6']['interface'])))) {
+			if (isset($config['dhcpdv6'][$on]['enable']) || isset($oc['track6-interface'])
+				|| (!empty($config['dhcrelay6']['interface']) && in_array($on, explode(',', $config['dhcrelay6']['interface'])))) {
 				$ipfrules .= <<<EOD
 # allow access to DHCPv6 server on {$oc['descr']}
 # We need inet6 icmp for stateless autoconfig and dhcpv6
@@ -2922,9 +2954,9 @@ EOD;
 			continue;
 
 		$gw = get_interface_gateway($ifdescr);
-		if (is_ipaddrv4($gw) && is_ipaddrv4($ifcfg['ip'])) {
+		if (is_ipaddrv4($gw) && isset($ifcfg['ip']) && is_ipaddrv4($ifcfg['ip'])) {
 			$ipfrules .= "pass out {$log['pass']} route-to ( {$ifcfg['if']} {$gw} ) from {$ifcfg['ip']} to !{$ifcfg['sa']}/{$ifcfg['sn']} keep state allow-opts label \"let out anything from firewall host itself\"\n";
-			if (is_array($ifcfg['vips'])) {
+			if (isset($ifcfg['vips']) && is_array($ifcfg['vips'])) {
 				foreach ($ifcfg['vips'] as $vip)
 					if (ip_in_subnet($vip['ip'], "{$ifcfg['sa']}/{$ifcfg['sn']}"))
 						$ipfrules .= "pass out {$log['pass']} route-to ( {$ifcfg['if']} {$gw} ) from {$vip['ip']} to !{$ifcfg['sa']}/{$ifcfg['sn']} keep state allow-opts label \"let out anything from firewall host itself\"\n";
@@ -2999,7 +3031,7 @@ EOD;
 
 	if(isset($config['nat']['rule']) && is_array($config['nat']['rule'])) {
 		foreach ($config['nat']['rule'] as $rule) {
-			if((!isset($config['system']['disablenatreflection']) || $rule['natreflection'] == "enable")
+			if((!isset($config['system']['disablenatreflection']) || (isset($rule['natreflection']) && $rule['natreflection'] == "enable"))
 			   && $rule['natreflection'] != "disable") {
 				$ipfrules .= "# NAT Reflection rules\n";
 				$ipfrules .= <<<EOD
@@ -3051,7 +3083,7 @@ EOD;
 				else
 					$rule_arr3[] = filter_generate_user_rule_arr($rule);
 			}
-			if ($rule['sched'])
+			if (isset($rule['sched']) && !empty($rule['sched']))
 				$time_based_rules = true;
 		}
 
@@ -3134,7 +3166,7 @@ EOD;
 		if (isset($config['installedpackages']['miniupnpd']['config'][0]['enable']))
 			$ipfrules .= "anchor \"miniupnpd\"\n";
 
-		if (is_array($config['installedpackages']['miniupnpd'][0]['config'])) {
+		if (isset($config['installedpackages']['miniupnpd'][0]['config']) && is_array($config['installedpackages']['miniupnpd'][0]['config'])) {
 			$upnp_interfaces = explode(",", $config['installedpackages']['miniupnpd'][0]['config']['iface_array']);
 			foreach($upnp_interfaces as $upnp_if) {
 				if (is_array($FilterIflist[$upnp_if])) {
@@ -3166,12 +3198,6 @@ function filter_rules_spoofcheck_generate($ifname, $ifcfg, $log)
 	$ipfrules = "antispoof {$log['block']} for \${$ifcfg['descr']} \n";
 
 	return $ipfrules;
-}
-
-/* COMPAT Function */
-function tdr_install_cron($should_install) {
-	log_error(gettext("Please use filter_tdr_install_cron() function tdr_install_cron will be deprecated!"));
-	filter_tdr_install_cron($should_install);
 }
 
 /****f* filter/filter_tdr_install_cron
@@ -3357,7 +3383,8 @@ function filter_tdr_month($schedule) {
 
 function filter_setup_logging_interfaces()
 {
-	global $config, $FilterIflist;
+	global $config;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	$rules = '';
 	if (isset($FilterIflist['lan']))
@@ -3384,7 +3411,8 @@ function filter_process_carp_rules($log)
 /* Generate IPsec Filter Items */
 function filter_generate_ipsec_rules($log = array())
 {
-	global $config, $g, $FilterIflist;
+	global $config, $g;
+	$FilterIflist = filter_generate_optcfg_array() ;
 
 	if (isset($config['system']['disablevpnrules'])) {
 		return "\n# VPN Rules not added disabled in System->Advanced.\n";

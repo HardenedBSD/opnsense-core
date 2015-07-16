@@ -2,6 +2,7 @@
 /*
 	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
+	(from itemid.inc) Copyright (C) 2009 Janne Enberg <janne.enberg@lietu.net>
 	All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without
@@ -27,9 +28,80 @@
 */
 
 require_once("guiconfig.inc");
-require_once("itemid.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
+
+/****f* itemid/delete_id
+ * NAME
+ *   delete_id - delete an item with ['id'] = $id from $array
+ * INPUTS
+ *   $id       - int: The ID to delete
+ *   $array    - array to delete the item from
+ * RESULT
+ *   boolean   - true if item was found and deleted
+ ******/
+function delete_id($id, &$array){
+	// Index to delete
+	$delete_index = NULL;
+
+	if (!is_array($array))
+		return false;
+
+	// Search for the item in the array
+	foreach ($array as $key => $item){
+		// If this item is the one we want to delete
+		if(isset($item['associated-rule-id']) && $item['associated-rule-id']==$id ){
+			$delete_index = $key;
+			break;
+		}
+	}
+
+	// If we found the item, unset it
+	if( $delete_index!==NULL ){
+		unset($array[$delete_index]);
+		return true;
+	} else {
+		return false;
+	}
+
+}
+
+
+/****f* itemid/get_id
+ * NAME
+ *   get_id - Get an item id with ['associated-rule-id'] = $id from $array
+ * INPUTS
+ *   $id       - string: The ID to get
+ *   $array    - array to get the item from
+ * RESULT
+ *   mixed   - The id, NULL if not found
+ ******/
+function get_id($id, &$array) {
+	// Use $foo = &get_id('id', array('id'=>'value'));
+
+	if (!is_array($array))
+		return false;
+
+	// Search for the item in the array
+	foreach ($array as $key => $item){
+		// If this item is the one we want to delete
+		if (isset($item['associated-rule-id']) && $item['associated-rule-id']==$id)
+			return $key;
+	}
+
+	return false;
+}
+
+/****f* itemid/get_unique_id
+ * NAME
+ *   get_unique_id - get a unique identifier
+ * RESULT
+ *   string     - unique id
+ ******/
+function get_unique_id(){
+
+	return uniqid("nat_", true);
+}
+
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/firewall_nat.php');
 
@@ -437,13 +509,10 @@ $pgtitle = array(gettext("Firewall"),gettext("NAT"),gettext("Port Forward"),gett
 include("head.inc");
 
 ?>
-<link type="text/css" rel="stylesheet" href="/javascript/chosen/chosen.css" />
 </head>
 
 <body>
 <?php include("fbegin.inc"); ?>
-
-	<script src="/javascript/chosen/chosen.jquery.js" type="text/javascript"></script>
 
 	<section class="page-content-main">
 
@@ -451,7 +520,7 @@ include("head.inc");
 
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 
@@ -913,6 +982,7 @@ include("head.inc");
 
 <script type="text/javascript">
 //<![CDATA[
+$(document).ready(function() {
 	ext_change();
 	dst_change(document.iform.interface.value,'<?=htmlspecialchars($pconfig['interface'])?>','<?=htmlspecialchars($pconfig['dst'])?>');
 	var iface_old = document.iform.interface.value;
@@ -922,6 +992,7 @@ include("head.inc");
 	show_source();
 	<?php endif; ?>
 	nordr_change();
+});
 //]]>
 </script>
 <script type="text/javascript">

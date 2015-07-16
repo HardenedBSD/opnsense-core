@@ -55,12 +55,6 @@ if _tmpdir=$(mktemp -d -q /.diskless.XXXXXX); then
 	# only remove the directory
 	rmdir ${_tmpdir}
 
-	# cleanup configuration files from previous instance
-	# (does not work with install media unfortunately)
-	/bin/rm -rf /var/run/*
-	/bin/rm -rf /var/etc/*
-	/bin/rm -rf /var/tmp/*
-
 	# Only use secadm when / is writable
 	if [ -f /usr/local/etc/secadm.rules ]; then
 		use_secadm="yes"
@@ -73,6 +67,14 @@ else
 	done
 fi
 
+# mount repo if available
+if [ -d /root/core ]; then
+	make -C /root/core mount
+fi
+
+# regenerate groups and users
+/usr/local/etc/rc.recover > /dev/null
+
 # rewrite message of the day
 /etc/rc.d/motd onestart
 
@@ -82,25 +84,6 @@ fi
 # set up and recover a crash dump before activating swap
 /usr/local/etc/rc.crashdump
 swapon -a
-
-# Remove symlinks that are no longer needed
-if [ -L /etc/dhclient.conf ]; then rm /etc/dhclient.conf; fi
-if [ -L /etc/syslog.conf ]; then rm /etc/syslog.conf; fi
-if [ -L /etc/resolv.conf ]; then rm /etc/resolv.conf; fi
-if [ -L /etc/hosts ]; then rm /etc/hosts; fi
-
-# !!! migration code for OPNsense <= 15.1.7, do not remove !!!
-if [ -d "/cf/conf" ]; then
-	rm -f /conf
-	mv /cf/conf /conf
-	rm -rf /cf
-fi
-# !!! migration code for OPNsense <= 15.1.7, do not remove !!!
-
-# mount repo if available
-if [ -d /root/core ]; then
-	make -C /root/core mount
-fi
 
 # set up config directory structure
 mkdir -p /conf/backup
@@ -142,38 +125,23 @@ if [ "$CDDEVICE" != "" ]; then
 	cdcontrol -f /dev/"$CDDEVICE" eject
 fi
 
-# sync pw database after mount.
-rm -f /etc/spwd.db.tmp
-/usr/sbin/pwd_mkdb -d /etc/ /etc/master.passwd
-
 # Enable console output if its muted.
 /sbin/conscontrol mute off >/dev/null
 
 USE_MFS_TMPVAR=`/usr/bin/grep -c use_mfs_tmpvar /conf/config.xml`
 if [ ${USE_MFS_TMPVAR} -ne 0 ]; then
-	USE_MFS_TMP_SIZE=`/usr/bin/grep use_mfs_tmp_size /conf/config.xml | /usr/bin/cut -f2 -d'>' | /usr/bin/cut -f1 -d'<'`
-	if [ ! -z ${USE_MFS_TMP_SIZE} ] && [ ${USE_MFS_TMP_SIZE} -gt 0 ]; then
-		tmpsize="${USE_MFS_TMP_SIZE}m"
-	else
-		tmpsize="40m"
-	fi
-
-	USE_MFS_VAR_SIZE=`/usr/bin/grep use_mfs_var_size /conf/config.xml | /usr/bin/cut -f2 -d'>' | /usr/bin/cut -f1 -d'<'`
-	if [ ! -z ${USE_MFS_VAR_SIZE} ] && [ ${USE_MFS_VAR_SIZE} -gt 0 ]; then
-		varsize="${USE_MFS_VAR_SIZE}m"
-	else
-		varsize="60m"
-	fi
-
 	echo -n "Setting up memory disks..."
 
 	if [ ! -d /root/var/db/pkg ]; then
 		mkdir -p /root/var/db
 		mv /var/db/pkg /root/var/db
+		# create a symlink underneath as well
+		# to fix early boot pkg(8) issues:
+		ln -s /root/var/db/pkg /var/db/pkg
 	fi
 
-	mdmfs -S -M -s ${tmpsize} md /tmp
-	mdmfs -S -M -s ${varsize} md /var
+	mount -t tmpfs -o mode=01777 tmpfs /tmp
+	mount -t tmpfs tmpfs /var
 
 	mkdir -p /var/db
 	ln -s /root/var/db/pkg /var/db/pkg
@@ -183,12 +151,18 @@ elif [ -d /root/var/db/pkg ]; then
 	# User must have just disabled RAM disks,
 	# let's move these back into place.
 	mkdir -p /var/db
+	# reverse the recovery symlink before moving
+	# back the original database:
+	rm -f /var/db/pkg
 	mv /root/var/db/pkg /var/db/
 fi
 
 # make some directories in /var
 mkdir -p /var/run /var/log /var/etc /var/db/entropy /var/at/jobs \
     /var/empty /var/tmp
+
+# work around the fact that shutdown(8) doesn't clean up this file
+rm -f /var/run/nologin
 
 # write /var/run/dmesg.boot
 /etc/rc.d/dmesg onestart
@@ -198,8 +172,7 @@ chmod 1777 /tmp
 
 echo -n "."
 DISABLESYSLOGCLOG=`/usr/bin/grep -c disablesyslogclog /conf/config.xml`
-ENABLEFIFOLOG=`/usr/bin/grep -c usefifolog /conf/config.xml`
-LOG_FILES="system filter dhcpd vpn pptps poes l2tps openvpn portalauth ipsec ppp relayd wireless lighttpd ntpd gateways resolver routing"
+LOG_FILES="system filter dhcpd vpn pptps poes l2tps openvpn portalauth ipsec ppps relayd wireless lighttpd ntpd gateways resolver routing"
 
 DEFAULT_LOG_FILE_SIZE=`/usr/local/bin/xmllint --xpath 'string(//opnsense/syslog/logfilesize)' /conf/config.xml`
 if [ ! ${DEFAULT_LOG_FILE_SIZE} ]; then
@@ -208,21 +181,14 @@ fi
 
 for logfile in $LOG_FILES; do
 	if [ "$DISABLESYSLOGCLOG" -gt "0" ]; then
-		/usr/bin/touch /var/log/$logfile.log
+		touch /var/log/$logfile.log
 	else
 		if [ ! -f /var/log/$logfile.log ]; then
-			if [ "$ENABLEFIFOLOG" -gt "0" ]; then
-				# generate fifolog files
-				/usr/sbin/fifolog_create -s ${DEFAULT_LOG_FILE_SIZE} /var/log/$logfile.log
-			else
-				/usr/local/sbin/clog -i -s ${DEFAULT_LOG_FILE_SIZE} /var/log/$logfile.log
-			fi
+			clog -i -s ${DEFAULT_LOG_FILE_SIZE} /var/log/$logfile.log
 		fi
 	fi
+	chmod 0600 /var/log/$logfile.log
 done
-
-# change permissions on newly created fifolog files.
-chmod 0600 /var/log/*.log
 
 echo -n "."
 /sbin/ldconfig -elf /usr/lib /usr/local/lib /lib
@@ -275,7 +241,7 @@ echo "done."
 /usr/local/etc/rc.opnsense start
 
 # Start ping handler every 240 seconds
-minicron 240 /var/run/ping_hosts.pid /usr/local/bin/ping_hosts.sh
+minicron 240 /var/run/ping_hosts.pid /usr/local/sbin/ping_hosts.sh
 
 # Start account expire handler every hour
 minicron 3600 /var/run/expire_accounts.pid /usr/local/etc/rc.expireaccounts
@@ -292,7 +258,7 @@ if [ "${GMIRROR_STATUS}" != "" ]; then
 	minicron 60 /var/run/gmirror_status_check.pid /usr/local/sbin/gmirror_status_check.php
 fi
 
-/usr/local/bin/beep.sh start 2>&1 >/dev/null
+/usr/local/sbin/beep.sh start
 
 /usr/local/etc/rc.initial.banner
 

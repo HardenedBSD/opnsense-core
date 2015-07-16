@@ -30,7 +30,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 $a_gateways = return_gateways_array(true, false, true);
 $a_gateways_arr = array();
@@ -96,7 +95,7 @@ function can_delete_gateway_item($id)
         }
     }
 
-    if (isset($input_errors)) {
+    if (isset($input_errors) && count($input_errors) > 0) {
         return false;
     }
 
@@ -205,10 +204,10 @@ $main_buttons = array(
         <div class="row">
 
             <?php
-            if ($input_errors) {
+            if (isset($input_errors) && count($input_errors) > 0) {
                 print_input_errors($input_errors);
             }
-            if ($savemsg) {
+            if (isset($savemsg)) {
                 print_info_box($savemsg);
             }
             if (is_subsystem_dirty('staticroutes')) {

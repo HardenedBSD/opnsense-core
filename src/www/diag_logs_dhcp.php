@@ -56,7 +56,7 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 
@@ -65,10 +65,16 @@ include("head.inc");
 
 
 						<div class="tab-content content-box col-xs-12">
-					    <div class="container-fluid">
+						<div class="container-fluid">
+							<?php printf(gettext('Last %s DHCP service log entries'), $nentries); ?>
+						</div>
+						<div class="table-responsive">
+							<table class="table table-striped table-sort">
+								<?php dump_clog($dhcpd_logfile, $nentries, true); ?>
+							</table>
+						</div>
 
-							<p> <?php printf(gettext("Last %s DHCP service log entries"), $nentries);?></p>
-								<pre> <?php echo trim(implode("", array_slice(file($dhcpd_logfile), -$nentries)));?></pre>
+					    <div class="container-fluid">
 
 								<form action="diag_logs_dhcp.php" method="post">
 									<input name="clear" type="submit" class="btn" value="<?= gettext("Clear log");?>" />

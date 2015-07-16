@@ -39,7 +39,7 @@ $nentries = 50;
 /* AJAX related routines */
 handle_ajax($nentries, $nentries + 20);
 
-if ($_POST['clear']) {
+if (isset($_POST['clear'])) {
 	clear_log_file($filter_logfile);
 }
 
@@ -85,7 +85,7 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 

@@ -33,7 +33,24 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
+
+/* returns an array consisting of every element of $haystack that is not equal to $needle. */
+function array_exclude($needle, $haystack)
+{
+	$result = array();
+
+	if (is_array($haystack)) {
+		foreach ($haystack as $thing) {
+			if ($needle !== $thing) {
+				$result[] = $thing;
+			}
+		}
+	}
+
+	return $result;
+}
+
+
 
 $pgtitle = array(gettext("Firewall"),gettext("Aliases"),gettext("Edit"));
 
@@ -573,7 +590,7 @@ EOD;
 
 ?>
 
-<body onload="<?= $jsevents["body"]["onload"] ?>">
+<body>
 <?php
 	include("fbegin.inc");
 	echo $jscriptstr;
@@ -608,7 +625,7 @@ EOD;
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<div id="inputerrors"></div>
 
 

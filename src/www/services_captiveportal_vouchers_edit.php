@@ -29,7 +29,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("captiveportal.inc");
 require_once("voucher.inc");
 
@@ -172,10 +171,10 @@ include("head.inc");
 
 			<div class="row">
 
-				<?php if ($input_errors) {
+				<?php if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
 } ?>
-				<?php if ($savemsg) {
+				<?php if (isset($savemsg)) {
                     print_info_box($savemsg);
 } ?>
 
@@ -191,8 +190,7 @@ include("head.inc");
 									<tr>
 									  <td width="22%" valign="top" class="vncellreq"><?=gettext("Roll"); ?>#</td>
 									  <td width="78%" class="vtable">
-										<?=$mandfldhtml;
-?><input name="number" type="text" class="formfld" id="number" size="10" value="<?=htmlspecialchars($pconfig['number']);?>" />
+									  <input name="number" type="text" class="formfld" id="number" size="10" value="<?=htmlspecialchars($pconfig['number']);?>" />
 								        <br />
 								        <span class="vexpl"><?=gettext("Enter the Roll");
 ?># (0..<?=htmlspecialchars($maxnumber);
@@ -202,8 +200,7 @@ include("head.inc");
 									<tr>
 									  <td width="22%" valign="top" class="vncellreq"><?=gettext("Minutes per Ticket"); ?></td>
 									  <td width="78%" class="vtable">
-										<?=$mandfldhtml;
-?><input name="minutes" type="text" class="formfld" id="minutes" size="10" value="<?=htmlspecialchars($pconfig['minutes']);?>" />
+									  <input name="minutes" type="text" class="formfld" id="minutes" size="10" value="<?=htmlspecialchars($pconfig['minutes']);?>" />
 								        <br />
 								        <span class="vexpl"><?=gettext("Defines the time in minutes that a user is allowed access. The clock starts ticking the first time a voucher is used for authentication"); ?>.</span>
 									   </td>
@@ -211,8 +208,7 @@ include("head.inc");
 									<tr>
 									  <td width="22%" valign="top" class="vncellreq"><?=gettext("Count"); ?></td>
 									  <td width="78%" class="vtable">
-										<?=$mandfldhtml;
-?><input name="count" type="text" class="formfld" id="count" size="10" value="<?=htmlspecialchars($pconfig['count']);?>" />
+									  <input name="count" type="text" class="formfld" id="count" size="10" value="<?=htmlspecialchars($pconfig['count']);?>" />
 								        <br />
 								        <span class="vexpl"><?=gettext("Enter the number of vouchers");
 ?> (1..<?=htmlspecialchars($maxcount);
@@ -222,8 +218,7 @@ include("head.inc");
 									<tr>
 									  <td width="22%" valign="top" class="vncell"><?=gettext("Comment"); ?></td>
 									  <td width="78%" class="vtable">
-										<?=$mandfldhtml;
-?><input name="descr" type="text" class="formfld" id="descr" size="60" value="<?=htmlspecialchars($pconfig['descr']);?>" />
+									  <input name="descr" type="text" class="formfld" id="descr" size="60" value="<?=htmlspecialchars($pconfig['descr']);?>" />
 								        <br />
 								        <span class="vexpl"><?=gettext("Can be used to further identify this roll. Ignored by the system"); ?>.</span>
 										</td>

@@ -32,7 +32,6 @@ $monthArray = array (gettext('January'),gettext('February'),gettext('March'),get
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 $pgtitle = array(gettext("Firewall"),gettext("Schedules"));
 
@@ -86,7 +85,7 @@ $main_buttons = array(
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 
 
 			    <section class="col-xs-12">

@@ -36,17 +36,12 @@ ob_start(null, "1000");
 
 
 ## Load Essential Includes
-require_once('functions.inc');
 require_once('guiconfig.inc');
 require_once('notices.inc');
 
 if (isset($_REQUEST['closenotice'])) {
     close_notice($_REQUEST['closenotice']);
     echo get_menu_messages();
-    exit;
-}
-if ($_REQUEST['act'] == 'alias_info_popup' && !preg_match("/\D/", $_REQUEST['aliasid'])) {
-    alias_info_popup($_REQUEST['aliasid']);
     exit;
 }
 
@@ -95,9 +90,6 @@ if ($_POST && $_POST['sequence']) {
     header("Location: index.php");
     exit;
 }
-
-## Load Functions Files
-require_once('includes/functions.inc.php');
 
 ## Check to see if we have a swap space,
 ## if true, display, if false, hide it ...
@@ -159,7 +151,7 @@ if ($config['widgets'] && $config['widgets']['sequence'] != "") {
 
     ##find custom configurations of a particular widget and load its info to $pconfig
     foreach ($widgetnames as $widget) {
-        if ($config['widgets'][$widget . '-config']) {
+        if (isset($config['widgets'][$widget . '-config'])) {
             $pconfig[$widget . '-config'] = $config['widgets'][$widget . '-config'];
         }
     }
@@ -446,8 +438,13 @@ endif; ?>
                         $nicename = ucwords($nicename);
                     }
 
-                    if ($config['widgets'] && $pconfig['sequence'] != "") {
-                        switch($displayarray[$widgetcounter]){
+                    if (isset($config['widgets']) && isset($pconfig['sequence'])) {
+                        if (isset($displayarray[$widgetcounter])) {
+                            $disparr = $displayarray[$widgetcounter];
+                        } else {
+                            $disparr = null;
+                        }
+                        switch($disparr){
                             case "show":
                                 $divdisplay = "block";
                                 $display = "block";
@@ -520,7 +517,7 @@ endif; ?>
                                     <?php
                                         $widgettitle = $widgetname . "_title";
                                         $widgettitlelink = $widgetname . "_title_link";
-                                    if ($$widgettitle != "") {
+                                    if (isset($$widgettitle)) {
                                         //only show link if defined
                                         if ($$widgettitlelink != "") {
 ?>
@@ -529,19 +526,19 @@ endif; ?>
                                         }
                                             //echo widget title
                                             echo $$widgettitle;
-                                        if ($$widgettitlelink != "") {
+                                        if (isset($$widgettitlelink)) {
 ?>
                                             </span></u>
                                             <?php
                                         }
                                     } else {
-                                        if ($$widgettitlelink != "") {
+                                        if (isset($$widgettitlelink)) {
 ?>
                                             <u><span onclick="location.href='/<?php echo $$widgettitlelink;?>'" style="cursor:pointer">
                                             <?php
                                         }
                                         echo $nicename;
-                                        if ($$widgettitlelink != "") {
+                                        if (isset($$widgettitlelink)) {
 ?>
                                         </span></u>
                                         <?php

@@ -29,6 +29,7 @@
 /* include all configuration functions */
 require_once("config.inc");
 require_once("functions.inc");
+require_once("util.inc");
 
 /* Optimize Unbound for environment */
 function unbound_optimization() {
@@ -376,28 +377,9 @@ function sync_unbound_service() {
     unbound_remote_control_setup();
     unbound_generate_config();
     do_as_unbound_user("start");
-    require_once("service-utils.inc");
     if (is_process_running("unbound"))
         do_as_unbound_user("restore_cache");
 
-}
-
-function unbound_acl_id_used($id) {
-    global $config;
-
-    if (is_array($config['unbound']['acls']))
-        foreach($config['unbound']['acls'] as & $acls)
-            if ($id == $acls['aclid'])
-                return true;
-
-    return false;
-}
-
-function unbound_get_next_id() {
-    $aclid = 0;
-    while(unbound_acl_id_used($aclid))
-        $aclid++;
-    return $aclid;
 }
 
 // Execute commands as the user unbound
@@ -562,7 +544,7 @@ function unbound_add_host_entries() {
 function unbound_control($action) {
     global $config, $g;
 
-    $cache_dumpfile = "/var/tmp/unbound_cache";
+    $cache_dumpfile = "/tmp/unbound_cache";
 
     switch ($action) {
         case "start":
@@ -589,7 +571,7 @@ function unbound_control($action) {
             // Restore Unbound's Cache
             if ((is_process_running("unbound")) && ($config['unbound']['dumpcache'] == "on")) {
                 if (file_exists($cache_dumpfile) && filesize($cache_dumpfile) > 0)
-                    do_as_unbound_user("load_cache < /var/tmp/unbound_cache");
+                    do_as_unbound_user("load_cache < /tmp/unbound_cache");
             }
             break;
         default:

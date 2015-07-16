@@ -30,6 +30,20 @@
 require_once("guiconfig.inc");
 require_once("openvpn.inc");
 
+function openvpn_validate_host($value, $name) {
+	$value = trim($value);
+	if (empty($value) || (!is_domain($value) && !is_ipaddr($value)))
+		return sprintf(gettext("The field '%s' must contain a valid IP address or domain name."), $name);
+	return false;
+}
+
+
+
+$openvpn_client_modes = array(
+	'p2p_tls' => gettext("Peer to Peer ( SSL/TLS )"),
+	'p2p_shared_key' => gettext("Peer to Peer ( Shared Key )") );
+
+
 $pgtitle = array(gettext("OpenVPN"), gettext("Client"));
 $shortcut_section = "openvpn";
 
@@ -372,7 +386,7 @@ $main_buttons = array(
 
 ?>
 
-<body onload="<?= $jsevents["body"]["onload"] ?>">
+<body>
 <?php include("fbegin.inc"); ?>
 <script type="text/javascript">
 //<![CDATA[
@@ -471,10 +485,10 @@ endif; ?>
                     $savemsg = "";
                 }
 
-                if ($input_errors) {
+                if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
                 }
-                if ($savemsg) {
+                if (isset($savemsg)) {
                     print_info_box($savemsg);
                 }
                 ?>

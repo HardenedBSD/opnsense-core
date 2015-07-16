@@ -45,7 +45,6 @@ function cpelements_sort()
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("captiveportal.inc");
 
 $cpzone = $_GET['zone'];
@@ -143,7 +142,7 @@ $main_buttons = array(
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) {
+				<?php if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
 } ?>
 

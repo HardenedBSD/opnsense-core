@@ -30,9 +30,47 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("vslb.inc");
-require_once("maintable.inc");
+require_once("load_balancer_maintable.inc");
+
+/* Cleanup relayd anchors that have been marked for cleanup. */
+function cleanup_lb_marked()
+{
+	global $config;
+
+	$filename = '/tmp/relayd_anchors_remove';
+	$cleanup_anchors = array();
+
+	/* Nothing to do! */
+	if (!file_exists($filename)) {
+		return;
+	} else {
+		$cleanup_anchors = explode("\n", file_get_contents($filename));
+		/* Nothing to do! */
+		if (empty($cleanup_anchors)) {
+			return;
+		}
+	}
+
+	/* Load current names so we can make sure we don't remove an anchor that is still in use. */
+	$vs_a = $config['load_balancer']['virtual_server'];
+	$active_vsnames = array();
+	if (isset($vs_a)) {
+		foreach ($vs_a as $vs) {
+			$active_vsnames[] = $vs['name'];
+		}
+	}
+
+	foreach ($cleanup_anchors as $anchor) {
+		/* Only cleanup an anchor if it is not still active. */
+		if (!in_array($anchor, $active_vsnames)) {
+			cleanup_lb_anchor($anchor);
+		}
+	}
+
+	@unlink($filename);
+}
+
 
 if (!is_array($config['load_balancer']['virtual_server'])) {
 	$config['load_balancer']['virtual_server'] = array();
@@ -101,8 +139,8 @@ $main_buttons = array(
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('loadbalancer')): ?><br/>
 				<?php print_info_box_np(gettext("The virtual server configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>

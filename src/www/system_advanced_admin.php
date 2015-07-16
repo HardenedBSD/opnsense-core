@@ -32,7 +32,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 $pconfig['webguiproto'] = $config['system']['webgui']['protocol'];
 $pconfig['webguiport'] = $config['system']['webgui']['port'];
@@ -301,10 +300,10 @@ include("head.inc");
 
         <div class="row">
             <?php
-            if ($input_errors) {
+            if (isset($input_errors) && count($input_errors) > 0) {
                 print_input_errors($input_errors);
             }
-            if ($savemsg) {
+            if (isset($savemsg)) {
                 print_info_box($savemsg);
             }
             ?>
@@ -534,7 +533,7 @@ endif; ?>
 										<input name="sshdpermitrootlogin" type="checkbox" id="sshdpermitrootlogin" value="yes" <?php if ($pconfig['sshdpermitrootlogin']) {
                                             echo "checked=\"checked\"";
 } ?> />
-										<strong><?=gettext("Enable root user login"); ?></strong>
+										<strong><?=gettext("Permit root user login"); ?></strong>
 										<br />
 										<?=gettext("Root login is generally discouraged. It is advised "); ?>
 										<?=gettext("to log in via another user and switch to root afterwards."); ?>
@@ -546,7 +545,7 @@ endif; ?>
 										<input name="passwordauth" type="checkbox" id="passwordauth" value="yes" <?php if ($pconfig['passwordauth']) {
                                             echo "checked=\"checked\"";
 } ?> />
-										<strong><?=gettext("Enable password login for Secure Shell"); ?></strong>
+										<strong><?=gettext("Permit password login"); ?></strong>
 										<br />
 										<?=gettext("When disabled, authorized keys need to be configured for each"); ?>
 										<a href="system_usermanager.php"><?=gettext("user"); ?></a>

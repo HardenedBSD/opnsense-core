@@ -32,7 +32,14 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
+
+function default_table_entries_size()
+{
+        $current = `pfctl -sm | grep table-entries | awk '{print $4};'`;
+
+        return $current;
+}
+
 
 $pconfig['disablefilter'] = $config['system']['disablefilter'];
 $pconfig['rfc959workaround'] = $config['system']['rfc959workaround'];
@@ -260,10 +267,10 @@ include("head.inc");
 
         <div class="row">
             <?php
-            if ($input_errors) {
+            if (isset($input_errors) && count($input_errors) > 0) {
                 print_input_errors($input_errors);
             }
-            if ($savemsg) {
+            if (isset($savemsg)) {
                 print_info_box($savemsg);
             }
             ?>

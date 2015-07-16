@@ -80,14 +80,14 @@ if (function_exists("display_error_form") && !isset($config['system']['webgui'][
 			strcasecmp($http_host, $config['system']['hostname']) == 0)
 		$found_host = true;
 
-	if(is_array($config['dyndnses']['dyndns']) && !$found_host)
+	if(isset($config['dyndnses']['dyndns']) && is_array($config['dyndnses']['dyndns']) && !$found_host)
 		foreach($config['dyndnses']['dyndns'] as $dyndns)
 			if(strcasecmp($dyndns['host'], $http_host) == 0) {
 				$found_host = true;
 				break;
 			}
 
-	if(is_array($config['dnsupdates']['dnsupdate']) && !$found_host)
+	if(isset($config['dnsupdates']['dnsupdate']) && is_array($config['dnsupdates']['dnsupdate']) && !$found_host)
 		foreach($config['dnsupdates']['dnsupdate'] as $rfc2136)
 			if(strcasecmp($rfc2136['host'], $http_host) == 0) {
 				$found_host = true;
@@ -114,7 +114,7 @@ if (function_exists("display_error_form") && !isset($config['system']['webgui'][
 
 // If the HTTP_REFERER is something other than ourselves then disallow.
 if(function_exists("display_error_form") && !isset($config['system']['webgui']['nohttpreferercheck'])) {
-	if($_SERVER['HTTP_REFERER']) {
+	if(isset($_SERVER['HTTP_REFERER'])) {
 		if(file_exists('/tmp/setupwizard_lastreferrer')) {
 			if($_SERVER['HTTP_REFERER'] == file_get_contents('/tmp/setupwizard_lastreferrer')) {
 				unlink('/tmp/setupwizard_lastreferrer');
@@ -142,14 +142,14 @@ if(function_exists("display_error_form") && !isset($config['system']['webgui']['
 				}
 			}
 
-			if(is_array($config['dyndnses']['dyndns']) && !$found_host)
+			if(isset($config['dyndnses']['dyndns']) && is_array($config['dyndnses']['dyndns']) && !$found_host)
 				foreach($config['dyndnses']['dyndns'] as $dyndns)
 					if(strcasecmp($dyndns['host'], $referrer_host) == 0) {
 						$found_host = true;
 						break;
 					}
 
-			if(is_array($config['dnsupdates']['dnsupdate']) && !$found_host)
+			if(isset($config['dnsupdates']['dnsupdate']) && is_array($config['dnsupdates']['dnsupdate']) && !$found_host)
 				foreach($config['dnsupdates']['dnsupdate'] as $rfc2136)
 					if(strcasecmp($rfc2136['host'], $referrer_host) == 0) {
 						$found_host = true;
@@ -335,7 +335,7 @@ function local_sync_accounts()
 	if ($fd) {
 		while (!feof($fd)) {
 			$line = explode(':',fgets($fd));
-			if (((!strncmp($line[0], '_', 1)) || ($line[2] < 2000) || ($line[2] > 65000))) {
+			if ( count($line) < 3 ||  !strncmp($line[0], '_', 1) || $line[2] < 2000 || $line[2] > 65000) {
 				continue;
 			}
 			/*
@@ -354,13 +354,7 @@ function local_sync_accounts()
 	if ($fd) {
 		while (!feof($fd)) {
 			$line = explode(':',fgets($fd));
-			if (!strncmp($line[0], '_', 1)) {
-				continue;
-			}
-			if ($line[2] < 2000) {
-				continue;
-			}
-			if ($line[2] > 65000) {
+			if (count($line) < 3 || !strncmp($line[0], '_', 1) || $line[2] < 2000 || $line[2] > 65000 ) {
 				continue;
 			}
 			mwexecf('/usr/sbin/pw groupdel %s', $line[2]);
@@ -414,8 +408,6 @@ function local_user_set(&$user)
 	/* configure shell type */
 	if (userHasPrivilege($user, 'user-shell-access')) {
 		$user_shell = '/bin/csh';
-	} elseif (userHasPrivilege($user, 'user-copy-files')) {
-		$user_shell = '/usr/local/bin/scponly';
 	}
 
 	/* unlock valid shell users */
@@ -459,7 +451,7 @@ function local_user_set(&$user)
 	@chgrp($user_home, $user_group);
 
 	/* write out ssh authorized key file */
-	if ($user['authorizedkeys']) {
+	if (isset($user['authorizedkeys'])) {
 		@mkdir("{$user_home}/.ssh", 0700);
 		@chown("{$user_home}/.ssh", $user_name);
 		$keys = base64_decode($user['authorizedkeys']);
@@ -1188,16 +1180,10 @@ function radius_backed($username, $passwd, $authcfg, &$attributes = array())
 	return $ret;
 }
 
-function get_user_expiration_date($username) {
-	$user = getUserEntry($username);
-	if ($user['expires'])
-		return $user['expires'];
-}
-
 function is_account_expired($username) {
-	$expirydate = get_user_expiration_date($username);
-	if ($expirydate) {
-		if (strtotime("-1 day") > strtotime(date("m/d/Y",strtotime($expirydate))))
+	$user = getUserEntry($username);
+	if (isset($user['expires']) && !empty($user['expires'])) {
+		if (strtotime("-1 day") > strtotime(date("m/d/Y",strtotime($user['expires']))))
 			return true;
 	}
 
@@ -1215,7 +1201,7 @@ function is_account_disabled($username) {
 function auth_get_authserver($name) {
         global $config;
 
-        if (is_array($config['system']['authserver'])) {
+        if (isset($config['system']['authserver']) && is_array($config['system']['authserver'])) {
                 foreach ($config['system']['authserver'] as $authcfg) {
                         if ($authcfg['name'] == $name)
                                 return $authcfg;
@@ -1230,7 +1216,7 @@ function auth_get_authserver_list() {
 
 	$list = array();
 
-        if (is_array($config['system']['authserver'])) {
+        if (isset($config['system']['authserver']) && is_array($config['system']['authserver'])) {
                 foreach ($config['system']['authserver'] as $authcfg) {
 			/* Add support for disabled entries? */
 			$list[$authcfg['name']] = $authcfg;
@@ -1295,150 +1281,4 @@ function authenticate_user($username, $password, $authcfg = NULL, &$attributes =
         }
 
 	return $authenticated;
-}
-
-function session_auth() {
-	global $config, $_SESSION;
-
-	// Handle HTTPS httponly and secure flags
-	$currentCookieParams = session_get_cookie_params();
-	session_set_cookie_params(
-		$currentCookieParams["lifetime"],
-		$currentCookieParams["path"],
-		NULL,
-		($config['system']['webgui']['protocol'] == "https"),
-		true
-	);
-
-	if (session_status() == PHP_SESSION_NONE) {
-		session_start();
-	}
-
-	// Detect protocol change
-	if (!isset($_POST['login']) && !empty($_SESSION['Logged_In']) && $_SESSION['protocol'] != $config['system']['webgui']['protocol'])
-		return false;
-
-	/* Validate incoming login request */
-	if (isset($_POST['login']) && !empty($_POST['usernamefld']) && !empty($_POST['passwordfld'])) {
-		$authcfg = auth_get_authserver($config['system']['webgui']['authmode']);
-		if (authenticate_user($_POST['usernamefld'], $_POST['passwordfld'], $authcfg) ||
-		    authenticate_user($_POST['usernamefld'], $_POST['passwordfld'])) {
-			// Generate a new id to avoid session fixation
-			session_regenerate_id();
-			$_SESSION['Logged_In'] = "True";
-			$_SESSION['Username'] = $_POST['usernamefld'];
-			$_SESSION['last_access'] = time();
-			$_SESSION['protocol'] = $config['system']['webgui']['protocol'];
-			if (!isset($config['system']['webgui']['quietlogin'])) {
-				log_error(sprintf(gettext("Successful login for user '%1\$s' from: %2\$s"), $_POST['usernamefld'], $_SERVER['REMOTE_ADDR']));
-			}
-			if (isset($_POST['postafterlogin']))
-				return true;
-			else {
-				header("Location: {$_SERVER['REQUEST_URI']}");
-			}
-			exit;
-		} else {
-			/* give the user an error message */
-			$_SESSION['Login_Error'] = _('Wrong username or password.');
-			log_error("webConfigurator authentication error for '{$_POST['usernamefld']}' from {$_SERVER['REMOTE_ADDR']}");
-			if (isAjax()) {
-				echo "showajaxmessage('{$_SESSION['Login_Error']}');";
-				return;
-			}
-		}
-	}
-
-	/* Show login page if they aren't logged in */
-	if (empty($_SESSION['Logged_In']))
-		return false;
-
-	/* If session timeout isn't set, we don't mark sessions stale */
-	if (!isset($config['system']['webgui']['session_timeout'])) {
-		/* Default to 4 hour timeout if one is not set */
-		if ($_SESSION['last_access'] < (time() - 14400)) {
-			$_GET['logout'] = true;
-			$_SESSION['Logout'] = true;
-		} else
-			$_SESSION['last_access'] = time();
-	} else if (intval($config['system']['webgui']['session_timeout']) == 0) {
-		/* only update if it wasn't ajax */
-		if (!isAjax())
-			$_SESSION['last_access'] = time();
-	} else {
-		/* Check for stale session */
-		if ($_SESSION['last_access'] < (time() - ($config['system']['webgui']['session_timeout'] * 60))) {
-			$_GET['logout'] = true;
-			$_SESSION['Logout'] = true;
-		} else {
-			/* only update if it wasn't ajax */
-			if (!isAjax())
-				$_SESSION['last_access'] = time();
-		}
-	}
-
-	/* user hit the logout button */
-	if (isset($_GET['logout'])) {
-
-		if ($_SESSION['Logout'])
-			log_error(sprintf(gettext("Session timed out for user '%1\$s' from: %2\$s"), $_SESSION['Username'], $_SERVER['REMOTE_ADDR']));
-		else
-			log_error(sprintf(gettext("User logged out for user '%1\$s' from: %2\$s"), $_SESSION['Username'], $_SERVER['REMOTE_ADDR']));
-
-		/* wipe out $_SESSION */
-		$_SESSION = array();
-
-		if (isset($_COOKIE[session_name()]))
-			setcookie(session_name(), '', time()-42000, '/');
-
-		/* and destroy it */
-		session_destroy();
-
-		$scriptName = explode("/", $_SERVER["SCRIPT_FILENAME"]);
-		$scriptElms = count($scriptName);
-		$scriptName = $scriptName[$scriptElms-1];
-
-		if (isAjax())
-			return false;
-
-		/* redirect to page the user is on, it'll prompt them to login again */
-		header("Location: {$scriptName}");
-
-		return false;
-	}
-
-	/*
-	 * this is for debugging purpose if you do not want to use Ajax
-	 * to submit a HTML form. It basically diables the observation
-	 * of the submit event and hence does not trigger Ajax.
-	 */
-	if ($_GET['disable_ajax'])
-		$_SESSION['NO_AJAX'] = "True";
-
-	/*
-	 * Same to re-enable Ajax.
-	 */
-	if ($_GET['enable_ajax'])
-		unset($_SESSION['NO_AJAX']);
-
-	return true;
-}
-
-/**
- * do a basic authentication, uses $_SERVER['HTTP_AUTHORIZATION'] to validate user.
- * @param $http_auth_header http_authorization header content
- * @return bool
- */
-function http_basic_auth($http_auth_header)
-{
-    $tags=explode(" ", $http_auth_header) ;
-    if (count($tags) >= 2) {
-        $userinfo= explode(":", base64_decode($tags[1])) ;
-        if (count($userinfo)>=2) {
-            return authenticate_user($userinfo[0], $userinfo[1]);
-        }
-    }
-
-    // not authenticated
-    return false;
 }

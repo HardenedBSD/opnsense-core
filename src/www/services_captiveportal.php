@@ -29,7 +29,6 @@
 
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("captiveportal.inc");
 
 if (substr($_GET['act'], 0, 3) == "get")
@@ -480,8 +479,8 @@ function enable_change(enable_change) {
 			<div class="row">
 
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
-				<?php if ($savemsg) print_info_box($savemsg); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
+				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 
 			    <section class="col-xs-12">
 
@@ -964,7 +963,7 @@ function enable_change(enable_change) {
 										<tr>
 											<td width="22%" valign="top" class="vncell"><?=gettext("Portal page contents"); ?></td>
 											<td width="78%" class="vtable">
-											<?=$mandfldhtml;?><input type="file" name="htmlfile" class="formfld file btn btn-default" id="htmlfile" /><br />
+											<input type="file" name="htmlfile" class="formfld file btn btn-default" id="htmlfile" /><br />
 											<?php
 												list($host) = explode(":", $_SERVER['HTTP_HOST']);
 												$zoneid = $pconfig['zoneid'] ? ( $pconfig['zoneid'] + 8000 ) : 8000;

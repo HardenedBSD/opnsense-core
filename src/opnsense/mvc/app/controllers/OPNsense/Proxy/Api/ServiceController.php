@@ -148,4 +148,24 @@ class ServiceController extends ApiControllerBase
             return array("status" => "failed");
         }
     }
+
+
+    /**
+     * fetch acls
+     * @return array
+     */
+    public function fetchaclsAction()
+    {
+        if ($this->request->isPost()) {
+            $backend = new Backend();
+            // generate template
+            $backend->configdRun("template reload OPNsense.Proxy");
+
+            // fetch files
+            $response = $backend->configdRun("proxy fetchacls");
+            return array("response" => $response,"status" => "ok");
+        } else {
+            return array("response" => array());
+        }
+    }
 }

@@ -27,8 +27,6 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-$allowautocomplete = true;
-
 $pgtitle = array(gettext("Diagnostics"), gettext("Test Port"));
 require_once("guiconfig.inc");
 
@@ -94,7 +92,7 @@ include("head.inc"); ?>
 <?php echo gettext("No data is transmitted to the remote host during this test, it will only attempt to open a connection and optionally display the data sent back from the server."); ?>
 <br /><br /><br />
 
-				<?php if ($input_errors) print_input_errors($input_errors); ?>
+				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
                 <div class="content-box">
 
@@ -109,7 +107,7 @@ include("head.inc"); ?>
 					        <tbody>
 						        <tr>
 						          <td><?=gettext("Host"); ?></td>
-						          <td><?=$mandfldhtml;?><input name="host" type="text" class="form-control" id="host" value="<?=htmlspecialchars($host);?>" /></td>
+						          <td><input name="host" type="text" class="form-control" id="host" value="<?=htmlspecialchars($host);?>" /></td>
 						        </tr>
 						        <tr>
 						          <td><?= gettext("Port"); ?></td>

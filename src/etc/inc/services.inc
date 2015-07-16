@@ -3,6 +3,7 @@
 /*
 	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
 	Copyright (C) 2010 Ermal Luci
+	(from service-utils.inc) Copyright (C) 2005-2006 Colin Smith (ethethlay@gmail.com)
 	All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without
@@ -74,13 +75,29 @@ function get_pppoes_child_interfaces($ifpattern) {
 
 }
 
+function get_configured_pppoe_server_interfaces()
+{
+	global $config;
+
+	$iflist = array();
+	if (isset($config['pppoes']['pppoe'])) {
+		foreach($config['pppoes']['pppoe'] as $pppoe) {
+			if ($pppoe['mode'] == 'server') {
+				$int = 'poes'. $pppoe['pppoeid'];
+				$iflist[$int] = strtoupper($int);
+			}
+		}
+	}
+
+	return $iflist;
+}
 
 /* implement ipv6 route advertising deamon */
 function services_radvd_configure($blacklist = array())
 {
 	global $config, $g;
 
-	if (!is_array($config['dhcpdv6'])) {
+	if (!isset($config['dhcpdv6']) || !is_array($config['dhcpdv6'])) {
 		$config['dhcpdv6'] = array();
 	}
 
@@ -263,9 +280,11 @@ function services_radvd_configure($blacklist = array())
 		}
 		$radvdifs[$realif] = $realif;
 
-		$autotype = $config['interfaces'][$trackif]['ipaddrv6'];
+		if (isset($config['interfaces'][$trackif]['ipaddrv6'])) {
+			$autotype = $config['interfaces'][$trackif]['ipaddrv6'];
+			$radvdconf .= "# Generated config for {$autotype} delegation from {$trackif} on {$if}\n";
+		}
 
-		$radvdconf .= "# Generated config for {$autotype} delegation from {$trackif} on {$if}\n";
 		$radvdconf .= "interface {$realif} {\n";
 		$radvdconf .= "\tAdvSendAdvert on;\n";
 		$radvdconf .= "\tMinRtrAdvInterval 3;\n";
@@ -360,6 +379,23 @@ function services_dhcpd_configure($family = "all", $blacklist = array())
 		services_dhcpdv6_configure($blacklist);
 		services_radvd_configure($blacklist);
 	}
+}
+
+function is_dhcp_server_enabled()
+{
+	global $config;
+
+	if (!is_array($config['dhcpd'])) {
+		return false;
+	}
+
+	foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf) {
+		if (isset($dhcpifconf['enable']) && !empty($config['interfaces'][$dhcpif])) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 function services_dhcpdv4_configure()
@@ -975,6 +1011,31 @@ function dhcpdzones($ddns_zones, $dhcpifconf)
 	return $dhcpdconf;
 }
 
+function is_dhcpv6_server_enabled()
+{
+	global $config;
+
+	if (is_array($config['interfaces'])) {
+		foreach ($config['interfaces'] as $ifcfg) {
+			if (isset($ifcfg['enable']) && !empty($ifcfg['track6-interface'])) {
+				return true;
+			}
+		}
+	}
+
+	if (!isset($config['dhcpdv6']) || !is_array($config['dhcpdv6'])) {
+		return false;
+	}
+
+	foreach ($config['dhcpdv6'] as $dhcpv6if => $dhcpv6ifconf) {
+		if (isset($dhcpv6ifconf['enable']) && !empty($config['interfaces'][$dhcpv6if])) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 function services_dhcpdv6_configure($blacklist = array())
 {
 	global $config, $g;
@@ -1005,7 +1066,7 @@ function services_dhcpdv6_configure($blacklist = array())
 	}
 
 	$syscfg = $config['system'];
-	if (!is_array($config['dhcpdv6']))
+	if (!isset($config['dhcpdv6']) || !is_array($config['dhcpdv6']))
 		$config['dhcpdv6'] = array();
 	$dhcpdv6cfg = $config['dhcpdv6'];
 	$Iflist = get_configured_interface_list();
@@ -1318,7 +1379,7 @@ function services_igmpproxy_configure() {
         /* kill any running igmpproxy */
         killbyname("igmpproxy");
 
-	if (!is_array($config['igmpproxy']['igmpentry']) || (count($config['igmpproxy']['igmpentry']) == 0))
+	if (!isset($config['igmpproxy']['igmpentry']) || !is_array($config['igmpproxy']['igmpentry']) || (count($config['igmpproxy']['igmpentry']) == 0))
 		return 1;
 
         $iflist = get_configured_interface_list();
@@ -1669,24 +1730,27 @@ function services_dyndns_configure($int = '')
 {
 	global $config, $g;
 
-	$dyndnscfg = $config['dyndnses']['dyndns'];
-	$gwgroups = return_gateway_groups_array();
-	if (is_array($dyndnscfg)) {
-		if (file_exists("/var/run/booting"))
-			echo gettext("Starting DynDNS clients...");
+	if (isset($config['dyndnses']['dyndns'])) {
+		$dyndnscfg = $config['dyndnses']['dyndns'];
 
-		foreach ($dyndnscfg as $dyndns) {
-			if ((empty($int)) || ($int == $dyndns['interface']) || (is_array($gwgroups[$dyndns['interface']]))) {
-				$dyndns['verboselog'] = isset($dyndns['verboselog']);
-				$dyndns['curl_ipresolve_v4'] = isset($dyndns['curl_ipresolve_v4']);
-				$dyndns['curl_ssl_verifypeer'] = isset($dyndns['curl_ssl_verifypeer']);
-				services_dyndns_configure_client($dyndns);
-				sleep(1);
+		$gwgroups = return_gateway_groups_array();
+		if (is_array($dyndnscfg)) {
+			if (file_exists("/var/run/booting"))
+				echo gettext("Starting DynDNS clients...");
+
+			foreach ($dyndnscfg as $dyndns) {
+				if ((empty($int)) || ($int == $dyndns['interface']) || (is_array($gwgroups[$dyndns['interface']]))) {
+					$dyndns['verboselog'] = isset($dyndns['verboselog']);
+					$dyndns['curl_ipresolve_v4'] = isset($dyndns['curl_ipresolve_v4']);
+					$dyndns['curl_ssl_verifypeer'] = isset($dyndns['curl_ssl_verifypeer']);
+					services_dyndns_configure_client($dyndns);
+					sleep(1);
+				}
 			}
-		}
 
-		if (file_exists("/var/run/booting"))
-			echo gettext("done.") . "\n";
+			if (file_exists("/var/run/booting"))
+				echo gettext("done.") . "\n";
+		}
 	}
 
 	return 0;
@@ -1747,8 +1811,9 @@ function services_dnsmasq_configure()
 		}
 
 		/* Setup listen port, if non-default */
-		if (is_port($config['dnsmasq']['port']))
+		if (isset($config['dnsmasq']['port']) && is_port($config['dnsmasq']['port'])) {
 			$args .= " --port={$config['dnsmasq']['port']} ";
+		}
 
 		$listen_addresses = "";
 		if(isset($config['dnsmasq']['interface'])) {
@@ -1838,13 +1903,14 @@ function services_dnsmasq_configure()
 			$args .= " --domain-needed ";
 		}
 
-		if ($config['dnsmasq']['custom_options'])
+		if (isset($config['dnsmasq']['custom_options'])) {
 			foreach (preg_split('/\s+/', $config['dnsmasq']['custom_options']) as $c) {
 				$args .= " " . escapeshellarg("--{$c}");
 				$p = explode('=', $c);
 				if (array_key_exists($p[0], $standard_args))
 					unset($standard_args[$p[0]]);
 			}
+		}
 		$args .= ' ' . implode(' ', array_values($standard_args));
 
 		/* run dnsmasq */
@@ -2099,7 +2165,7 @@ function services_dnsupdate_process($int = '', $updatehost = '', $forced = false
 	global $config, $g;
 
 	/* Dynamic DNS updating active? */
-	if (is_array($config['dnsupdates']['dnsupdate'])) {
+	if (isset($config['dnsupdates']['dnsupdate']) && is_array($config['dnsupdates']['dnsupdate'])) {
 		$notify_text = "";
 		foreach ($config['dnsupdates']['dnsupdate'] as $i => $dnsupdate) {
 			if (!isset($dnsupdate['enable']))
@@ -2301,33 +2367,18 @@ function upnp_action ($action) {
 	}
 }
 
-
-function upnp_start() {
+function upnp_start()
+{
        global $config;
 
-       if(!isset($config['installedpackages']['miniupnpd']['config']))
-               return;
-
-       if($config['installedpackages']['miniupnpd']['config'][0]['enable']) {
+       if (!empty($config['installedpackages']['miniupnpd']['config'][0]['enable'])) {
                echo gettext("Starting UPnP service... ");
-               require_once('/usr/local/pkg/miniupnpd.inc');
+               require_once('miniupnpd.inc');
                sync_package_miniupnpd();
                echo "done.\n";
        }
 }
 
-/**
- * check if cron exists
- */
-function cron_job_exists($command) {
-	global $config;
-	foreach($config['cron']['item'] as $item) {
-		if(strstr($item['command'], $command)) {
-			return true;
-		}
-	}
-	return false;
-}
 
 function install_cron_job($command, $active=false, $minute="0", $hour="*", $monthday="*", $month="*", $weekday="*", $who="root") {
 	global $config, $g;
@@ -2371,4 +2422,279 @@ function install_cron_job($command, $active=false, $minute="0", $hour="*", $mont
 		}
 	}
 	configure_cron();
+}
+
+/**
+ * check if apinger service is enabled
+ */
+function is_apinger_enabled() {
+	global $config;
+	$gwcount=0;
+	if (isset($config['gateways']['gateway_item'])) {
+		foreach($config['gateways']['gateway_item'] as $gwkey => $gateway) {
+			if (!isset($gateway['monitor_disable']) || $gateway['monitor_disable'] == "0") {
+				$gwcount += 1;
+			}
+		}
+	}
+
+	if ($gwcount == 0) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
+
+function get_services() {
+	global $config;
+	$services = array();
+
+	/*    Add services that are in the base.
+	 *
+	 */
+	if (is_radvd_enabled()) {
+		$pconfig = array();
+		$pconfig['name'] = "radvd";
+		$pconfig['description'] = gettext("Router Advertisement Daemon");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['dnsmasq']['enable'])) {
+		$pconfig = array();
+		$pconfig['name'] = "dnsmasq";
+		$pconfig['description'] = gettext("DNS Forwarder");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['unbound']['enable'])) {
+		$pconfig = array();
+		$pconfig['name'] = "unbound";
+		$pconfig['description'] = gettext("Unbound DNS Forwarder");
+		$services[] = $pconfig;
+	}
+
+	$pconfig = array();
+	$pconfig['name'] = "ntpd";
+	$pconfig['description'] = gettext("NTP clock sync");
+	$services[] = $pconfig;
+
+	if (isset($config['captiveportal']) && is_array($config['captiveportal'])) {
+		foreach ($config['captiveportal'] as $zone => $setting) {
+			if (isset($setting['enable'])) {
+				$pconfig = array();
+				$pconfig['name'] = "captiveportal";
+				$pconfig['zone'] = $zone;
+				$pconfig['description'] = gettext("Captive Portal") . ": ".htmlspecialchars($setting['zone']);
+				$services[] = $pconfig;
+			}
+		}
+	}
+
+	$iflist = array();
+	$ifdescrs = get_configured_interface_list();
+	foreach ($ifdescrs as $if) {
+		$oc = $config['interfaces'][$if];
+		if ($oc['if'] && (!link_interface_to_bridge($if)))
+			$iflist[$if] = $if;
+	}
+
+	if (isset($config['dhcrelay']['enable'])) {
+		$pconfig = array();
+		$pconfig['name'] = "dhcrelay";
+		$pconfig['description'] = gettext("DHCP Relay");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['dhcrelay6']['enable'])) {
+		$pconfig = array();
+		$pconfig['name'] = "dhcrelay6";
+		$pconfig['description'] = gettext("DHCPv6 Relay");
+		$services[] = $pconfig;
+	}
+
+	if (is_dhcp_server_enabled()) {
+		$pconfig = array();
+		$pconfig['name'] = "dhcpd";
+		$pconfig['description'] = gettext("DHCP Service");
+		$services[] = $pconfig;
+	}
+
+	$gateways_arr = return_gateways_array();
+	if (is_apinger_enabled() && is_array($gateways_arr)) {
+		$pconfig = array();
+		$pconfig['name'] = "apinger";
+		$pconfig['description'] = gettext("Gateway Monitoring Daemon");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['snmpd']['enable'])) {
+		$pconfig = array();
+		$pconfig['name'] = "bsnmpd";
+		$pconfig['description'] = gettext("SNMP Service");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['igmpproxy']['igmpentry']) && is_array($config['igmpproxy']['igmpentry']) && (count($config['igmpproxy']['igmpentry']) > 0)) {
+		$pconfig = array();
+		$pconfig['name'] = "igmpproxy";
+		$pconfig['description'] = gettext("IGMP proxy");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['installedpackages']['miniupnpd']) && $config['installedpackages']['miniupnpd']['config'][0]['enable']) {
+		$pconfig = array();
+		$pconfig['name'] = "miniupnpd";
+		$pconfig['description'] = gettext("UPnP Service");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['ipsec']['enable'])) {
+		$pconfig = array();
+		$pconfig['name'] = "ipsec";
+		$pconfig['description'] = gettext("IPsec VPN");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['system']['ssh']['enabled'])) {
+		$pconfig = array();
+		$pconfig['name'] = 'sshd';
+		$pconfig['description'] = gettext('Secure Shell Daemon');
+		$services[] = $pconfig;
+	}
+
+	foreach (array('server', 'client') as $mode) {
+		if (isset($config['openvpn']["openvpn-{$mode}"])) {
+			foreach ($config['openvpn']["openvpn-{$mode}"] as $id => $setting) {
+				if (!isset($setting['disable'])) {
+					$pconfig = array();
+					$pconfig['name'] = "openvpn";
+					$pconfig['mode'] = $mode;
+					$pconfig['id'] = $id;
+					$pconfig['vpnid'] = $setting['vpnid'];
+					$pconfig['description'] = gettext("OpenVPN") . " ".$mode.": ".htmlspecialchars($setting['description']);
+					$services[] = $pconfig;
+				}
+			}
+		}
+	}
+
+	if (isset($config['load_balancer']['virtual_server']) && isset($config['load_balancer']['lbpool']) && count($config['load_balancer']['virtual_server']) && count($config['load_balancer']['lbpool'])) {
+		$pconfig = array();
+		$pconfig['name'] = "relayd";
+		$pconfig['description'] = gettext("Server load balancing daemon");
+		$services[] = $pconfig;
+	}
+
+	if (isset($config['OPNsense']['proxy']['general']['enabled']) && $config['OPNsense']['proxy']['general']['enabled'] == 1) {
+		$services[] = array('name'=>'squid', 'description' => gettext("Proxy server"));
+	}
+	if (isset($config['OPNsense']['IDS']['general']['enabled']) && $config['OPNsense']['IDS']['general']['enabled'] == 1) {
+		 $services[] = array('name'=>'suricata', 'description' => gettext("Intrusion Detection"));
+	}
+	return $services;
+}
+
+
+function find_service_by_openvpn_vpnid($vpnid) {
+	$services = get_services();
+	foreach ($services as $service)
+		if (($service["name"] == "openvpn") && isset($service["vpnid"]) && ($service["vpnid"] == $vpnid))
+			return $service;
+	return array();
+}
+
+
+function service_name_compare($a, $b) {
+	if (strtolower($a['name']) == strtolower($b['name']))
+		return 0;
+	return (strtolower($a['name']) < strtolower($b['name'])) ? -1 : 1;
+}
+
+
+function get_service_status($service) {
+	global $g;
+	switch ($service['name']) {
+		case "openvpn":
+			$running = isvalidpid("/var/run/openvpn_{$service['mode']}{$service['vpnid']}.pid");
+			break;
+		case "captiveportal":
+			$running = isvalidpid("/var/run/lighty-{$service['zone']}-CaptivePortal.pid");
+			if (isset($config['captiveportal'][$service['zone']]['httpslogin']))
+				$running = $running && isvalidpid("/var/run/lighty-{$service['zone']}-CaptivePortal-SSL.pid");
+			break;
+		case "vhosts-http":
+			$running = isvalidpid("/var/run/vhosts-http.pid");
+			break;
+		case "dhcrelay6":
+			$running = isvalidpid("/var/run/dhcrelay6.pid");
+			break;
+		case 'ipsec':
+			$running = isvalidpid("/var/run/charon.pid");
+			break;
+		default:
+			$running = is_process_running($service['name']);
+	}
+	return $running;
+}
+
+
+function get_service_status_icon($service, $withtext = true, $smallicon = false) {
+	global $g;
+	$output = "";
+	if(get_service_status($service)) {
+		$statustext = gettext("Running");
+		$output .= '<span class="btn btn-success"><span class="glyphicon glyphicon-play" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip" data-placement="bottom" ></span></span>&nbsp;';
+	} else {
+		$statustext = gettext("Stopped") ;
+		$output .= '<span class="btn btn-danger"><span class="glyphicon glyphicon-stop" title="'.sprintf(gettext('%s Service is'),$service['name']).' '.$statustext.'" data-toggle="tooltip" data-placement="bottom" ></span></span>&nbsp;';
+	}
+	return $output;
+}
+
+
+function get_service_control_links($service, $addname = false) {
+	global $g;
+	$output = "";
+	$stitle = ($addname) ? $service['name'] . " " : "";
+	if(get_service_status($service)) {
+		switch ($service['name']) {
+			case "openvpn":
+				$output .= "<a href='status_services.php?mode=restartservice&amp;service={$service['name']}&amp;vpnmode={$service['mode']}&amp;id={$service['vpnid']}' class=\"btn btn-default\">";
+				break;
+			case "captiveportal":
+				$output .= "<a href='status_services.php?mode=restartservice&amp;service={$service['name']}&amp;zone={$service['zone']}' class=\"btn btn-default\">";
+				break;
+			default:
+				$output .= "<a href='status_services.php?mode=restartservice&amp;service={$service['name']}' class=\"btn btn-default\">";
+		}
+		$output .= "<span data-toggle=\"tooltip\" data-placement=\"bottom\" title='" . sprintf(gettext("Restart %sService"),$stitle) . "' class=\"glyphicon glyphicon-refresh\"/></a>\n";
+		switch ($service['name']) {
+			case "openvpn":
+				$output .= "<a href='status_services.php?mode=stopservice&amp;service={$service['name']}&amp;vpnmode={$service['mode']}&amp;id={$service['vpnid']}' class=\"btn btn-default\">";
+				break;
+			case "captiveportal":
+				$output .= "<a href='status_services.php?mode=stopservice&amp;service={$service['name']}&amp;zone={$service['zone']}' class=\"btn btn-default\">";
+				break;
+			default:
+				$output .= "<a href='status_services.php?mode=stopservice&amp;service={$service['name']}' class=\"btn btn-default\">";
+				break;
+		}
+		$output .= "<span data-toggle=\"tooltip\" data-placement=\"bottom\" title='" . sprintf(gettext("Stop %sService"),$stitle) . "' class=\"glyphicon glyphicon-stop\" />";
+		$output .= "</a>";
+	} else {
+		switch ($service['name']) {
+			case "openvpn":
+				$output .= "<a href='status_services.php?mode=startservice&amp;service={$service['name']}&amp;vpnmode={$service['mode']}&amp;id={$service['vpnid']}' class=\"btn btn-default\">";
+				break;
+			case "captiveportal":
+				$output .= "<a href='status_services.php?mode=startservice&amp;service={$service['name']}&amp;zone={$service['zone']}' class=\"btn btn-default\">";
+				break;
+			default:
+				$output .= "<a href='status_services.php?mode=startservice&amp;service={$service['name']}' class=\"btn btn-default\">";
+				break;
+		}
+		$output .= "<span data-toggle=\"tooltip\" data-placement=\"bottom\" title='" . sprintf(gettext("Start %sService"),$stitle) . "' alt='start' class=\"glyphicon glyphicon-play\"/></a>\n";
+	}
+	return $output;
 }

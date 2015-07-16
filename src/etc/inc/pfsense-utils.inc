@@ -27,21 +27,6 @@
  *
  */
 
-/****f* legacy/have_natpfruleint_access
- * NAME
- *   have_natpfruleint_access
- * INPUTS
- *	none
- * RESULT
- *   returns true if user has access to edit a specific firewall nat port forward interface
- ******/
-function have_natpfruleint_access($if) {
-	$security_url = "firewall_nat_edit.php?if=". strtolower($if);
-	if(isAllowedPage($security_url, $allowed))
-		return true;
-	return false;
-}
-
 /****f* legacy/have_ruleint_access
  * NAME
  *   have_ruleint_access
@@ -132,36 +117,6 @@ function enable_hardware_offloading($interface)
 	}
 }
 
-/****f* legacy/is_schedule_inuse
- * NAME
- *   checks to see if a schedule is currently in use by a rule
- * INPUTS
- *
- * RESULT
- *   true or false
- * NOTES
- *
- ******/
-function is_schedule_inuse($schedule)
-{
-	global $config;
-
-	if ($schedule == '') {
-		return false;
-	}
-
-	/* loop through firewall rules looking for schedule in use */
-	if (isset($config['filter']['rule'])) {
-		foreach ($config['filter']['rule'] as $rule) {
-			if ($rule['sched'] == $schedule) {
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
 /****f* legacy/setup_polling
  * NAME
  *   sets up polling
@@ -180,18 +135,6 @@ function setup_polling()
 		set_single_sysctl("kern.polling.idle_poll", "1");
 	} else {
 		set_single_sysctl("kern.polling.idle_poll", "0");
-	}
-
-	if ($config['system']['polling_each_burst']) {
-		set_single_sysctl("kern.polling.each_burst", $config['system']['polling_each_burst']);
-	}
-
-	if ($config['system']['polling_burst_max']) {
-		set_single_sysctl("kern.polling.burst_max", $config['system']['polling_burst_max']);
-	}
-
-	if ($config['system']['polling_user_frac']) {
-		set_single_sysctl("kern.polling.user_frac", $config['system']['polling_user_frac']);
 	}
 }
 
@@ -240,16 +183,6 @@ function get_carp_status() {
 }
 
 /*
- * convert_ip_to_network_format($ip, $subnet): converts an ip address to network form
-
- */
-function convert_ip_to_network_format($ip, $subnet) {
-	$ipsplit = explode('.', $ip);
-	$string = $ipsplit[0] . "." . $ipsplit[1] . "." . $ipsplit[2] . ".0/" . $subnet;
-	return $string;
-}
-
-/*
  * get_carp_interface_status($carpinterface): returns the status of a carp ip
  */
 function get_carp_interface_status($carpinterface) {
@@ -271,121 +204,6 @@ function get_carp_interface_status($carpinterface) {
 }
 
 /*
- * get_pfsync_interface_status($pfsyncinterface): returns the status of a pfsync
- */
-function get_pfsync_interface_status($pfsyncinterface) {
-	if (!does_interface_exist($pfsyncinterface))
-		return;
-
-	return exec_command("/sbin/ifconfig {$pfsyncinterface} | /usr/bin/awk '/pfsync:/ {print \$5}'");
-}
-
-/*
- * add_rule_to_anchor($anchor, $rule): adds the specified rule to an anchor
- */
-function add_rule_to_anchor($anchor, $rule, $label) {
-	mwexec("echo " . escapeshellarg($rule) . " | /sbin/pfctl -a " . escapeshellarg($anchor) . ":" . escapeshellarg($label) . " -f -");
-}
-
-
-/*
- * add_text_to_file($file, $text): adds $text to $file.
- * replaces the text if it already exists.
- */
-function add_text_to_file($file, $text, $replace = false) {
-	if(file_exists($file) and is_writable($file)) {
-		$filecontents = file($file);
-		$filecontents = array_map('rtrim', $filecontents);
-		array_push($filecontents, $text);
-		if ($replace)
-			$filecontents = array_unique($filecontents);
-
-		$file_text = implode("\n", $filecontents);
-
-		@file_put_contents($file, $file_text);
-		return true;
-	}
-	return false;
-}
-
-/*
- *   after_sync_bump_adv_skew(): create skew values by 1S
- */
-function after_sync_bump_adv_skew()
-{
-	global $config;
-
-	$processed_skew = 1;
-	$a_vip = &$config['virtualip']['vip'];
-	foreach ($a_vip as $vipent) {
-		if($vipent['advskew'] <> "") {
-			$processed_skew = 1;
-			$vipent['advskew'] = $vipent['advskew']+1;
-		}
-	}
-
-	if ($processed_skew == 1) {
-		write_config(gettext("After synch increase advertising skew"));
-	}
-}
-
-/*
- * get_filename_from_url($url): converts a url to its filename.
- */
-function get_filename_from_url($url) {
-	return basename($url);
-}
-
-
-/****f* legacy/WakeOnLan
- * NAME
- *   WakeOnLan - Wake a machine up using the wake on lan format/protocol
- * RESULT
- *   true/false - true if the operation was successful
- ******/
-function WakeOnLan($addr, $mac)
-{
-	$addr_byte = explode(':', $mac);
-	$hw_addr = '';
-
-	for ($a=0; $a < 6; $a++)
-		$hw_addr .= chr(hexdec($addr_byte[$a]));
-
-	$msg = chr(255).chr(255).chr(255).chr(255).chr(255).chr(255);
-
-	for ($a = 1; $a <= 16; $a++)
-		$msg .= $hw_addr;
-
-	// send it to the broadcast address using UDP
-	$s = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-	if ($s == false) {
-		log_error(gettext("Error creating socket!"));
-		log_error(sprintf(gettext("Error code is '%1\$s' - %2\$s"), socket_last_error($s), socket_strerror(socket_last_error($s))));
-	} else {
-		// setting a broadcast option to socket:
-		$opt_ret =  socket_set_option($s, 1, 6, TRUE);
-		if($opt_ret < 0)
-			log_error(sprintf(gettext("setsockopt() failed, error: %s"), strerror($opt_ret)));
-		$e = socket_sendto($s, $msg, strlen($msg), 0, $addr, 2050);
-		socket_close($s);
-		log_error(sprintf(gettext('Magic Packet sent (%1$s) to {%2$s} MAC=%3$s'), $e, $addr, $mac));
-		return true;
-	}
-
-	return false;
-}
-
-/*
- * reverse_strrchr($haystack, $needle):  Return everything in $haystack up to the *last* instance of $needle.
- *					 Useful for finding paths and stripping file extensions.
- */
-function reverse_strrchr($haystack, $needle) {
-	if (!is_string($haystack))
-		return;
-	return strrpos($haystack, $needle) ? substr($haystack, 0, strrpos($haystack, $needle) +1 ) : false;
-}
-
-/*
  *  backup_config_section($section): returns as an xml file string of
  *                                   the configuration section
  */
@@ -397,6 +215,8 @@ function backup_config_section($section_name) {
 	$xmlconfig = str_replace("<?xml version=\"1.0\"?>", "", $xmlconfig);
 	return $xmlconfig;
 }
+
+/* KEEP THIS: unbreaks syntax highlighting <? */
 
 /*
  *  restore_config_section($section_name, new_contents): restore a configuration section,
@@ -414,14 +234,14 @@ function restore_config_section($section_name, $new_contents)
 	fclose($fout);
 
 	$xml = parse_xml_config($tmpxml, null);
-	if ($xml['pfsense']) {
+	if (isset($xml['pfsense'])) {
 		$xml = $xml['pfsense'];
-	} elseif ($xml['m0n0wall']) {
+	} elseif (isset($xml['m0n0wall'])) {
 		$xml = $xml['m0n0wall'];
-	} elseif ($xml['opnsense']) {
+	} elseif (isset($xml['opnsense'])) {
 		$xml = $xml['opnsense'];
 	}
-	if ($xml[$section_name]) {
+	if (isset($xml[$section_name])) {
 		$section_xml = $xml[$section_name];
 	} else {
 		$section_xml = -1;
@@ -462,108 +282,20 @@ function merge_config_section($section_name, $new_contents)
 }
 
 /*
- * http_post($server, $port, $url, $vars): does an http post to a web server
- *                                         posting the vars array.
- * written by nf@bigpond.net.au
- */
-function http_post($server, $port, $url, $vars) {
-	$user_agent = "Mozilla/4.0 (compatible; MSIE 5.5; Windows 98)";
-	$urlencoded = "";
-	while (list($key,$value) = each($vars))
-		$urlencoded.= urlencode($key) . "=" . urlencode($value) . "&";
-	$urlencoded = substr($urlencoded,0,-1);
-	$content_length = strlen($urlencoded);
-	$headers = "POST $url HTTP/1.1
-Accept: */*
-Accept-Language: en-au
-Content-Type: application/x-www-form-urlencoded
-User-Agent: $user_agent
-Host: $server
-Connection: Keep-Alive
-Cache-Control: no-cache
-Content-Length: $content_length
-
-";
-
-	$errno = "";
-	$errstr = "";
-	$fp = fsockopen($server, $port, $errno, $errstr);
-	if (!$fp) {
-		return false;
-	}
-
-	fputs($fp, $headers);
-	fputs($fp, $urlencoded);
-
-	$ret = "";
-	while (!feof($fp))
-		$ret.= fgets($fp, 1024);
-	fclose($fp);
-
-	return $ret;
-}
-
-/*
- * rmdir_recursive($path,$follow_links=false)
- * Recursively remove a directory tree (rm -rf path)
- * This is for directories _only_
- */
-function rmdir_recursive($path,$follow_links=false) {
-	$to_do = glob($path);
-	if(!is_array($to_do)) $to_do = array($to_do);
-	foreach($to_do as $workingdir) { // Handle wildcards by foreaching.
-		if(file_exists($workingdir)) {
-			if(is_dir($workingdir)) {
-				$dir = opendir($workingdir);
-				while ($entry = readdir($dir)) {
-					if (is_file("$workingdir/$entry") || ((!$follow_links) && is_link("$workingdir/$entry")))
-						unlink("$workingdir/$entry");
-					elseif (is_dir("$workingdir/$entry") && $entry!='.' && $entry!='..')
-						rmdir_recursive("$workingdir/$entry");
-				}
-				closedir($dir);
-				rmdir($workingdir);
-			} elseif (is_file($workingdir)) {
-				unlink($workingdir);
-			}
-		}
-	}
-	return;
-}
-
-/*
  * host_firmware_version(): Return the versions used in this install
  */
-function host_firmware_version($tocheck = "")
+function host_firmware_version()
 {
 	global $config;
 
-	$os_version = trim(substr(php_uname("r"), 0, strpos(php_uname("r"), '-')));
-
 	return array(
-		"firmware" => array("version" => trim(file_get_contents('/usr/local/opnsense/version/opnsense', " \n"))),
-		"kernel"   => array("version" => $os_version),
-		"base"     => array("version" => $os_version),
-		"config_version" => $config['version']
+		'firmware' => array('version' => file_get_contents('/usr/local/opnsense/version/opnsense')),
+		'kernel' => array('version' => file_get_contents('/usr/local/opnsense/version/os-update.kernel')),
+		'base' => array('version' => file_get_contents('/usr/local/opnsense/version/os-update.base')),
+		'config_version' => $config['version']
 	);
 }
 
-
-/****f* legacy/strncpy
- * NAME
- *   strncpy - copy strings
- * INPUTS
- *   &$dst, $src, $length
- * RESULT
- *   none
- ******/
-function strncpy(&$dst, $src, $length) {
-	if (strlen($src) > $length) {
-		$dst = substr($src, 0, $length);
-	} else {
-		$dst = $src;
-	}
-}
 
 /****f* legacy/reload_interfaces_sync
  * NAME
@@ -595,7 +327,8 @@ function reload_interfaces_sync()
  * RESULT
  *   none
  ******/
-function reload_all() {
+function reload_all()
+{
 	configd_run("service reload all", true);
 }
 
@@ -607,7 +340,8 @@ function reload_all() {
  * RESULT
  *   none
  ******/
-function reload_interfaces() {
+function reload_interfaces()
+{
 	configd_run("interface reload");
 }
 
@@ -619,7 +353,8 @@ function reload_interfaces() {
  * RESULT
  *   none
  ******/
-function reload_all_sync() {
+function reload_all_sync()
+{
 	global $config;
 
 	/* parse config.xml again */
@@ -652,10 +387,6 @@ function reload_all_sync() {
 	/* start the NTP client */
 	system_ntp_configure();
 
-	/* sync pw database */
-	@unlink('/etc/spwd.db.tmp');
-	mwexec('/usr/sbin/pwd_mkdb -d /etc/ /etc/master.passwd');
-
 	/* restart sshd */
 	mwexec_bg('/usr/local/etc/rc.sshd');
 
@@ -666,6 +397,9 @@ function reload_all_sync() {
 function setup_serial_port($when = 'save', $path = '')
 {
 	global $config;
+
+	$serial_enabled = isset($config['system']['enableserial']);
+
 	$prefix = "";
 	if (($when == "upgrade") && (!empty($path)) && is_dir($path.'/boot/'))
 		$prefix = "/tmp/{$path}";
@@ -690,7 +424,7 @@ function setup_serial_port($when = 'save', $path = '')
 						fwrite($fd, "{$bcs}\n");
 				}
 			}
-			if (is_serial_enabled()) {
+			if ($serial_enabled) {
 				fwrite($fd, "-S{$serialspeed} -D\n");
 			}
 			fclose($fd);
@@ -714,7 +448,7 @@ function setup_serial_port($when = 'save', $path = '')
 					&& (stripos($bcs, "autoboot_delay") === false))
 					$new_boot_config[] = $bcs;
 
-			if (is_serial_enabled()) {
+			if ($serial_enabled) {
 				$new_boot_config[] = 'boot_multicons="YES"';
 				$new_boot_config[] = 'boot_serial="YES"';
 				$primaryconsole = $config['system']['primaryconsole'];
@@ -738,7 +472,7 @@ function setup_serial_port($when = 'save', $path = '')
 	$ttys_split = explode("\n", $ttys);
 	$fd = fopen("/etc/ttys", "w");
 
-	$on_off = (is_serial_enabled() ? 'on' : 'off');
+	$on_off = $serial_enabled ? 'on' : 'off';
 
 	if (isset($config['system']['disableconsolemenu'])) {
 		$console_type = 'Pc';
@@ -760,62 +494,19 @@ function setup_serial_port($when = 'save', $path = '')
 	reload_ttys();
 }
 
-function is_serial_enabled()
-{
-	global $config;
-
-	return isset($config['system']['enableserial']);
-}
-
 function reload_ttys()
 {
 	/* force init(8) to reload /etc/ttys */
 	exec('/bin/kill -HUP 1');
 }
 
-/* DHCP enabled on any interfaces? */
-function is_dhcp_server_enabled() {
-	global $config;
-
-	if (!is_array($config['dhcpd']))
-		return false;
-
-	foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf) {
-		if (isset($dhcpifconf['enable']) && !empty($config['interfaces'][$dhcpif]))
-			return true;
-	}
-
-	return false;
-}
-
-/* DHCP enabled on any interfaces? */
-function is_dhcpv6_server_enabled() {
-	global $config;
-
-	if (is_array($config['interfaces'])) {
-		foreach ($config['interfaces'] as $ifcfg) {
-			if (isset($ifcfg['enable']) && !empty($ifcfg['track6-interface']))
-				return true;
-		}
-	}
-
-	if (!is_array($config['dhcpdv6']))
-		return false;
-
-	foreach ($config['dhcpdv6'] as $dhcpv6if => $dhcpv6ifconf) {
-		if (isset($dhcpv6ifconf['enable']) && !empty($config['interfaces'][$dhcpv6if]))
-			return true;
-	}
-
-	return false;
-}
-
 /* radvd enabled on any interfaces? */
 function is_radvd_enabled() {
 	global $config;
 
-	if (!is_array($config['dhcpdv6']))
+	if (!isset($config['dhcpdv6']) || !is_array($config['dhcpdv6'])) {
 		$config['dhcpdv6'] = array();
+	}
 
 	$dhcpdv6cfg = $config['dhcpdv6'];
 	$Iflist = get_configured_interface_list();
@@ -867,7 +558,7 @@ function is_pppoe_server_enabled() {
 
 	$pppoeenable = false;
 
-	if (!is_array($config['pppoes']) || !is_array($config['pppoes']['pppoe']))
+	if (!isset($config['pppoes']['pppoe']) || !is_array($config['pppoes']['pppoe']))
 		return false;
 
 	foreach ($config['pppoes']['pppoe'] as $pppoes)
@@ -1157,19 +848,6 @@ function get_interface_info($ifdescr)
 	return $ifinfo;
 }
 
-function get_uptime_sec() {
-	$boottime = "";
-	$matches = "";
-	$boottime = get_single_sysctl("kern.boottime");
-	preg_match("/sec = (\d+)/", $boottime, $matches);
-	$boottime = $matches[1];
-	if(intval($boottime) == 0)
-		return 0;
-
-	$uptime = time() - $boottime;
-	return $uptime;
-}
-
 function add_hostname_to_watch($hostname) {
 	if(!is_dir("/var/db/dnscache")) {
 		mkdir("/var/db/dnscache");
@@ -1232,56 +910,6 @@ function default_state_size()
 	return $max_states;
 }
 
-function default_table_entries_size()
-{
-	$current = `pfctl -sm | grep table-entries | awk '{print $4};'`;
-
-	return $current;
-}
-
-/* Compare the current hostname DNS to the DNS cache we made
- * if it has changed we return the old records
- * if no change we return false */
-function compare_hostname_to_dnscache($hostname) {
-	if(!is_dir("/var/db/dnscache")) {
-		mkdir("/var/db/dnscache");
-	}
-	$hostname = trim($hostname);
-	if(is_readable("/var/db/dnscache/{$hostname}")) {
-		$oldcontents = file_get_contents("/var/db/dnscache/{$hostname}");
-	} else {
-		$oldcontents = "";
-	}
-	if((is_fqdn($hostname)) && (!is_ipaddr($hostname))) {
-		$domrecords = array();
-		$domips = array();
-		exec("host -t A " . escapeshellarg($hostname), $domrecords, $rethost);
-		if($rethost == 0) {
-			foreach($domrecords as $domr) {
-				$doml = explode(" ", $domr);
-				$domip = $doml[3];
-				/* fill array with domain ip addresses */
-				if(is_ipaddr($domip)) {
-					$domips[] = $domip;
-				}
-			}
-		}
-		sort($domips);
-		$contents = "";
-		if(! empty($domips)) {
-			foreach($domips as $ip) {
-				$contents .= "$ip\n";
-			}
-		}
-	}
-
-	if(trim($oldcontents) != trim($contents)) {
-		log_error(sprintf(gettext('DNSCACHE: Found old IP %1$s and new IP %2$s'), $oldcontents, $contents));
-		return ($oldcontents);
-	} else {
-		return false;
-	}
-}
 
 /*
  * load_crypto() - Load crypto modules if enabled in config.
@@ -1292,7 +920,7 @@ function load_crypto()
 
 	$crypto_modules = array('glxsb', 'aesni');
 
-	if (!in_array($config['system']['crypto_hardware'], $crypto_modules)) {
+	if (!isset($config['system']['crypto_hardware']) || !in_array($config['system']['crypto_hardware'], $crypto_modules)) {
 		return false;
 	}
 
@@ -1311,7 +939,7 @@ function load_thermal_hardware()
 
 	$thermal_hardware_modules = array('coretemp', 'amdtemp');
 
-	if (!in_array($config['system']['thermal_hardware'], $thermal_hardware_modules)) {
+	if (!isset($config['system']['thermal_hardware']) || !in_array($config['system']['thermal_hardware'], $thermal_hardware_modules)) {
 		return false;
 	}
 
@@ -1319,13 +947,6 @@ function load_thermal_hardware()
 		log_error("Loading {$config['system']['thermal_hardware']} thermal monitor module.");
 		mwexec("/sbin/kldload {$config['system']['thermal_hardware']}");
 	}
-}
-
-
-function get_freebsd_version()
-{
-	$version = explode(".", php_uname("r"));
-	return $version[0];
 }
 
 function download_file($url, $destination, $verify_ssl = false, $connect_timeout = 60, $timeout = 0)
@@ -1362,73 +983,6 @@ function download_file($url, $destination, $verify_ssl = false, $connect_timeout
 	fclose($fp);
 	curl_close($ch);
 	return ($http_code == 200) ? true : $http_code;
-}
-
-function read_header($ch, $string) {
-	global $file_size, $fout;
-	$length = strlen($string);
-	$regs = "";
-	preg_match("/(Content-Length:) (.*)/", $string, $regs);
-	if($regs[2] <> "") {
-		$file_size = intval($regs[2]);
-	}
-	ob_flush();
-	return $length;
-}
-
-/*
- *   update_output_window: update bottom textarea dynamically.
- */
-function update_output_window($text) {
-	global $pkg_interface;
-	$log = preg_replace("/\n/", "\\n", $text);
-	if($pkg_interface != "console") {
-		echo "\n<script type=\"text/javascript\">";
-		echo "\n//<![CDATA[";
-		echo "\nthis.document.iform.output.value = \"" . $log . "\";";
-		echo "\nthis.document.iform.output.scrollTop = this.document.iform.output.scrollHeight;";
-		echo "\n//]]>";
-		echo "\n</script>";
-	}
-	/* ensure that contents are written out */
-	ob_flush();
-}
-
-/*
- *   update_status: update top textarea dynamically.
- */
-function update_status($status) {
-	global $pkg_interface;
-	if($pkg_interface == "console") {
-		echo "\r{$status}";
-	} else {
-		echo "\n<script type=\"text/javascript\">";
-		echo "\n//<![CDATA[";
-		echo "\nthis.document.iform.status.value=\"" . $status . "\";";
-		echo "\n//]]>";
-		echo "\n</script>";
-	}
-	/* ensure that contents are written out */
-	ob_flush();
-}
-
-/*
- * update_progress_bar($percent, $first_time): updates the javascript driven progress bar.
- */
-function update_progress_bar($percent, $first_time) {
-	global $pkg_interface;
-	if($percent > 100) $percent = 1;
-	if($pkg_interface <> "console") {
-		echo "\n<script type=\"text/javascript\">";
-		echo "\n//<![CDATA[";
-		echo "\n$('.progress-bar').css('width', '" . $percent . "%');";
-		echo "\n//]]>";
-		echo "\n</script>";
-	} else {
-		if(!($first_time))
-			echo "\x08\x08\x08\x08\x08";
-		echo sprintf("%4d%%", $percent);
-	}
 }
 
 /* Split() is being DEPRECATED as of PHP 5.3.0 and REMOVED as of PHP 6.0.0. Relying on this feature is highly discouraged. */
@@ -1474,71 +1028,6 @@ function update_alias_names_upon_change($section, $field, $new_alias_name, $orig
 	}
 }
 
-function update_alias_url_data()
-{
-	global $config;
-
-	$updated = false;
-
-	/* item is a url type */
-	$lockkey = lock('aliasurl');
-	if (is_array($config['aliases']['alias'])) {
-		foreach ($config['aliases']['alias'] as $x => $alias) {
-			if (empty($alias['aliasurl']))
-				continue;
-
-			$address = "";
-			$isfirst = 0;
-			foreach ($alias['aliasurl'] as $alias_url) {
-				/* fetch down and add in */
-				$temp_filename = tempnam('/tmp/', 'alias_import');
-				unlink($temp_filename);
-				$verify_ssl = isset($config['system']['checkaliasesurlcert']);
-				mkdir($temp_filename);
-				download_file($alias_url, $temp_filename . "/aliases", $verify_ssl);
-
-				/* if the item is tar gzipped then extract */
-				if (stripos($alias_url, '.tgz')) {
-					if (!process_alias_tgz($temp_filename))
-						continue;
-				} else if (stripos($alias_url, '.zip')) {
-					if (!process_alias_unzip($temp_filename))
-						continue;
-				}
-				if (file_exists("{$temp_filename}/aliases")) {
-					$fd = @fopen("{$temp_filename}/aliases", 'r');
-					if (!$fd) {
-						log_error(sprintf(_('Could not process aliases from alias: %s'), $alias_url));
-						continue;
-					}
-					/* NOTE: fgetss() is not a typo RTFM before being smart */
-					while (($fc = fgetss($fd)) !== FALSE) {
-						$tmp = trim($fc, " \t\n\r");
-						if (empty($tmp))
-							continue;
-						$tmp_str = strstr($tmp, '#', true);
-						if (!empty($tmp_str))
-							$tmp = $tmp_str;
-						if ($isfirst == 1)
-							$address .= ' ';
-						$address .= $tmp;
-						$isfirst = 1;
-					}
-					fclose($fd);
-					mwexec("/bin/rm -rf {$temp_filename}");
-				}
-			}
-			if (!empty($address)) {
-				$config['aliases']['alias'][$x]['address'] = $address;
-				$updated = true;
-			}
-		}
-	}
-	unlock($lockkey);
-
-	/* Report status to callers as well */
-	return $updated;
-}
 
 function process_alias_unzip($temp_filename) {
 	if(!file_exists("/usr/local/bin/unzip")) {
@@ -1909,8 +1398,11 @@ function is_ipaddr_configured($ipaddr, $ignore_if = "", $check_localip = false, 
 function calculate_ipv6_delegation_length($if) {
 	global $config;
 
-	if(!is_array($config['interfaces'][$if]))
+	if(!isset($config['interfaces'][$if]) || !is_array($config['interfaces'][$if])) {
 		return false;
+	} elseif (!isset($config['interfaces'][$if]['ipaddrv6'])) {
+		return (0);
+	}
 
 	switch($config['interfaces'][$if]['ipaddrv6']) {
 		case "6to4":
@@ -2026,18 +1518,4 @@ function zte_simstate_to_string($state) {
 	$modes[3] = "Network Lock and (U)SIM card Lock";
 	$string = "{$modes[$state]} State";
 	return $string;
-}
-
-function get_configured_pppoe_server_interfaces() {
-	global $config;
-	$iflist = array();
-	if (is_array($config['pppoes']['pppoe'])) {
-		foreach($config['pppoes']['pppoe'] as $pppoe) {
-			if ($pppoe['mode'] == "server") {
-				$int = "poes". $pppoe['pppoeid'];
-				$iflist[$int] = strtoupper($int);
-			}
-		}
-	}
-	return $iflist;
 }

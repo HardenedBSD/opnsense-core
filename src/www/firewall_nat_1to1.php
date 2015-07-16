@@ -29,7 +29,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 
 if (!is_array($config['nat']['onetoone']))
 	$config['nat']['onetoone'] = array();
@@ -149,7 +148,7 @@ $main_buttons = array(
 			<div class="row">
 
 				<?php
-				if ($savemsg)
+				if (isset($savemsg))
 					print_info_box($savemsg);
 				if (is_subsystem_dirty('natconf'))
 					print_info_box_np(gettext("The NAT configuration has been changed.") .

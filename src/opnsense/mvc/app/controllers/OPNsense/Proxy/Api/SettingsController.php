@@ -1,6 +1,6 @@
 <?php
 /**
- *    Copyright (C) 2015 Deciso B.V.
+ *    Copyright (C) 2015 J. Schellevis - Deciso B.V.
  *
  *    All rights reserved.
  *
@@ -30,7 +30,9 @@ namespace OPNsense\Proxy\Api;
 
 use \OPNsense\Base\ApiControllerBase;
 use \OPNsense\Proxy\Proxy;
+use \OPNsense\Cron\Cron;
 use \OPNsense\Core\Config;
+use \OPNsense\Base\UIModelGrid;
 
 /**
  * Class SettingsController
@@ -47,31 +49,6 @@ class SettingsController extends ApiControllerBase
         $result = array();
         if ($this->request->isGet()) {
             $mdlProxy = new Proxy();
-
-            // Define array for selected interfaces
-            $selopt = array();
-
-            // Get ConfigObject
-            $configObj = Config::getInstance()->object();
-            // Iterate over all interfaces configuration
-            // TODO: replace for <interfaces> helper
-            foreach ($configObj->interfaces->children() as $key => $value) {
-                // Check if interface is enabled, if tag is <enable/> treat as enabled.
-                if (isset($value->enable) && $value->enable != '0') {
-                    // Check if interface has static ip
-                    if ($value->ipaddr != 'dhcp') {
-                        if ($value->descr == '') {
-                            $description = strtoupper($key); // Use interface name as description if none is given
-                        } else {
-                            $description = $value->descr;
-                        }
-                        $selopt[$key] = (string)$description; // Add Interface to selectable options.
-                    }
-                }
-            }
-
-            $mdlProxy->forward->interfaces->setSelectOptions($selopt);
-            $mdlProxy->forward->ftpInterfaces->setSelectOptions($selopt);
             $result['proxy'] = $mdlProxy->getNodes();
         }
 
@@ -113,5 +90,217 @@ class SettingsController extends ApiControllerBase
 
         return $result;
 
+    }
+
+    /**
+     *
+     * search remote blacklists
+     * @return array
+     */
+    public function searchRemoteBlacklistsAction()
+    {
+        $this->sessionClose();
+        // fetch query parameters
+        $itemsPerPage = $this->request->getPost('rowCount', 'int', 9999);
+        $currentPage = $this->request->getPost('current', 'int', 1);
+        $sortBy = array("filename");
+        $sortDescending = false;
+
+        if ($this->request->hasPost('sort') && is_array($this->request->getPost("sort"))) {
+            $sortBy = array_keys($this->request->getPost("sort"));
+            if ($this->request->getPost("sort")[$sortBy[0]] == "desc") {
+                $sortDescending = true;
+            }
+        }
+
+        $searchPhrase = $this->request->getPost('searchPhrase', 'string', '');
+
+        // create model and fetch query resuls
+        $fields = array(
+            "enabled",
+            "filename",
+            "url",
+            "description"
+        );
+        $mdlProxy = new Proxy();
+        $grid = new UIModelGrid($mdlProxy->forward->acl->remoteACLs->blacklists->blacklist);
+
+        return $grid->fetch($fields, $itemsPerPage, $currentPage, $sortBy, $sortDescending, $searchPhrase);
+    }
+
+    /**
+     * retrieve remote blacklist settings or return defaults
+     * @param $uuid item unique id
+     * @return array
+     */
+    public function getRemoteBlacklistAction($uuid = null)
+    {
+        $mdlProxy = new Proxy();
+        if ($uuid != null) {
+            $node = $mdlProxy->getNodeByReference('forward.acl.remoteACLs.blacklists.blacklist.' . $uuid);
+            if ($node != null) {
+                // return node
+                return array("blacklist" => $node->getNodes());
+            }
+        } else {
+            // generate new node, but don't save to disc
+            $node = $mdlProxy->forward->acl->remoteACLs->blacklists->blacklist->add();
+            return array("blacklist" => $node->getNodes());
+        }
+        return array();
+    }
+
+
+    public function setRemoteBlacklistAction($uuid)
+    {
+        if ($this->request->isPost() && $this->request->hasPost("blacklist")) {
+            $mdlProxy = new Proxy();
+            if ($uuid != null) {
+                $node = $mdlProxy->getNodeByReference('forward.acl.remoteACLs.blacklists.blacklist.' . $uuid);
+                if ($node != null) {
+                    $result = array("result" => "failed", "validations" => array());
+                    $blacklistInfo = $this->request->getPost("blacklist");
+
+                    $node->setNodes($blacklistInfo);
+                    $valMsgs = $mdlProxy->performValidation();
+                    foreach ($valMsgs as $field => $msg) {
+                        $fieldnm = str_replace($node->__reference, "blacklist", $msg->getField());
+                        $result["validations"][$fieldnm] = $msg->getMessage();
+                    }
+
+                    if (count($result['validations']) == 0) {
+                        // save config if validated correctly
+                        $mdlProxy->serializeToConfig();
+                        Config::getInstance()->save();
+                        $result = array("result" => "saved");
+                    }
+                    return $result;
+                }
+            }
+        }
+        return array("result" => "failed");
+    }
+
+    /**
+     * add new blacklist and set with attributes from post
+     * @return array
+     */
+    public function addRemoteBlacklistAction()
+    {
+        $result = array("result" => "failed");
+        if ($this->request->isPost() && $this->request->hasPost("blacklist")) {
+            $result = array("result" => "failed", "validations" => array());
+            $mdlProxy = new Proxy();
+            $node = $mdlProxy->forward->acl->remoteACLs->blacklists->blacklist->Add();
+            $node->setNodes($this->request->getPost("blacklist"));
+            $valMsgs = $mdlProxy->performValidation();
+
+            foreach ($valMsgs as $field => $msg) {
+                $fieldnm = str_replace($node->__reference, "blacklist", $msg->getField());
+                $result["validations"][$fieldnm] = $msg->getMessage();
+            }
+
+            if (count($result['validations']) == 0) {
+                // save config if validated correctly
+                $mdlProxy->serializeToConfig();
+                Config::getInstance()->save();
+                $result = array("result" => "saved");
+            }
+            return $result;
+        }
+        return $result;
+    }
+
+    /**
+     * delete blacklist by uuid
+     * @param $uuid item unique id
+     * @return array status
+     */
+    public function delRemoteBlacklistAction($uuid)
+    {
+
+        $result = array("result" => "failed");
+
+        if ($this->request->isPost()) {
+            $mdlProxy = new Proxy();
+            if ($uuid != null) {
+                if ($mdlProxy->forward->acl->remoteACLs->blacklists->blacklist->del($uuid)) {
+                    // if item is removed, serialize to config and save
+                    $mdlProxy->serializeToConfig();
+                    Config::getInstance()->save();
+                    $result['result'] = 'deleted';
+                } else {
+                    $result['result'] = 'not found';
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * toggle blacklist by uuid (enable/disable)
+     * @param $uuid item unique id
+     * @return array status
+     */
+    public function toggleRemoteBlacklistAction($uuid)
+    {
+
+        $result = array("result" => "failed");
+
+        if ($this->request->isPost()) {
+            $mdlProxy = new Proxy();
+            if ($uuid != null) {
+                $node = $mdlProxy->getNodeByReference('forward.acl.remoteACLs.blacklists.blacklist.' . $uuid);
+                if ($node != null) {
+                    if ($node->enabled->__toString() == "1") {
+                        $result['result'] = "Disabled";
+                        $node->enabled = "0";
+                    } else {
+                        $result['result'] = "Enabled";
+                        $node->enabled = "1";
+                    }
+                    // if item has toggled, serialize to config and save
+                    $mdlProxy->serializeToConfig();
+                    Config::getInstance()->save();
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * create new cron item for remote acl or return already available one
+     * @return array status action
+     */
+    public function fetchRBCronAction()
+    {
+        $result = array("result" => "failed");
+
+        if ($this->request->isPost()) {
+            $mdlProxy = new Proxy();
+            if ((string)$mdlProxy->forward->acl->remoteACLs->UpdateCron == "") {
+                $mdlCron = new Cron();
+                // update cron relation (if this doesn't break consistency)
+                $uuid = $mdlCron->newDailyJob("Proxy", "proxy fetchacls", "fetch proxy acls", "1");
+                $mdlProxy->forward->acl->remoteACLs->UpdateCron = $uuid;
+
+                if ($mdlCron->performValidation()->count() == 0) {
+                    $mdlCron->serializeToConfig();
+                    // save data to config, do not validate because the current in memory model doesn't know about the
+                    // cron item just created.
+                    $mdlProxy->serializeToConfig($validateFullModel = false, $disable_validation = true);
+                    Config::getInstance()->save();
+                    $result['result'] = "new";
+                    $result['uuid'] = $uuid;
+                } else {
+                    $result['result'] = "unable to add cron";
+                }
+            } else {
+                $result['result'] = "existing";
+                $result['uuid'] = (string)$mdlProxy->forward->acl->remoteACLs->UpdateCron;
+            }
+        }
+
+        return $result;
     }
 }

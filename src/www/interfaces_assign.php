@@ -34,7 +34,6 @@ $shortcut_section = "interfaces";
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("ipsec.inc");
 require_once("vpn.inc");
 require_once("captiveportal.inc");
@@ -222,19 +221,15 @@ if (isset($_POST['add_x']) && isset($_POST['if_add'])) {
 	}
 
 } else if (isset($_POST['apply'])) {
-	if (file_exists("/var/run/interface_mismatch_reboot_needed")) {
-		system_reboot();
-		$rebootingnow = true;
-	} else {
-		write_config();
+	write_config();
 
-		$retval = filter_configure();
+	$retval = filter_configure();
+	$savemsg = get_std_save_message($retval);
+
+	if (stristr($retval, "error") != true) {
 		$savemsg = get_std_save_message($retval);
-
-		if (stristr($retval, "error") <> true)
-			$savemsg = get_std_save_message($retval);
-		else
-			$savemsg = $retval;
+	} else {
+		$savemsg = $retval;
 	}
 
 } else if (isset($_POST['Submit'])) {
@@ -419,15 +414,6 @@ foreach ($portlist as $portname => $portinfo) {
 
 include("head.inc");
 
-if(file_exists("/var/run/interface_mismatch_reboot_needed"))
-	if ($_POST) {
-		if($rebootingnow)
-			$savemsg = gettext("The system is now rebooting.  Please wait.");
-		else
-			$savemsg = gettext("Reboot is needed. Please apply the settings in order to reboot.");
-	} else {
-		$savemsg = gettext("Interface mismatch detected.  Please resolve the mismatch and click 'Apply changes'.  The firewall will reboot afterwards.");
-	}
 ?>
 
 <body>
@@ -438,15 +424,13 @@ if(file_exists("/var/run/interface_mismatch_reboot_needed"))
 		<div class="row">
 
 			<?php
-			if (file_exists("/tmp/reload_interfaces")) {
-				echo "<p>\n";
-				print_info_box_np(gettext("The interface configuration has been changed.<br />You must apply the changes in order for them to take effect."));
-				echo "<br /></p>\n";
-			} elseif($savemsg)
+			if (isset($savemsg)) {
 				print_info_box($savemsg);
+			}
 
-			if ($input_errors)
+			if (isset($input_errors) && count($input_errors) > 0) {
 				print_input_errors($input_errors);
+			}
 			?>
 
 		    <section class="col-xs-12">

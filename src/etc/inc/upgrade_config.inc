@@ -29,6 +29,141 @@
 
 require_once('rrd.inc');
 
+function dump_rrd_to_xml($rrddatabase, $xmldumpfile)
+{
+	$rrdtool = '/usr/local/bin/rrdtool';
+
+	@unlink($xmldumpfile);
+
+	exec("$rrdtool dump " . escapeshellarg($rrddatabase) . " {$xmldumpfile} 2>&1", $dumpout, $dumpret);
+	if ($dumpret <> 0) {
+		$dumpout = implode(" ", $dumpout);
+		log_error(sprintf(gettext('RRD dump failed exited with %1$s, the error is: %2$s'), $dumpret, $dumpout));
+	}
+
+	return($dumpret);
+}
+
+
+function migrate_rrd_format($rrdoldxml, $rrdnewxml) {
+	if(!file_exists("/tmp/rrd_notice_sent.txt")) {
+		$_gb = exec("echo 'Converting RRD configuration to new format.  This might take a bit...' | wall");
+		@touch("/tmp/rrd_notice_sent.txt");
+	}
+	$numrraold = count($rrdoldxml['rra']);
+	$numrranew = count($rrdnewxml['rra']);
+	$numdsold = count($rrdoldxml['ds']);
+	$numdsnew = count($rrdnewxml['ds']);
+	log_error(sprintf(gettext('Import RRD has %1$s DS values and %2$s RRA databases, new format RRD has %3$s DS values and %4$s RRA databases'), $numdsold, $numrraold, $numdsnew ,$numrranew));
+
+	/* add data sources not found in the old array from the new array */
+	$i = 0;
+	foreach($rrdnewxml['ds'] as $ds) {
+		if(!is_array($rrdoldxml['ds'][$i])) {
+			$rrdoldxml['ds'][$i] = $rrdnewxml['ds'][$i];
+			/* set unknown values to 0 */
+			$rrdoldxml['ds'][$i]['last_ds'] = " 0.0000000000e+00 ";
+			$rrdoldxml['ds'][$i]['value'] = " 0.0000000000e+00 ";
+			$rrdoldxml['ds'][$i]['unknown_sec'] = "0";
+		}
+		$i++;
+	}
+
+	$i = 0;
+	$rracountold = count($rrdoldxml['rra']);
+	$rracountnew = count($rrdnewxml['rra']);
+	/* process each RRA, which contain a database */
+	foreach($rrdnewxml['rra'] as $rra) {
+		if(!is_array($rrdoldxml['rra'][$i])) {
+			$rrdoldxml['rra'][$i] = $rrdnewxml['rra'][$i];
+		}
+
+		$d = 0;
+		/* process cdp_prep */
+		$cdp_prep = $rra['cdp_prep'];
+		foreach($cdp_prep['ds'] as $ds) {
+			if(!is_array($rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d])) {
+				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d] = $rrdnewxml['rra'][$i]['cdp_prep']['ds'][$d];
+				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d]['primary_value'] = " 0.0000000000e+00 ";
+				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d]['secondary_value'] = " 0.0000000000e+00 ";
+				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d]['value'] = " 0.0000000000e+00 ";
+				$rrdoldxml['rra'][$i]['cdp_prep']['ds'][$d]['unknown_datapoints'] = "0";
+			}
+			$d++;
+		}
+
+		/* process database */
+		$rows = $rra['database'];
+		$k = 0;
+		$rowcountold = count($rrdoldxml['rra'][$i]['database']['row']);
+		$rowcountnew = count($rrdnewxml['rra'][$i]['database']['row']);
+		$rowcountdiff = $rowcountnew - $rowcountold;
+		/* save old rows for a bit before we put the required empty rows before it */
+		$rowsdata = $rows;
+		$rowsempty = array();
+		$r = 0;
+		while($r < $rowcountdiff) {
+			$rowsempty[] = $rrdnewxml['rra'][$i]['database']['row'][$r];
+			$r++;
+		}
+		$rows = $rowsempty + $rowsdata;
+		/* now foreach the rows in the database */
+		foreach($rows['row'] as $row) {
+			if(!is_array($rrdoldxml['rra'][$i]['database']['row'][$k])) {
+				$rrdoldxml['rra'][$i]['database']['row'][$k] = $rrdnewxml['rra'][$i]['database']['row'][$k];
+			}
+			$m = 0;
+			$vcountold = count($rrdoldxml['rra'][$i]['database']['row'][$k]['v']);
+			$vcountnew = count($rrdnewxml['rra'][$i]['database']['row'][$k]['v']);
+			foreach($row['v'] as $value) {
+				if(empty($rrdoldxml['rra'][$i]['database']['row'][$k]['v'][$m])) {
+					if(isset($valid)) {
+						$rrdoldxml['rra'][$i]['database']['row'][$k]['v'][$m] = "0.0000000000e+00 ";
+					} else {
+						$rrdoldxml['rra'][$i]['database']['row'][$k]['v'][$m] = $rrdnewxml['rra'][$i]['database']['row'][$k]['v'][$m];
+					}
+				} else {
+					if($value <> " NaN ") {
+						$valid = true;
+					} else {
+						$valid = false;
+					}
+				}
+				$m++;
+			}
+			$k++;
+		}
+		$i++;
+	}
+
+	$numrranew = count($rrdoldxml['rra']);
+	$numdsnew = count($rrdoldxml['ds']);
+	log_error(sprintf(gettext('The new RRD now has %1$s DS values and %2$s RRA databases'), $numdsnew, $numrranew));
+	return $rrdoldxml;
+}
+
+/*
+ * Replace a value on a deep associative array using regex
+ */
+function array_replace_values_recursive($data, $match, $replace)
+{
+	if (empty($data)) {
+		return $data;
+	}
+
+	if (is_string($data)) {
+		$data = preg_replace("/{$match}/", $replace, $data);
+	} elseif (is_array($data)) {
+		foreach ($data as $k => $v) {
+			$data[$k] = array_replace_values_recursive($v, $match, $replace);
+		}
+	}
+
+	return $data;
+}
+
+
+
 /*
  * Upgrade functions must be named:
  *    upgrade_XXX_to_YYY
@@ -281,13 +416,10 @@ function upgrade_015_to_016() {
 function upgrade_016_to_017() {
 	global $config;
 	/* wipe previous shaper configuration */
-	unset($config['shaper']['queue']);
-	unset($config['shaper']['rule']);
 	unset($config['interfaces']['wan']['bandwidth']);
 	unset($config['interfaces']['wan']['bandwidthtype']);
 	unset($config['interfaces']['lan']['bandwidth']);
 	unset($config['interfaces']['lan']['bandwidthtype']);
-	$config['shaper']['enable'] = FALSE;
 }
 
 
@@ -365,28 +497,10 @@ function upgrade_019_to_020() {
 	}
 }
 
-function upgrade_020_to_021() {
-	global $config;
-	/* shaper scheduler moved */
-	if(isset($config['system']['schedulertype'])) {
-		$config['shaper']['schedulertype'] = $config['system']['schedulertype'];
-		unset($config['system']['schedulertype']);
-	}
-}
-
-
 function upgrade_021_to_022() {
 	global $config;
 	/* move gateway to wan interface */
 	$config['interfaces']['wan']['gateway'] = $config['system']['gateway'];
-}
-
-function upgrade_022_to_023() {
-	global $config;
-	if(isset($config['shaper'])) {
-		/* wipe previous shaper configuration */
-		unset($config['shaper']);
-	}
 }
 
 function upgrade_024_to_025() {
@@ -637,16 +751,6 @@ function upgrade_040_to_041() {
 
 	}
 }
-
-
-function upgrade_041_to_042() {
-	global $config;
-	if (isset($config['shaper']))
-		unset($config['shaper']);
-	if (isset($config['ezshaper']))
-		unset($config['ezshaper']);
-}
-
 
 function upgrade_042_to_043() {
 	global $config;
@@ -1355,9 +1459,6 @@ function upgrade_049_to_050()
 			switch($priv['id']) {
 				case "hasshell":
 				$privs[] = "user-shell-access";
-				break;
-				case "copyfiles":
-				$privs[] = "user-copy-files";
 				break;
 			}
 		}
@@ -3253,9 +3354,6 @@ function upgrade_110_to_111()
 	mwexec('/usr/sbin/pw useradd -n unbound -c "Unbound DNS Resolver" -d /var/unbound -s /usr/sbin/nologin -u 59 -g 59', true);
 
 	/* cleanup old unbound package stuffs */
-	@unlink('/usr/local/pkg/unbound.xml');
-	@unlink('/usr/local/pkg/unbound.inc');
-	@unlink('/usr/local/pkg/unbound_advanced.xml');
 	@unlink('/usr/local/www/unbound_status.php');
 	@unlink('/usr/local/www/unbound_acls.php');
 	@unlink('/usr/local/bin/unbound_monitor.sh');

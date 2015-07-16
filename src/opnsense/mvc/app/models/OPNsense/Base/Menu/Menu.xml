@@ -15,7 +15,10 @@
 
         <HighAvailSync VisibleName="High Availability" url="/system_hasync.php"/>
 
-        <Routing url="/system_gateways.php"/>
+        <Routing url="/system_gateways.php">
+		<Routes url="/system_routes.php"/>
+		<GatewayGroups url="/system_gateway_groups.php"/>
+        </Routing>
 
         <Settings url="/system_general.php">
             <General VisibleName="General" url="/system_general.php"/>
@@ -24,7 +27,7 @@
             <Networking url="/system_advanced_network.php"></Networking>
             <Miscellaneos url="/system_advanced_misc.php"/>
             <System_Tunables VisibleName="System Tunables" url="/system_advanced_sysctl.php"/>
-            <Notifications url="system_advanced_notifications.php"/>
+            <Notifications url="/system_advanced_notifications.php"/>
         </Settings>
 
         <SetupWizard VisibleName="Setup Wizard" url="wizard.php?xml=setup_wizard.xml"/>
@@ -71,10 +74,6 @@
         </Rules>
         <Schedules url="/firewall_schedule.php"/>
         <TrafficShaper url="/ui/trafficshaper/" VisibleName="Traffic Shaper"/>
-        <Queues VisibleName="Queues" url="/firewall_shaper.php">
-            <ByQueue VisibleName="By Queue" url="/firewall_shaper_queues.php"/>
-            <Wizards url="/firewall_shaper_wizards.php"/>
-        </Queues>
         <VirtualIPs VisibleName="Virtual IPs" url="/firewall_virtual_ip.php"/>
     </Firewall>
 
@@ -99,6 +98,7 @@
         </DNSResolver>
         <DynamicDNS VisibleName="Dynamic DNS" url="/services_dyndns.php">
             <DynamicDNSRFC2136Clients url="/services_rfc2136.php"/>
+            <DynamicDNSEdit url="/services_dyndns_edit.php"/>
         </DynamicDNS>
         <IGMPProxy VisibleName="IGMP Proxy" url="/services_igmpproxy.php"></IGMPProxy>
         <LoadBalancer VisibleName="Load Balancer" url="/load_balancer_pool.php">
@@ -110,8 +110,9 @@
         <PPPoEServer VisibleName="PPPoE Server" url="/services_vpn_pppoe.php"/>
         <Proxy VisibleName="Proxy Server" url="/ui/proxy/"/>
         <SNMP VisibleName="SNMP" url="/services_snmp.php"/>
-        <UPnPNATPMP VisibleName="Universal P&amp;P / NAT-PMP" url="/pkg_edit.php?xml=miniupnpd.xml"/>
+        <UPnP VisibleName="Universal Plug and Play" url="/services_upnp.php"/>
         <WoL VisibleName="Wake on LAN" url="/services_wol.php"/>
+        <IDS VisibleName="Intrusion Detection" url="/ui/ids/"/>
     </Services>
 
     <VPN order="5" cssClass="glyphicon glyphicon-lock">
@@ -155,7 +156,6 @@
         </LoadBalancer>
         <NTP url="/status_ntpd.php"/>
         <OpenVPN url="/status_openvpn.php"/>
-        <Queues url="/status_queues.php"/>
         <RRDGraphs VisibleName="RRD Graphs" url="/status_rrd_graph.php">
             <Settings url="/status_rrd_graph_settings.php"/>
         </RRDGraphs>
@@ -184,7 +184,7 @@
         </SystemLogs>
 
         <TrafficGraphs VisibleName="Traffic Graphs" url="/status_graph.php"/>
-        <UPnPandNATPMP VisibleName="UPnP &amp; NAT-PMP" url="/status_upnp.php"/>
+        <UPnP VisibleName="Universal Plug and Play" url="/status_upnp.php"/>
     </Status>
 
     <Diagnostics order="7" cssClass="glyphicon glyphicon-stats">

@@ -28,7 +28,6 @@
 require_once("guiconfig.inc");
 require_once("functions.inc");
 require_once("filter.inc");
-require_once("shaper.inc");
 require_once("captiveportal.inc");
 
 global $cpzone;
@@ -44,12 +43,12 @@ if ($_GET['act'] == "del" && !empty($_GET['zone'])) {
     if ($a_cp[$cpzone]) {
         $cpzoneid = $a_cp[$cpzone]['zoneid'];
         unset($a_cp[$cpzone]['enable']);
-        captiveportal_configure();
         unset($a_cp[$cpzone]);
         if (isset($config['voucher'][$cpzone])) {
             unset($config['voucher'][$cpzone]);
         }
         write_config();
+        captiveportal_configure();
         header("Location: services_captiveportal_zones.php");
         exit;
     }
@@ -72,7 +71,7 @@ $main_buttons = array(
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($savemsg) {
+				<?php if (isset($savemsg)) {
                     print_info_box($savemsg);
 } ?>
 				<?php if (is_subsystem_dirty('captiveportal')) :

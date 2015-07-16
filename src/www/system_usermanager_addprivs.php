@@ -33,6 +33,17 @@ function admusercmp($a, $b)
 
 require_once("guiconfig.inc");
 
+function sort_user_privs($privs) {
+	// Privileges to place first, to redirect properly.
+	$priority_privs = array("page-dashboard-all", "page-system-login/logout");
+
+	$fprivs = array_intersect($privs, $priority_privs);
+	$sprivs  = array_diff($privs, $priority_privs);
+
+	return array_merge($fprivs, $sprivs);
+}
+
+
 $pgtitle = array("System","User manager","Add privileges");
 
 if (is_numericint($_GET['userid'])) {
@@ -99,7 +110,7 @@ if (isAjax()) {
 include("head.inc");
 ?>
 
-<body link="#0000CC" vlink="#0000CC" alink="#0000CC" onload="<?= $jsevents["body"]["onload"] ?>">
+<body link="#0000CC" vlink="#0000CC" alink="#0000CC" >
 <?php include("fbegin.inc"); ?>
 <script type="text/javascript">
 //<![CDATA[
@@ -136,10 +147,10 @@ function update_description() {
 	<div class="container-fluid">
 		<div class="row">
 			<?php
-            if ($input_errors) {
+            if (isset($input_errors) && count($input_errors) > 0) {
                 print_input_errors($input_errors);
             }
-            if ($savemsg) {
+            if (isset($savemsg)) {
                 print_info_box($savemsg);
             }
             ?>

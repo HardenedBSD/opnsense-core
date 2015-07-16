@@ -7,6 +7,19 @@ if(Connection_Aborted()) {
 require_once("config.inc");
 require_once("pfsense-utils.inc");
 
+function get_uptime_sec() {
+        $boottime = "";
+        $matches = "";
+        $boottime = get_single_sysctl("kern.boottime");
+        preg_match("/sec = (\d+)/", $boottime, $matches);
+        $boottime = $matches[1];
+        if(intval($boottime) == 0)
+                return 0;
+
+        $uptime = time() - $boottime;
+        return $uptime;
+}
+
 function get_stats() {
 	$stats['cpu'] = cpu_usage();
 	$stats['mem'] = mem_usage();
@@ -94,14 +107,23 @@ function get_uptime() {
 	else if ($updays > 0)
 		$uptimestr .= "1 Day ";
 
-	if ($uphours > 1)
+	if ($uphours > 1) {
 		$hours = "s";
+	} else {
+		$hours = "";
+	}
 
-	if ($upmins > 1)
+	if ($upmins > 1) {
 		$minutes = "s";
+	} else {
+		$minutes = "" ;
+	}
 
-	if ($upmins > 1)
+	if ($upmins > 1) {
 		$seconds = "s";
+	} else {
+		$seconds = "";
+	}
 
 	$uptimestr .= sprintf("%02d Hour$hours %02d Minute$minutes %02d Second$seconds", $uphours, $upmins, $upsecs);
 	return $uptimestr;
@@ -189,7 +211,7 @@ function get_temp() {
 function get_mounted_filesystems() {
 	$mout = "";
 	$filesystems = array();
-	exec("/bin/df -Tht ufs,zfs,cd9660 | /usr/bin/awk '{print $1, $2, $3, $4, $6, $7;}'", $mout);
+	exec("/bin/df -Tht ufs,tmpfs,zfs,cd9660 | /usr/bin/awk '{print $1, $2, $3, $4, $6, $7;}'", $mout);
 
 	/* Get rid of the header */
 	array_shift($mout);

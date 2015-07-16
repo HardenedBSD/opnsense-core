@@ -1,32 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <packagegui>
-	<title>Services: UPnP &amp; NAT-PMP</title>
+	<title>Services: Universal Plug and Play</title>
 	<name>miniupnpd</name>
 	<version>20100712</version>
-	<savetext>Change</savetext>
-	<include_file>/usr/local/pkg/miniupnpd.inc</include_file>
-	<menu>
-		<name>UPnP &amp; NAT-PMP</name>
-		<tooltiptext>Set UPnP &amp; NAT-PMP settings such as interfaces to listen on.</tooltiptext>
-		<section>Services</section>
-		<url>/pkg_edit.php?xml=miniupnpd.xml&amp;id=0</url>
-	</menu>
-<!--	<additional_files_needed>
-		<item>https://packages.pfsense.org/packages/config/miniupnpd/miniupnpd.inc</item>
-	    <prefix>/usr/local/pkg/</prefix>
-	    <chmod>0755</chmod>
-	</additional_files_needed>
-	<additional_files_needed>
-		<item>https://packages.pfsense.org/packages/config/miniupnpd/status_upnp.php</item>
-	    <prefix>/usr/local/www/</prefix>
-	    <chmod>0755</chmod>
-	</additional_files_needed>
-	<additional_files_needed>
-		<prefix>/usr/local/sbin/</prefix>
-		<chmod>0755</chmod>
-		<item>https://packages.pfsense.org/packages/config/miniupnpd/sbin/miniupnpd</item>
-	</additional_files_needed>
--->
 	<service>
 		<name>miniupnpd</name>
 		<rcfile>miniupnpd.sh</rcfile>
@@ -36,13 +12,13 @@
 		<field>
 			<name>UPnP &amp; NAT-PMP Settings</name>
 			<type>listtopic</type>
-			<enablefields>enable_upnp,enable_natpmp,iface_array,overridewanip,upnpqueue,logpackets,sysuptime,permdefault,permuser1,permuser2,permuser3,permuser4</enablefields>
+			<enablefields>enable_upnp,enable_natpmp,iface_array,overridewanip,logpackets,sysuptime,permdefault,permuser1,permuser2,permuser3,permuser4</enablefields>
 		</field>
 		<field>
 			<fielddescr>Enable UPnP &amp; NAT-PMP</fielddescr>
 			<fieldname>enable</fieldname>
 			<type>checkbox</type>
-			<enablefields>enable_upnp,enable_natpmp,iface_array,overridewanip,upnpqueue,logpackets,sysuptime,permdefault,permuser1,permuser2,permuser3,permuser4</enablefields>
+			<enablefields>enable_upnp,enable_natpmp,iface_array,overridewanip,logpackets,sysuptime,permdefault,permuser1,permuser2,permuser3,permuser4</enablefields>
 		</field>
 		<field>
 			<fielddescr>Allow UPnP Port Mapping</fielddescr>
@@ -97,11 +73,6 @@
 			<type>input</type>
 		</field>
 		<field>
-			<fielddescr>Traffic Shaping Queue</fielddescr>
-			<fieldname>upnpqueue</fieldname>
-			<type>input</type>
-		</field>
-		<field>
 			<fielddescr>Log packets handled by UPnP &amp; NAT-PMP rules?</fielddescr>
 			<fieldname>logpackets</fieldname>
 			<type>checkbox</type>
@@ -146,13 +117,4 @@
 			<size>60</size>
 		</field>
 	</fields>
-	<custom_php_command_before_form>
-		before_form_miniupnpd($pkg);
-	</custom_php_command_before_form>
-	<custom_php_validation_command>
-		validate_form_miniupnpd($_POST, $input_errors);
-	</custom_php_validation_command>
-	<custom_php_resync_config_command>
-		sync_package_miniupnpd();
-	</custom_php_resync_config_command>
 </packagegui>

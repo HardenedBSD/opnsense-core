@@ -41,22 +41,25 @@ function upload_crash_report($files)
 	$post = array();
 	$counter = 0;
 
-	foreach($files as $file) {
-		$post["file{$counter}"] = "@{$file}";
+	foreach($files as $filename) {
+		$post["file{$counter}"] = curl_file_create($filename, "application/x-gzip", basename($filename));
 		$counter++;
 	}
 
 	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_HEADER, 0);
-	curl_setopt($ch, CURLOPT_VERBOSE, 0);
+	curl_setopt($ch, CURLOPT_URL, 'https://crash.opnsense.org/');
+	curl_setopt($ch, CURLOPT_HEADER, false);
+	curl_setopt($ch, CURLOPT_VERBOSE, false);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/4.0 (compatible;)');
-	curl_setopt($ch, CURLOPT_URL, 'https://crash.opnsense.org/');
 	curl_setopt($ch, CURLOPT_POST, true);
+	curl_setopt($ch, CURLOPT_SAFE_UPLOAD, true);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-type: multipart/form-data;' ) );
 	$response = curl_exec($ch);
+	curl_close($ch);
 
-	return $response;
+	return !$response;
 }
 
 $pgtitle = array(gettext("Diagnostics"),gettext("Crash Reporter"));
@@ -87,9 +90,8 @@ $crash_report_header = sprintf(
 
 
 <?php
-	if ($_POST['Submit'] == 'yes') {
+	if (isset($_POST['Submit']) && $_POST['Submit'] == 'yes') {
 		echo '<p>' . gettext('Processing...');
-		ob_flush();
 		flush();
 		if (!is_dir('/var/crash')) {
 			mkdir('/var/crash', 0750, true);
@@ -98,20 +100,19 @@ $crash_report_header = sprintf(
 		@rename('/tmp/PHP_errors.log', '/var/crash/PHP_errors.log');
 		exec('/usr/bin/gzip /var/crash/*');
 		$files_to_upload = glob('/var/crash/*');
-		echo '<br/>' . gettext('Uploading...');
-		ob_flush();
+		echo gettext('ok') . '<br/>' . gettext('Uploading...');
 		flush();
 		$resp = upload_crash_report($files_to_upload);
-		echo '<br/>' . print_r($resp) . '</p>';
+		echo ($resp ? gettext('ok') : gettext('failed')) . '</p>';
 		array_map('unlink', $files_to_upload);
-	} elseif ($_POST['Submit'] == 'no') {
+	} elseif (isset($_POST['Submit']) && $_POST['Submit'] == 'no') {
 		array_map('unlink', glob('/var/crash/*'));
 		@unlink('/tmp/PHP_errors.log');
 	}
 
 	if (get_crash_report(true) == '') {
 		echo '<p><strong>';
-		if ($_POST['Submit'] == 'yes') {
+		if (isset($_POST['Submit']) && $_POST['Submit'] == 'yes') {
 			echo gettext('Thank you for submitting this crash report.');
 		} elseif ($_POST['Submit'] == 'no') {
 			echo gettext('Please consider submitting a crash report if the error persists.');
@@ -135,7 +136,7 @@ $crash_report_header = sprintf(
 		}
 		echo "<p><strong>" . gettext("Unfortunately we have detected at least one programming bug.") . "</strong></p>";
 		echo "<p><br/>" . sprintf(gettext("Would you like to submit this crash report to the %s developers?"), $g['product_name']) . "</p>";
-		echo "<p><button disabled=\"disabled\" name=\"Submit\" type=\"submit\" class=\"btn btn-primary\" value=\"yes\">" . gettext('Yes') . "</button> ";
+		echo "<p><button name=\"Submit\" type=\"submit\" class=\"btn btn-primary\" value=\"yes\">" . gettext('Yes') . "</button> ";
 		echo "<button name=\"Submit\" type=\"submit\" class=\"btn btn-primary\" value=\"no\">" . gettext('No') . "</button></p>";
 		echo "<p><br/><i>" . gettext("Please-double check the contents to ensure you are comfortable submitting the following information:") . "</i></p>";
 		echo "<textarea readonly=\"readonly\" style=\"max-width: none;\" rows=\"24\" cols=\"80\" name=\"crashreports\">{$crash_reports}</textarea></p>";

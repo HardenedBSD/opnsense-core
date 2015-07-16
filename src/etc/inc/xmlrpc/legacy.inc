@@ -43,6 +43,98 @@ function xmlrpc_publishable_legacy()
     return $publish;
 }
 
+/*
+ * does_vip_exist($vip): return true or false if a vip is
+ * configured.
+ */
+function does_vip_exist($vip) {
+	global $config;
+
+	if(!$vip)
+		return false;
+
+
+	switch ($vip['mode']) {
+	case "carp":
+	case "ipalias":
+		/* XXX: Make proper checks? */
+		$realif = get_real_interface($vip['interface']);
+		if (!does_interface_exist($realif)) {
+			return false;
+		}
+		break;
+	case "proxyarp":
+		/* XXX: Implement this */
+	default:
+		return false;
+	}
+
+	$ifacedata = pfSense_getall_interface_addresses($realif);
+	foreach ($ifacedata as $vipips) {
+		if ($vipips == "{$vip['subnet']}/{$vip['subnet_bits']}")
+			return true;
+	}
+
+	return false;
+}
+
+/*
+	This function was borrowed from a comment on PHP.net at the following URL:
+	http://www.php.net/manual/en/function.array-merge-recursive.php#73843
+ */
+function array_merge_recursive_unique($array0, $array1) {
+
+	$arrays = func_get_args();
+	$remains = $arrays;
+
+	// We walk through each arrays and put value in the results (without
+	// considering previous value).
+	$result = array();
+
+	// loop available array
+	foreach($arrays as $array) {
+
+		// The first remaining array is $array. We are processing it. So
+		// we remove it from remaing arrays.
+		array_shift($remains);
+
+		// We don't care non array param, like array_merge since PHP 5.0.
+		if(is_array($array)) {
+			// Loop values
+			foreach($array as $key => $value) {
+				if(is_array($value)) {
+					// we gather all remaining arrays that have such key available
+					$args = array();
+					foreach($remains as $remain) {
+						if(array_key_exists($key, $remain)) {
+							array_push($args, $remain[$key]);
+						}
+					}
+
+					if(count($args) > 2) {
+						// put the recursion
+						$result[$key] = call_user_func_array(__FUNCTION__, $args);
+					} else {
+						foreach($value as $vkey => $vval) {
+							if (!isset($result[$key]) || !is_array($result[$key])) {
+								$result[$key] = array();
+							}
+							$result[$key][$vkey] = $vval;
+						}
+					}
+				} else {
+					// simply put the value
+					$result[$key] = $value;
+				}
+			}
+		}
+	}
+	return $result;
+}
+
+
+
+
 /**
  * @param null $category
  * @return mixed

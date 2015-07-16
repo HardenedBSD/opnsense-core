@@ -81,7 +81,7 @@ if ($_POST) {
 include("head.inc");
 ?>
 
-<body onload="<?= $jsevents["body"]["onload"] ?>">
+<body>
 
 <?php
 if ($save_and_test) {
@@ -101,10 +101,10 @@ if ($save_and_test) {
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if ($input_errors) {
+				<?php if (isset($input_errors) && count($input_errors) > 0) {
                     print_input_errors($input_errors);
 }?>
-				<?php if ($savemsg) {
+				<?php if (isset($savemsg)) {
                     print_info_box($savemsg);
 }?>
 
