@@ -32,59 +32,58 @@ require_once("guiconfig.inc");
 require_once("auth.inc");
 
 $ldap_urltypes = array(
-	'TCP - Standard' => 389,
-	'SSL - Encrypted' => 636);
+    'TCP - Standard' => 389,
+    'SSL - Encrypted' => 636
+);
 
 $auth_server_types = array(
-	'ldap' => "LDAP",
-	'radius' => "Radius");
+    'ldap' => "LDAP",
+    'radius' => "Radius"
+);
 
 $ldap_scopes = array(
-	'one' => "One Level",
-	'subtree' => "Entire Subtree");
+    'one' => "One Level",
+    'subtree' => "Entire Subtree"
+);
 
-$ldap_protvers = array(
-	2,
-	3);
+$ldap_protvers = array(2, 3);
 
 $ldap_templates = array(
-
-	'open' => array(
-				'desc' => "OpenLDAP",
-				'attr_user' => "cn",
-				'attr_group' => "cn",
-				'attr_member' => "member"),
-
-	'msad' => array(
-				'desc' => "Microsoft AD",
-				'attr_user' => "samAccountName",
-				'attr_group' => "cn",
-				'attr_member' => "memberOf"),
-
-	'edir' => array(
-				'desc' => "Novell eDirectory",
-				'attr_user' => "cn",
-				'attr_group' => "cn",
-				'attr_member' => "uniqueMember"));
+    'open' => array(
+        'desc' => "OpenLDAP",
+        'attr_user' => "cn"
+    ),
+    'msad' => array(
+        'desc' => "Microsoft AD",
+        'attr_user' => "samAccountName"
+    ),
+    'edir' => array(
+        'desc' => "Novell eDirectory",
+        'attr_user' => "cn"
+    )
+);
 
 $radius_srvcs = array(
-	'both' => "Authentication and Accounting",
-	'auth' => "Authentication",
-	'acct' => "Accounting");
+    'both' => "Authentication and Accounting",
+    'auth' => "Authentication",
+    'acct' => "Accounting"
+);
 
 
 
 $pgtitle = array(gettext("System"), gettext("Authentication Servers"));
 $shortcut_section = "authentication";
 
-if (is_numericint($_GET['id'])) {
+if (isset($_GET['id']) && is_numericint($_GET['id'])) {
     $id = $_GET['id'];
 }
-if (isset($_POST['id']) && is_numericint($_POST['id'])) {
-    $id = $_POST['id'];
+if (isset($_GET['act'])) {
+    $act = $_GET['act'];
+} else {
+    $act = null;
 }
 
-if (!is_array($config['system']['authserver'])) {
+if (!isset($config['system']['authserver'])) {
     $config['system']['authserver'] = array();
 }
 
@@ -98,10 +97,7 @@ if (!is_array($config['ca'])) {
 }
 $a_ca =& $config['ca'];
 
-$act = $_GET['act'];
-if ($_POST['act']) {
-    $act = $_POST['act'];
-}
+
 
 if ($act == "del") {
     if (!$a_server[$_GET['id']]) {
@@ -139,17 +135,11 @@ if ($act == "edit") {
             $pconfig['ldap_scope'] = $a_server[$id]['ldap_scope'];
             $pconfig['ldap_basedn'] = $a_server[$id]['ldap_basedn'];
             $pconfig['ldap_authcn'] = $a_server[$id]['ldap_authcn'];
-            $pconfig['ldap_extended_enabled'] = $a_server[$id]['ldap_extended_enabled'];
             $pconfig['ldap_extended_query'] = $a_server[$id]['ldap_extended_query'];
             $pconfig['ldap_binddn'] = $a_server[$id]['ldap_binddn'];
             $pconfig['ldap_bindpw'] = $a_server[$id]['ldap_bindpw'];
             $pconfig['ldap_attr_user'] = $a_server[$id]['ldap_attr_user'];
-            $pconfig['ldap_attr_group'] = $a_server[$id]['ldap_attr_group'];
-            $pconfig['ldap_attr_member'] = $a_server[$id]['ldap_attr_member'];
-            $pconfig['ldap_utf8'] = isset($a_server[$id]['ldap_utf8']);
-            $pconfig['ldap_nostrip_at'] = isset($a_server[$id]['ldap_nostrip_at']);
-
-            if (!$pconfig['ldap_binddn'] || !$pconfig['ldap_bindpw']) {
+            if (empty($pconfig['ldap_binddn']) || empty($pconfig['ldap_bindpw'])) {
                 $pconfig['ldap_anon'] = true;
             }
         }
@@ -190,16 +180,21 @@ if ($act == "new") {
     $pconfig['radius_acct_port'] = "1813";
 }
 
-if ($_POST) {
-    unset($input_errors);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input_errors = array();
     $pconfig = $_POST;
+    if (isset($_POST['id']) && is_numericint($_POST['id'])) {
+        $id = $_POST['id'];
+    } else {
+        $id = null;
+    }
 
     /* input validation */
 
     if ($pconfig['type'] == "ldap") {
         $reqdfields = explode(" ", "name type ldap_host ldap_port ".
                         "ldap_urltype ldap_protver ldap_scope ".
-                        "ldap_attr_user ldap_attr_group ldap_attr_member ldapauthcontainers");
+                        "ldap_attr_user ldapauthcontainers");
         $reqdfieldsn = array(
             gettext("Descriptive name"),
             gettext("Type"),
@@ -209,8 +204,6 @@ if ($_POST) {
             gettext("Protocol version"),
             gettext("Search level"),
             gettext("User naming Attribute"),
-            gettext("Group naming Attribute"),
-            gettext("Group member attribute"),
             gettext("Authentication container"));
 
         if (!$pconfig['ldap_anon']) {
@@ -241,7 +234,7 @@ if ($_POST) {
             $reqdfieldsn[] = gettext("Accounting port value");
         }
 
-        if (!isset($id)) {
+        if ($id == null) {
             $reqdfields[] = "radius_secret";
             $reqdfieldsn[] = gettext("Shared Secret");
         }
@@ -253,7 +246,7 @@ if ($_POST) {
         $input_errors[] = gettext("The host name contains invalid characters.");
     }
 
-    if (auth_get_authserver($pconfig['name']) && !isset($id)) {
+    if (auth_get_authserver($pconfig['name']) && $id == null) {
         $input_errors[] = gettext("An authentication server with the same name already exists.");
     }
 
@@ -261,16 +254,10 @@ if ($_POST) {
         $input_errors[] = gettext("RADIUS Timeout value must be numeric and positive.");
     }
 
-    /* if this is an AJAX caller then handle via JSON */
-    if (isAjax() && is_array($input_errors)) {
-        input_errors2Ajax($input_errors);
-        exit;
-    }
-
-    if (!$input_errors) {
+    if (count($input_errors) == 0) {
         $server = array();
         $server['refid'] = uniqid();
-        if (isset($id) && $a_server[$id]) {
+        if ($id != null && isset($a_server[$id])) {
             $server = $a_server[$id];
         }
 
@@ -288,23 +275,8 @@ if ($_POST) {
             $server['ldap_scope'] = $pconfig['ldap_scope'];
             $server['ldap_basedn'] = $pconfig['ldap_basedn'];
             $server['ldap_authcn'] = $pconfig['ldapauthcontainers'];
-            $server['ldap_extended_enabled'] = $pconfig['ldap_extended_enabled'];
             $server['ldap_extended_query'] = $pconfig['ldap_extended_query'];
             $server['ldap_attr_user'] = $pconfig['ldap_attr_user'];
-            $server['ldap_attr_group'] = $pconfig['ldap_attr_group'];
-            $server['ldap_attr_member'] = $pconfig['ldap_attr_member'];
-            if ($pconfig['ldap_utf8'] == "yes") {
-                $server['ldap_utf8'] = true;
-            } else {
-                unset($server['ldap_utf8']);
-            }
-            if ($pconfig['ldap_nostrip_at'] == "yes") {
-                $server['ldap_nostrip_at'] = true;
-            } else {
-                unset($server['ldap_nostrip_at']);
-            }
-
-
             if (!$pconfig['ldap_anon']) {
                 $server['ldap_binddn'] = $pconfig['ldap_binddn'];
                 $server['ldap_bindpw'] = $pconfig['ldap_bindpw'];
@@ -312,9 +284,7 @@ if ($_POST) {
                 unset($server['ldap_binddn']);
                 unset($server['ldap_bindpw']);
             }
-        }
-
-        if ($server['type'] == "radius") {
+        } elseif ($server['type'] == "radius") {
             $server['host'] = $pconfig['radius_host'];
 
             if ($pconfig['radius_secret']) {
@@ -343,7 +313,7 @@ if ($_POST) {
             }
         }
 
-        if (isset($id) && $config['system']['authserver'][$id]) {
+        if ($id != null && isset($config['system']['authserver'][$id])) {
             $config['system']['authserver'][$id] = $server;
         } else {
             $config['system']['authserver'][] = $server;
@@ -352,6 +322,8 @@ if ($_POST) {
         write_config();
 
         redirectHeader("system_authservers.php");
+    } else {
+        $act = "edit";
     }
 }
 
@@ -452,8 +424,7 @@ function select_clicked() {
 	if (document.getElementById("ldap_port").value == '' ||
 	    document.getElementById("ldap_host").value == '' ||
 	    document.getElementById("ldap_scope").value == '' ||
-	    document.getElementById("ldap_basedn").value == '' ||
-	    document.getElementById("ldapauthcontainers").value == '') {
+	    document.getElementById("ldap_basedn").value == '' ) {
 		alert("<?=gettext("Please fill the required values.");?>");
 		return;
 	}
@@ -519,7 +490,7 @@ endif; ?>
 
 						<div class="tab-content content-box col-xs-12 table-responsive">
 
-								<?php if ($act == "new" || $act == "edit" || $input_errors) :
+								<?php if ($act == "new" || $act == "edit") :
 ?>
 								<form id="iform" name="iform" action="system_authservers.php" method="post">
 									<table class="table table-striped table-sort">
@@ -659,6 +630,40 @@ endif; ?>
 												</td>
 											</tr>
 											<tr>
+												<td width="22%" valign="top" class="vncell"><?=gettext("Bind credentials");?></td>
+												<td width="78%" class="vtable">
+													<table border="0" cellspacing="0" cellpadding="2" summary="bind credentials">
+														<tr>
+															<td>
+																<input name="ldap_anon" type="checkbox" id="ldap_anon" value="yes" <?php if ($pconfig['ldap_anon']) {
+                                                                    echo "checked=\"checked\"";
+} ?> onclick="ldap_bindchange()" />
+															</td>
+															<td>
+																<?=gettext("Use anonymous binds to resolve distinguished names");?>
+															</td>
+														</tr>
+													</table>
+													<table border="0" cellspacing="0" cellpadding="2" id="ldap_bind" summary="bind">
+														<tr>
+															<td colspan="2"></td>
+														</tr>
+														<tr>
+															<td><?=gettext("User DN:");?> &nbsp;</td>
+															<td>
+																<input name="ldap_binddn" type="text" class="formfld unknown" id="ldap_binddn" size="40" value="<?=htmlspecialchars($pconfig['ldap_binddn']);?>"/><br />
+															</td>
+														</tr>
+														<tr>
+															<td><?=gettext("Password:");?> &nbsp;</td>
+															<td>
+																<input name="ldap_bindpw" type="password" class="formfld pwd" id="ldap_bindpw" size="20" value="<?=htmlspecialchars($pconfig['ldap_bindpw']);?>"/><br />
+															</td>
+														</tr>
+													</table>
+												</td>
+											</tr>
+											<tr>
 												<td width="22%" valign="top" class="vncell"><?=gettext("Search scope");?></td>
 												<td width="78%" class="vtable">
 													<table border="0" cellspacing="0" cellpadding="2" summary="search scope">
@@ -721,48 +726,9 @@ endif; ?>
 													<table border="0" cellspacing="0" cellpadding="2" summary="query">
 														<tr>
 															<td>
-																<input name="ldap_extended_enabled" type="checkbox" id="ldap_extended_enabled" value="no" <?php if ($pconfig['ldap_extended_enabled']) {
-                                                                    echo "checked=\"checked\"";
-} ?> />
-															</td>
-															<td>
 
 																<input name="ldap_extended_query" type="text" class="formfld unknown" id="ldap_extended_query" size="40" value="<?=htmlspecialchars($pconfig['ldap_extended_query']);?>"/>
 																<br /><?=gettext("Example:");?> &amp;(objectClass=inetOrgPerson)(mail=*@example.com)
-															</td>
-														</tr>
-													</table>
-												</td>
-											</tr>
-											<tr>
-												<td width="22%" valign="top" class="vncell"><?=gettext("Bind credentials");?></td>
-												<td width="78%" class="vtable">
-													<table border="0" cellspacing="0" cellpadding="2" summary="bind credentials">
-														<tr>
-															<td>
-																<input name="ldap_anon" type="checkbox" id="ldap_anon" value="yes" <?php if ($pconfig['ldap_anon']) {
-                                                                    echo "checked=\"checked\"";
-} ?> onclick="ldap_bindchange()" />
-															</td>
-															<td>
-																<?=gettext("Use anonymous binds to resolve distinguished names");?>
-															</td>
-														</tr>
-													</table>
-													<table border="0" cellspacing="0" cellpadding="2" id="ldap_bind" summary="bind">
-														<tr>
-															<td colspan="2"></td>
-														</tr>
-														<tr>
-															<td><?=gettext("User DN:");?> &nbsp;</td>
-															<td>
-																<input name="ldap_binddn" type="text" class="formfld unknown" id="ldap_binddn" size="40" value="<?=htmlspecialchars($pconfig['ldap_binddn']);?>"/><br />
-															</td>
-														</tr>
-														<tr>
-															<td><?=gettext("Password:");?> &nbsp;</td>
-															<td>
-																<input name="ldap_bindpw" type="password" class="formfld pwd" id="ldap_bindpw" size="20" value="<?=htmlspecialchars($pconfig['ldap_bindpw']);?>"/><br />
 															</td>
 														</tr>
 													</table>
@@ -795,52 +761,6 @@ endif; ?>
 												<td width="22%" valign="top" class="vncell"><?=gettext("User naming attribute");?></td>
 												<td width="78%" class="vtable">
 													<input name="ldap_attr_user" type="text" class="formfld unknown" id="ldap_attr_user" size="20" value="<?=htmlspecialchars($pconfig['ldap_attr_user']);?>"/>
-												</td>
-											</tr>
-											<tr>
-												<td width="22%" valign="top" class="vncell"><?=gettext("Group naming attribute");?></td>
-												<td width="78%" class="vtable">
-													<input name="ldap_attr_group" type="text" class="formfld unknown" id="ldap_attr_group" size="20" value="<?=htmlspecialchars($pconfig['ldap_attr_group']);?>"/>
-												</td>
-											</tr>
-											<tr>
-												<td width="22%" valign="top" class="vncell"><?=gettext("Group member attribute");?></td>
-												<td width="78%" class="vtable">
-													<input name="ldap_attr_member" type="text" class="formfld unknown" id="ldap_attr_member" size="20" value="<?=htmlspecialchars($pconfig['ldap_attr_member']);?>"/>
-												</td>
-											</tr>
-											<tr>
-												<td width="22%" valign="top" class="vncell"><?=gettext("UTF8 Encode");?></td>
-												<td width="78%" class="vtable">
-													<table border="0" cellspacing="0" cellpadding="2" summary="utf8 encoding">
-														<tr>
-															<td>
-																<input name="ldap_utf8" type="checkbox" id="ldap_utf8" value="yes" <?php if ($pconfig['ldap_utf8']) {
-                                                                    echo "checked=\"checked\"";
-} ?> />
-															</td>
-															<td>
-																<?=gettext("UTF8 encode LDAP parameters before sending them to the server. Required to support international characters, but may not be supported by every LDAP server.");?>
-															</td>
-														</tr>
-													</table>
-												</td>
-											</tr>
-											<tr>
-												<td width="22%" valign="top" class="vncell"><?=gettext("Username Alterations");?></td>
-												<td width="78%" class="vtable">
-													<table border="0" cellspacing="0" cellpadding="2" summary="username alterations">
-														<tr>
-															<td>
-																<input name="ldap_nostrip_at" type="checkbox" id="ldap_nostrip_at" value="yes" <?php if ($pconfig['ldap_nostrip_at']) {
-                                                                    echo "checked=\"checked\"";
-} ?> />
-															</td>
-															<td>
-																<?=gettext("Do not strip away parts of the username after the @ symbol, e.g. user@host becomes user when unchecked.");?>
-															</td>
-														</tr>
-													</table>
 												</td>
 											</tr>
 										</table>
@@ -991,26 +911,23 @@ endif; ?>
 			</section>
 
 <script type="text/javascript">
-//<![CDATA[
-server_typechange('<?=htmlspecialchars($pconfig['type']);?>');
-<?php if (!isset($id) || $pconfig['type'] == "ldap") :
-?>
-ldap_bindchange();
-if (document.getElementById("ldap_port").value == "")
-	ldap_urlchange();
-<?php if (!isset($id)) :
-?>
-ldap_tmplchange();
-<?php
-endif; ?>
-<?php
-endif; ?>
-<?php if (!isset($id) || $pconfig['type'] == "radius") :
-?>
-radius_srvcschange();
-<?php
-endif; ?>
-//]]>
+    //<![CDATA[
+    $( document ).ready(function() {
+        server_typechange('<?=htmlspecialchars($pconfig['type']);?>');
+        if (document.getElementById("ldap_port").value == "") ldap_urlchange();
+        <?php
+        if ($pconfig['type'] == "ldap") {
+            echo "     ldap_bindchange();\n";
+            echo "     if (document.getElementById(\"ldap_port\").value == \"\") ldap_urlchange();\n";
+            if (!isset($id)) {
+                echo "    ldap_tmplchange();\n";
+            }
+        } else {
+            echo "     radius_srvcschange();\n";
+        }
+        ?>
+    });
+    //]]>
 </script>
 
 <?php include("foot.inc");

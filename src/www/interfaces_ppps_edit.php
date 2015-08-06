@@ -39,11 +39,11 @@ define("CRON_WEEKLY_PATTERN", "0 0 * * 0");
 define("CRON_DAILY_PATTERN", "0 0 * * *");
 define("CRON_HOURLY_PATTERN", "0 * * * *");
 
-if (!is_array($config['ppps'])) {
+if (!isset($config['ppps'])) {
 	$config['ppps'] = array();
 }
 
-if (!is_array($config['ppps']['ppp'])) {
+if (!isset($config['ppps']['ppp'])) {
 	$config['ppps']['ppp'] = array();
 }
 
@@ -53,7 +53,7 @@ $iflist = get_configured_interface_with_descr();
 $portlist = get_interface_list();
 $portlist = array_merge($portlist, $iflist);
 
-if (is_array($config['vlans']['vlan']) && count($config['vlans']['vlan'])) {
+if (isset($config['vlans']['vlan'])) {
 	foreach ($config['vlans']['vlan'] as $vlan) {
 		$portlist[$vlan['vlanif']] = $vlan;
 	}
@@ -156,13 +156,13 @@ if (isset($id) && $a_ppps[$id]) {
 			break;
 	}
 
-} else
+} else {
 	$pconfig['ptpid'] = interfaces_ptpid_next();
+}
 
 if ($_POST) {
 
 	unset($input_errors);
-	$pconfig = $_POST;
 
 	/* okay first of all, cause we are just hiding the PPPoE HTML
 	 * fields releated to PPPoE resets, we are going to unset $_POST
@@ -176,6 +176,12 @@ if ($_POST) {
 		unset($_POST['pppoe_resetdate']);
 		unset($_POST['pppoe_pr_preset_val']);
 	}
+
+	if (!isset($_POST['interfaces'])) {
+		$_POST['interfaces'] = array();
+	}
+
+	$pconfig = $_POST;
 
 	/* input validation */
 	switch($_POST['type']) {
@@ -444,7 +450,10 @@ $types = array("select" => gettext("Select"), "ppp" => "PPP", "pppoe" => "PPPoE"
 										</tr>
 										<tr style="display:none" name="portlists" id="portlists">
 											<td id="serialports"><?php
-												$selected_ports = explode(',',$pconfig['interfaces']);
+												$selected_ports = array();
+												if (isset($pconfig['interfaces'])) {
+													$selected_ports = explode(',',isset($pconfig['interfaces']));
+												}
 												if (!is_dir('/var/spool/lock')) {
 													mwexec('/bin/mkdir -p /var/spool/lock');
 												}

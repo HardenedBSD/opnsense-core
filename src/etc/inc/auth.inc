@@ -197,8 +197,10 @@ function index_groups()
 	if (isset($config['system']['group'])) {
 		$i = 0;
 		foreach($config['system']['group'] as $groupent) {
-			$groupindex[$groupent['name']] = $i;
-			$i++;
+			if (isset($groupent['name'])) {
+				$groupindex[$groupent['name']] = $i;
+				$i++;
+			}
 		}
 	}
 
@@ -223,8 +225,12 @@ function index_users()
 function &getUserEntry($name)
 {
 	global $config, $userindex;
-	if (isset($userindex[$name]))
+	$false = false;
+	if (isset($userindex[$name])) {
 		return $config['system']['user'][$userindex[$name]];
+	} else {
+		return $false;
+	}
 }
 
 function &getUserEntryByUID($uid)
@@ -580,6 +586,10 @@ function local_group_del_user($user)
 
 function local_group_set($group, $reset = false)
 {
+	if (!isset($group['name']) || !isset($group['gid'])) {
+		// input data invalid
+		return false;
+	}
 	$group_name = $group['name'];
 	$group_gid = $group['gid'];
 	$group_members = '';
@@ -602,45 +612,6 @@ function local_group_del($group)
 {
 	/* delete from group db */
 	mwexecf('/usr/sbin/pw groupdel %s', $group['name']);
-}
-
-function ldap_test_connection($authcfg)
-{
-	global $config;
-
-	if ($authcfg) {
-                if (strstr($authcfg['ldap_urltype'], "Standard"))
-                        $ldapproto = "ldap";
-                else
-                        $ldapproto = "ldaps";
-                $ldapserver         = "{$ldapproto}://" . ldap_format_host($authcfg['host']);
-                $ldapport           = $authcfg['ldap_port'];
-		if (!empty($ldapport))
-			$ldapserver .= ":{$ldapport}";
-                $ldapbasedn         = $authcfg['ldap_basedn'];
-                $ldapbindun         = $authcfg['ldap_binddn'];
-                $ldapbindpw         = $authcfg['ldap_bindpw'];
-        } else
-		return false;
-
-        /* first check if there is even an LDAP server populated */
-        if(!$ldapserver)
-                return false;
-
-        /* Setup CA environment if needed. */
-        ldap_setup_caenv($authcfg);
-
-        /* connect and see if server is up */
-        $error = false;
-	if (!($ldap = ldap_connect($ldapserver)))
-		$error = true;
-
-        if ($error == true) {
-                log_error(sprintf(gettext("ERROR!  Could not connect to server %s."), $ldapname));
-                return false;
-        }
-
-	return true;
 }
 
 function ldap_setup_caenv($authcfg)
@@ -671,453 +642,66 @@ function ldap_setup_caenv($authcfg)
 	putenv("LDAPTLS_CACERT=/var/run/certs/{$caref['refid']}.ca");
 }
 
-function ldap_test_bind($authcfg)
-{
-	global $config;
 
-	if ($authcfg) {
-                if (strstr($authcfg['ldap_urltype'], "Standard"))
-                        $ldapproto = "ldap";
-                else
-                        $ldapproto = "ldaps";
-                $ldapserver         = "{$ldapproto}://" . ldap_format_host($authcfg['host']);
-                $ldapport           = $authcfg['ldap_port'];
-		if (!empty($ldapport))
-			$ldapserver .= ":{$ldapport}";
-                $ldapbasedn         = $authcfg['ldap_basedn'];
-                $ldapbindun         = $authcfg['ldap_binddn'];
-                $ldapbindpw         = $authcfg['ldap_bindpw'];
-                $ldapver            = $authcfg['ldap_protver'];
-		if (empty($ldapbndun) || empty($ldapbindpw))
-                        $ldapanon = true;
-                else
-                        $ldapanon = false;
-	} else
-		return false;
 
-	/* first check if there is even an LDAP server populated */
-        if(!$ldapserver)
-                return false;
-
-	/* Setup CA environment if needed. */
-	ldap_setup_caenv($authcfg);
-
-        /* connect and see if server is up */
-        $error = false;
-	if (!($ldap = ldap_connect($ldapserver)))
-		$error = true;
-
-        if ($error == true) {
-                log_error(sprintf(gettext("ERROR!  Could not connect to server %s."), $ldapname));
-                return false;
-        }
-
-	ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
-	ldap_set_option($ldap, LDAP_OPT_DEREF, LDAP_DEREF_SEARCHING);
-	ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, (int)$ldapver);
-
-	$ldapbindun = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapbindun) : $ldapbindun;
-	$ldapbindpw = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapbindpw) : $ldapbindpw;
-	if ($ldapanon == true) {
-		if (!($res = @ldap_bind($ldap))) {
-			@ldap_close($ldap);
-			return false;
-		}
-	} else if (!($res = @ldap_bind($ldap, $ldapbindun, $ldapbindpw))) {
-		@ldap_close($ldap);
-		return false;
-	}
-
-	@ldap_unbind($ldap);
-
-	return true;
-}
-
-function ldap_get_user_ous($show_complete_ou=true, $authcfg)
-{
-	global $config;
-
-	if(!function_exists("ldap_connect"))
-		return;
-
-	$ous = array();
-
-	if ($authcfg) {
-                if (strstr($authcfg['ldap_urltype'], "Standard"))
-                        $ldapproto = "ldap";
-                else
-                        $ldapproto = "ldaps";
-                $ldapserver         = "{$ldapproto}://" . ldap_format_host($authcfg['host']);
-                $ldapport           = $authcfg['ldap_port'];
-		if (!empty($ldapport))
-			$ldapserver .= ":{$ldapport}";
-                $ldapbasedn         = $authcfg['ldap_basedn'];
-                $ldapbindun         = $authcfg['ldap_binddn'];
-                $ldapbindpw         = $authcfg['ldap_bindpw'];
-                $ldapver            = $authcfg['ldap_protver'];
-		if (empty($ldapbindun) || empty($ldapbindpw))
-                        $ldapanon = true;
-                else
-                        $ldapanon = false;
-                $ldapname           = $authcfg['name'];
-                $ldapfallback       = false;
-		$ldapscope          = $authcfg['ldap_scope'];
-        } else
-		return false;
-
-        /* first check if there is even an LDAP server populated */
-        if(!$ldapserver) {
-                log_error(gettext("ERROR!  ldap_get_user_ous() backed selected with no LDAP authentication server defined."));
-                return $ous;
-        }
-
-	/* Setup CA environment if needed. */
-	ldap_setup_caenv($authcfg);
-
-	/* connect and see if server is up */
-        $error = false;
-	if (!($ldap = ldap_connect($ldapserver)))
-		$error = true;
-
-        if ($error == true) {
-        log_error(sprintf(gettext("ERROR!  Could not connect to server %s."), $ldapname));
-                return $ous;
-        }
-
-	$ldapfilter = "(|(ou=*)(cn=Users))";
-
-	ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
-	ldap_set_option($ldap, LDAP_OPT_DEREF, LDAP_DEREF_SEARCHING);
-	ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, (int)$ldapver);
-
-	$ldapbindun = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapbindun) : $ldapbindun;
-	$ldapbindpw = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapbindpw) : $ldapbindpw;
-	if ($ldapanon == true) {
-                if (!($res = @ldap_bind($ldap))) {
-			log_error(sprintf(gettext("ERROR! ldap_get_user_ous() could not bind anonymously to server %s."), $ldapname));
-			@ldap_close($ldap);
-                        return $ous;
-		}
-	} else if (!($res = @ldap_bind($ldap, $ldapbindun, $ldapbindpw))) {
-		log_error(sprintf(gettext("ERROR! ldap_get_user_ous() could not bind to server %s."), $ldapname));
-		@ldap_close($ldap);
-		return $ous;
-	}
-
-	if ($ldapscope == "one")
-		$ldapfunc = "ldap_list";
-	else
-		$ldapfunc = "ldap_search";
-
-	$search = @$ldapfunc($ldap, $ldapbasedn, $ldapfilter);
-	$info = @ldap_get_entries($ldap, $search);
-
-	if (is_array($info)) {
-		foreach ($info as $inf) {
-			if (!$show_complete_ou) {
-				$inf_split = explode(",", $inf['dn']);
-				$ou = $inf_split[0];
-				$ou = str_replace("OU=","", $ou);
-				$ou = str_replace("CN=","", $ou);
-			} else
-				if($inf['dn'])
-					$ou = $inf['dn'];
-			if($ou)
-				$ous[] = $ou;
-		}
-	}
-
-	@ldap_unbind($ldap);
-
-	return $ous;
-}
-
-function ldap_get_groups($username, $authcfg)
-{
-	global $config;
-
-	if(!function_exists("ldap_connect"))
-		return;
-
-	if(!$username)
-		return false;
-
-	if(!isset($authcfg['ldap_nostrip_at']) && stristr($username, "@")) {
-		$username_split = explode("@", $username);
-		$username = $username_split[0];
-	}
-
-	if(stristr($username, "\\")) {
-		$username_split = explode("\\", $username);
-		$username = $username_split[0];
-	}
-
-	//log_error("Getting LDAP groups for {$username}.");
-        if ($authcfg) {
-                if (strstr($authcfg['ldap_urltype'], "Standard"))
-                        $ldapproto = "ldap";
-                else
-                        $ldapproto = "ldaps";
-                $ldapserver         = "{$ldapproto}://" . ldap_format_host($authcfg['host']);
-                $ldapport           = $authcfg['ldap_port'];
-		if (!empty($ldapport))
-			$ldapserver .= ":{$ldapport}";
-                $ldapbasedn         = $authcfg['ldap_basedn'];
-                $ldapbindun         = $authcfg['ldap_binddn'];
-                $ldapbindpw         = $authcfg['ldap_bindpw'];
-                $ldapauthcont       = $authcfg['ldap_authcn'];
-                $ldapnameattribute  = strtolower($authcfg['ldap_attr_user']);
-                $ldapgroupattribute  = strtolower($authcfg['ldap_attr_member']);
-                $ldapfilter         = "({$ldapnameattribute}={$username})";
-                $ldaptype           = "";
-                $ldapver            = $authcfg['ldap_protver'];
-		if (empty($ldapbindun) || empty($ldapbindpw))
-                        $ldapanon = true;
-                else
-                        $ldapanon = false;
-                $ldapname           = $authcfg['name'];
-                $ldapfallback       = false;
-		$ldapscope          = $authcfg['ldap_scope'];
-	} else
-		return false;
-
-	$ldapdn             = $_SESSION['ldapdn'];
-
-	/*Convert attribute to lowercase.  php ldap arrays put everything in lowercase */
-	$ldapgroupattribute = strtolower($ldapgroupattribute);
-	$memberof = array();
-
-        /* Setup CA environment if needed. */
-        ldap_setup_caenv($authcfg);
-
-	/* connect and see if server is up */
-	$error = false;
-	if (!($ldap = ldap_connect($ldapserver)))
-		$error = true;
-
-	if ($error == true) {
-		log_error(sprintf(gettext("ERROR! ldap_get_groups() Could not connect to server %s."), $ldapname));
-                return memberof;
-        }
-
-	ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
-	ldap_set_option($ldap, LDAP_OPT_DEREF, LDAP_DEREF_SEARCHING);
-	ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, (int)$ldapver);
-
-	/* bind as user that has rights to read group attributes */
-	$ldapbindun = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapbindun) : $ldapbindun;
-	$ldapbindpw = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapbindpw) : $ldapbindpw;
-	if ($ldapanon == true) {
-                if (!($res = @ldap_bind($ldap))) {
-			log_error(sprintf(gettext("ERROR! ldap_get_groups() could not bind anonymously to server %s."), $ldapname));
-			@ldap_close($ldap);
-                        return false;
-		}
-	} else if (!($res = @ldap_bind($ldap, $ldapbindun, $ldapbindpw))) {
-		log_error(sprintf(gettext("ERROR! ldap_get_groups() could not bind to server %s."), $ldapname));
-		@ldap_close($ldap);
-		return memberof;
-	}
-
-	/* get groups from DN found */
-	/* use ldap_read instead of search so we don't have to do a bunch of extra work */
-	/* since we know the DN is in $_SESSION['ldapdn'] */
-	//$search    = ldap_read($ldap, $ldapdn, "(objectclass=*)", array($ldapgroupattribute));
-	if ($ldapscope == "one")
-                $ldapfunc = "ldap_list";
-        else
-                $ldapfunc = "ldap_search";
-
-	$search    = @$ldapfunc($ldap, $ldapdn, $ldapfilter, array($ldapgroupattribute));
-	$info      = @ldap_get_entries($ldap, $search);
-
-	$countem = $info["count"];
-
-	if(is_array($info[0][$ldapgroupattribute])) {
-		/* Iterate through the groups and throw them into an array */
-		foreach ($info[0][$ldapgroupattribute] as $member) {
-			if (stristr($member, "CN=") !== false) {
-				$membersplit = explode(",", $member);
-				$memberof[] = preg_replace("/CN=/i", "", $membersplit[0]);
-			}
-		}
-	}
-
-	/* Time to close LDAP connection */
-	@ldap_unbind($ldap);
-
-	$groups = print_r($memberof,true);
-
-	return $memberof;
-}
-
-function ldap_format_host($host)
-{
-	return is_ipaddrv6($host) ? "[$host]" : $host ;
-}
-
+/**
+ * authenticate using ldap
+ */
 function ldap_backed($username, $passwd, $authcfg)
 {
-	global $config;
+		global $config;
 
-	if(!$username)
-		return;
+		if(!$username)
+			return;
 
-	if(!function_exists("ldap_connect"))
-		return;
+		if(!function_exists("ldap_connect"))
+			return;
 
-	if(!isset($authcfg['ldap_nostrip_at']) && stristr($username, "@")) {
-		$username_split = explode("@", $username);
-		$username = $username_split[0];
-	}
-	if(stristr($username, "\\")) {
-		$username_split = explode("\\", $username);
-		$username = $username_split[0];
-	}
-
-	if ($authcfg) {
-		if (strstr($authcfg['ldap_urltype'], "Standard"))
-			$ldapproto = "ldap";
-		else
-			$ldapproto = "ldaps";
-		$ldapserver         = "{$ldapproto}://" . ldap_format_host($authcfg['host']);
-		$ldapport	    = $authcfg['ldap_port'];
-		if (!empty($ldapport))
-			$ldapserver .= ":{$ldapport}";
-                $ldapbasedn         = $authcfg['ldap_basedn'];
-                $ldapbindun         = $authcfg['ldap_binddn'];
-                $ldapbindpw         = $authcfg['ldap_bindpw'];
-		if (empty($ldapbindun) || empty($ldapbindpw))
-			$ldapanon = true;
-		else
-			$ldapanon = false;
-                $ldapauthcont       = $authcfg['ldap_authcn'];
-                $ldapnameattribute  = strtolower($authcfg['ldap_attr_user']);
-                $ldapextendedqueryenabled  = $authcfg['ldap_extended_enabled'];
-                $ldapextendedquery = $authcfg['ldap_extended_query'];
-                $ldapfilter         = "";
-                if(!$ldapextendedqueryenabled)
-                {
-                        $ldapfilter = "({$ldapnameattribute}={$username})";
-                }
-                else
-                {
-                        $ldapfilter =
-"(&({$ldapnameattribute}={$username})({$ldapextendedquery}))";
-                }
-                $ldaptype           = "";
-                $ldapver            = $authcfg['ldap_protver'];
-		$ldapname	    = $authcfg['name'];
-		$ldapscope	    = $authcfg['ldap_scope'];
-	} else
-		return false;
-
-	/* first check if there is even an LDAP server populated */
-	if(!$ldapserver) {
-		if ($ldapfallback) {
-			log_error(gettext("ERROR! ldap_backed() called with no LDAP authentication server defined.  Defaulting to local user database. Visit System -> User Manager."));
-			return local_backed($username, $passwd);
-		} else
-			log_error(gettext("ERROR! ldap_backed() called with no LDAP authentication server defined."));
-
-		return false;
-	}
-
-        /* Setup CA environment if needed. */
-        ldap_setup_caenv($authcfg);
-
-	ldap_set_option($ldap, LDAP_OPT_REFERRALS, 0);
-	ldap_set_option($ldap, LDAP_OPT_DEREF, LDAP_DEREF_SEARCHING);
-	ldap_set_option($ldap, LDAP_OPT_PROTOCOL_VERSION, (int)$ldapver);
-
-	/* Make sure we can connect to LDAP */
-	$error = false;
-	if (!($ldap = ldap_connect($ldapserver)))
-		$error = true;
-
-	if ($error == true) {
-		log_error(sprintf(gettext("ERROR!  Could not connect to server %s."), $ldapname));
-		return false;
-	}
-
-	/* ok, its up.  now, lets bind as the bind user so we can search it */
-	$error = false;
-	$ldapbindun = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapbindun) : $ldapbindun;
-	$ldapbindpw = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapbindpw) : $ldapbindpw;
-	if ($ldapanon == true) {
-                if (!($res = @ldap_bind($ldap)))
-                        $error = true;
-	} else if (!($res = @ldap_bind($ldap, $ldapbindun, $ldapbindpw)))
-		$error = true;
-
-	if ($error == true) {
-		@ldap_close($ldap);
-		log_error(sprintf(gettext("ERROR! Could not bind to server %s."), $ldapname));
-		return false;
-	}
-
-	/* Get LDAP Authcontainers and split em up. */
-	$ldac_splits = explode(";", $ldapauthcont);
-
-	/* setup the usercount so we think we havn't found anyone yet */
-	$usercount  = 0;
-
-	/*****************************************************************/
-	/*  We First find the user based on username and filter          */
-	/*  Then, once we find the first occurance of that person        */
-	/*  We set seesion variables to ponit to the OU and DN of the    */
-	/*  Person.  To later be used by ldap_get_groups.                */
-	/*  that way we don't have to search twice.                      */
-	/*****************************************************************/
-
-	/* Iterate through the user containers for search */
-	foreach ($ldac_splits as $i => $ldac_split) {
-		$ldac_split = isset($authcfg['ldap_utf8']) ? utf8_encode($ldac_split) : $ldac_split;
-		$ldapfilter = isset($authcfg['ldap_utf8']) ? utf8_encode($ldapfilter) : $ldapfilter;
-		$ldapsearchbasedn = isset($authcfg['ldap_utf8']) ? utf8_encode("{$ldac_split},{$ldapbasedn}") : "{$ldac_split},{$ldapbasedn}";
-		/* Make sure we just use the first user we find */
-		if ($ldapscope == "one")
-			$ldapfunc = "ldap_list";
-		else
-			$ldapfunc = "ldap_search";
-		/* Support legacy auth container specification. */
-		if (stristr($ldac_split, "DC=") || empty($ldapbasedn))
-			$search	 = @$ldapfunc($ldap,$ldac_split,$ldapfilter);
-		else
-			$search  = @$ldapfunc($ldap,$ldapsearchbasedn,$ldapfilter);
-		if (!$search) {
-			log_error(sprintf(gettext("Search resulted in error: %s"), ldap_error($ldap)));
-			continue;
+		// search user dn in config
+		$userDN = null;
+		foreach ($config['system']['user'] as $confUser) {
+				if (!empty($confUser['user_dn']) && $username == $confUser['name']) {
+					$userDN = $confUser['user_dn'];
+					break;
+				}
 		}
-		$info	 = ldap_get_entries($ldap,$search);
-		$matches = $info['count'];
-		if ($matches == 1){
-			$userdn = $_SESSION['ldapdn'] = $info[0]['dn'];
-			$_SESSION['ldapou'] = $ldac_split[$i];
-			$_SESSION['ldapon'] = "true";
-			$usercount = 1;
-			break;
+
+		// backward compatibility, try to find this user dn to authenticate.
+		// --> this means the user can't have any roles on OPNsense!
+		if ($userDN == null) {
+			$ldap_auth = new OPNsense\Auth\LDAP($authcfg['ldap_basedn'], $authcfg['ldap_protver']);
+		  $ldap_is_connected = $ldap_auth->connect($authcfg['ldap_full_url']
+		                      , $authcfg['ldap_binddn']
+		                      , $authcfg['ldap_bindpw']
+		                    );
+			if ($ldap_is_connected) {
+				$result = $ldap_auth->searchUsers($username
+		              , $authcfg['ldap_attr_user']
+		              , $authcfg['ldap_extended_query']
+		            );
+
+				if (count($result) > 0) {
+						$userDN = $result[0]['dn'];
+				}
+			} else {
+				log_error(sprintf(gettext("ERROR!  Could not connect to server %s."), $authcfg['ldap_full_url']));
+			}
 		}
-	}
 
-	if ($usercount != 1){
-		@ldap_unbind($ldap);
-		log_error(gettext("ERROR! Either LDAP search failed, or multiple users were found."));
+		if ( $userDN != null ) {
+				// setup peer ca
+				ldap_setup_caenv($authcfg);
+				// try connect to ldap server, connect tells if this user could authenticate
+				$ldap_auth = new OPNsense\Auth\LDAP($authcfg['ldap_basedn'], $authcfg['ldap_protver']);
+				$ldap_is_connected = $ldap_auth->connect($authcfg['ldap_full_url']
+				                    , $userDN
+				                    , $passwd
+				                  );
+
+				return $ldap_is_connected;
+		}
+
 		return false;
-	}
-
-	/* Now lets bind as the user we found */
-	$passwd = isset($authcfg['ldap_utf8']) ? utf8_encode($passwd) : $passwd;
-	if (!($res = @ldap_bind($ldap, $userdn, $passwd))) {
-		log_error(sprintf(gettext('ERROR! Could not login to server %1$s as user %2$s: %3$s'), $ldapname, $username, ldap_error($ldap)));
-		@ldap_unbind($ldap);
-		return false;
-	}
-
-	/* At this point we are bound to LDAP so the user was auth'd okay. Close connection. */
-	@ldap_unbind($ldap);
-
-	return true;
 }
 
 function radius_backed($username, $passwd, $authcfg, &$attributes = array())
@@ -1187,16 +771,44 @@ function is_account_disabled($username) {
 }
 
 function auth_get_authserver($name) {
-        global $config;
+	global $config;
 
-        if (isset($config['system']['authserver']) && is_array($config['system']['authserver'])) {
-                foreach ($config['system']['authserver'] as $authcfg) {
-                        if ($authcfg['name'] == $name)
-                                return $authcfg;
-                }
-        }
-	if ($name == "Local Database")
-		return array("name" => gettext("Local Database"), "type" => "Local Auth", "host" => $config['system']['hostname']);
+	if ($name == "Local Database") {
+		return array(
+			"name" => gettext("Local Database"),
+			"type" => "Local Auth",
+			"host" => $config['system']['hostname']
+		);
+	}
+
+
+	if (isset($config['system']['authserver']) && is_array($config['system']['authserver'])) {
+		foreach ($config['system']['authserver'] as $authcfg) {
+			if ($authcfg['name'] == $name) {
+				if ($authcfg['type'] == 'ldap') {
+					// let's try to avoid regenerating the ldap url in every function.
+					if (strstr($authcfg['ldap_urltype'], "Standard")) {
+						$authcfg['ldap_full_url'] = "ldap://";
+					} else {
+						$authcfg['ldap_full_url'] = "ldaps://";
+					}
+					$authcfg['ldap_full_url'] .= is_ipaddrv6($authcfg['host']) ? "[{$authcfg['host']}]" : $authcfg['host'];
+					if (!empty($authcfg['ldap_port'])) {
+						$authcfg['ldap_full_url'] .= ":{$authcfg['ldap_port']}";
+					}
+					// make sure a user and password entry exists and are null for anonymous usage
+					if (empty($authcfg['ldap_binddn'])) {
+						$authcfg['ldap_binddn'] = null;
+					}
+					if (empty($authcfg['ldap_bindpw'])) {
+						$authcfg['ldap_bindpw'] = null;
+					}
+
+				}
+				return $authcfg;
+			}
+		}
+	}
 }
 
 function auth_get_authserver_list() {
@@ -1213,36 +825,6 @@ function auth_get_authserver_list() {
 
 	$list["Local Database"] = array( "name" => gettext("Local Database"), "type" => "Local Auth", "host" => $config['system']['hostname']);
 	return $list;
-}
-
-function getUserGroups($username, $authcfg)
-{
-	global $config;
-
-	$allowed_groups = array();
-	$member_groups = array();
-
-	switch ($authcfg['type']) {
-        case 'ldap':
-		$allowed_groups = @ldap_get_groups($username, $authcfg);
-		break;
-	case 'radius':
-		break;
-	default:
-		$user = getUserEntry($username);
-		$allowed_groups = @local_user_get_groups($user, true);
-		break;
-	}
-
-        if (isset($config['system']['group'])) {
-                foreach ($config['system']['group'] as $group) {
-                        if (in_array($group['name'], $allowed_groups)) {
-				$member_groups[] = $group['name'];
-			}
-		}
-	}
-
-	return $member_groups;
 }
 
 function authenticate_user($username, $password, $authcfg = NULL, &$attributes = array()) {

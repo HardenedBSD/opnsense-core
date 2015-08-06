@@ -43,6 +43,7 @@ function get_locale_list()
 	$locales['en_US'] = gettext('English');
 	$locales['zh_CN'] = gettext('Chinese (Simplified)');
 	$locales['de_DE'] = gettext('German');
+	$locales['ja_JP'] = gettext('Japanese');
 
 	return $locales;
 }
@@ -101,6 +102,16 @@ if (empty($pconfig['timezone']))
 	$pconfig['timezone'] = "Etc/UTC";
 if (empty($pconfig['timeservers']))
 	$pconfig['timeservers'] = "pool.ntp.org";
+
+$pconfig['mirror'] = 'default';
+if (isset($config['system']['firmware']['mirror'])) {
+	$pconfig['mirror'] = $config['system']['firmware']['mirror'];
+}
+
+$pconfig['flavour'] = 'default';
+if (isset($config['system']['firmware']['flavour'])) {
+	$pconfig['flavour'] = $config['system']['firmware']['flavour'];
+}
 
 $changedesc = gettext("System") . ": ";
 $changecount = 0;
@@ -205,6 +216,26 @@ if ($_POST) {
 			set_language($config['system']['language']);
 		}
 
+		if (!isset($config['system']['firmware'])) {
+			$config['system']['firmware'] = array();
+		}
+		if ($_POST['mirror'] == 'default') {
+			if (isset($config['system']['firmware']['mirror'])) {
+				/* default does not set anything for backwards compat */
+				unset($config['system']['firmware']['mirror']);
+			}
+		} else {
+			$config['system']['firmware']['mirror'] = $_POST['mirror'];
+		}
+		if ($_POST['flavour'] == 'default') {
+			if (isset($config['system']['firmware']['flavour'])) {
+				/* default does not set anything for backwards compat */
+				unset($config['system']['firmware']['flavour']);
+			}
+		} else {
+			$config['system']['firmware']['flavour'] = $_POST['flavour'];
+		}
+
 		update_if_changed("System Theme", $config['theme'], $_POST['theme']);
 
 		/* XXX - billm: these still need updating after figuring out how to check if they actually changed */
@@ -286,6 +317,7 @@ if ($_POST) {
 		elseif (isset($config['unbound']['enable']))
 			$retval |= services_unbound_configure();
 		$retval |= system_timezone_configure();
+		$retval |= system_firmware_configure();
 		$retval |= system_ntp_configure();
 
 		if ($olddnsallowoverride != $config['system']['dnsallowoverride']) {
@@ -524,6 +556,44 @@ include("head.inc");
 								<strong>
 									<?=gettext("This will change the look and feel of"); ?>
 									<?=$g['product_name'];?>.
+								</strong>
+							</td>
+						</tr>
+						<tr>
+							<td width="22%" valign="top" class="vncell"><?=gettext("Firmware Mirror"); ?></td>
+							<td width="78%" class="vtable">
+								<select name="mirror" class="selectpicker" data-style="btn-default" data-width="auto">
+									<?php
+									foreach (get_firmware_mirrors() as $mcode => $mdesc) {
+										$selected = ' selected="selected"';
+										if($mcode != $pconfig['mirror']) {
+											$selected = '';
+										}
+										echo "<option value=\"{$mcode}\"{$selected}>{$mdesc}</option>";
+									}
+									?>
+								</select>
+								<strong>
+									<?=gettext("Select an alternate firmware mirror."); ?>
+								</strong>
+							</td>
+						</tr>
+						<tr>
+							<td width="22%" valign="top" class="vncell"><?=gettext("Firmware Flavour"); ?></td>
+							<td width="78%" class="vtable">
+								<select name="flavour" class="selectpicker" data-style="btn-default" data-width="auto">
+									<?php
+									foreach (get_firmware_flavours() as $fcode => $fdesc) {
+										$selected = ' selected="selected"';
+										if($fcode != $pconfig['flavour']) {
+											$selected = '';
+										}
+										echo "<option value=\"{$fcode}\"{$selected}>{$fdesc}</option>";
+									}
+									?>
+								</select>
+								<strong>
+									<?=gettext("Select the firmware cryptography flavour."); ?>
 								</strong>
 							</td>
 						</tr>
