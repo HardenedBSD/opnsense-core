@@ -33,6 +33,7 @@ require_once("interfaces.inc");
 require_once("openvpn.inc");
 require_once("pfsense-utils.inc");
 require_once("unbound.inc");
+require_once("services.inc");
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/interfaces_vlan.php');
 
@@ -49,9 +50,10 @@ $a_vlans = &$config['vlans']['vlan'];
 $portlist = get_interface_list();
 
 /* add LAGG interfaces */
-if (is_array($config['laggs']['lagg']) && count($config['laggs']['lagg'])) {
-        foreach ($config['laggs']['lagg'] as $lagg)
+if (isset($config['laggs']['lagg'])) {
+        foreach ($config['laggs']['lagg'] as $lagg) {
                 $portlist[$lagg['laggif']] = $lagg;
+	}
 }
 
 if (is_numericint($_GET['id']))

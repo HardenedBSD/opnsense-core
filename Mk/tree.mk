@@ -23,7 +23,7 @@ plist:
 		if [ $${FILE%%.sample} != $${FILE} ]; then \
 			PREFIX="@sample "; \
 		fi; \
-		echo "${PREFIX} ${ROOT}/${TREE}/$${FILE}"; \
+		echo "$${PREFIX}${ROOT}/${TREE}/$${FILE}"; \
 	done
 .endfor
 

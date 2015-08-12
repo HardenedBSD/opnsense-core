@@ -32,11 +32,13 @@ require_once("interfaces.inc");
 require_once("pfsense-utils.inc");
 require_once("openvpn.inc");
 require_once("unbound.inc");
+require_once("services.inc");
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/interfaces_lagg.php');
 
-if (!is_array($config['laggs']['lagg']))
+if (!isset($config['laggs']['lagg'])) {
 	$config['laggs']['lagg'] = array();
+}
 
 $a_laggs = &$config['laggs']['lagg'];
 

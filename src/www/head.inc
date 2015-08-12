@@ -53,6 +53,8 @@ $pagetitle = gentitle( $pgtitle );
 
 		<!--[if lt IE 9]><script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script><![endif]-->
 
+		<!-- nvd3 -->
+		<link rel="stylesheet" href="/ui/css/nv.d3.css">
 
 		<script>var theme = '<?=$g['theme'];?>'; </script>
 
@@ -62,6 +64,11 @@ $pagetitle = gentitle( $pgtitle );
 		<!-- Ticker used for notices-->
 		<script type="text/javascript" src="/javascript/ticker.js"></script>
 
+		<!-- d3 -->
+		<script type="text/javascript" src="/ui/js/d3.min.js"></script>
+
+		<!-- nvd3 -->
+		<script type="text/javascript" src="/ui/js/nv.d3.min.js"></script>
 
 		<?php
 		/*
@@ -97,6 +104,27 @@ $pagetitle = gentitle( $pgtitle );
 					$("#mainmenu").find('[href="#'+$(this).attr('id')+'"]').remove();
 				}
 			});
+
+			// link showhelp class behavior
+			$("a[class='showhelp']").click(function (event) {
+				$("*[for='" + $(this).attr('id') + "']").toggleClass("hidden show");
+				event.preventDefault();
+			});
+
+			// handle all help messages show/hide
+			$('[id*="show_all_help"]').click(function(event) {
+				$('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
+				$('[id*="show_all_help"]').toggleClass("text-success text-danger");
+				if ($('[id*="show_all_help"]').hasClass("fa-toggle-on")) {
+					$('[for*="help_for"]').addClass("show");
+					$('[for*="help_for"]').removeClass("hidden");
+				} else {
+					$('[for*="help_for"]').addClass("hidden");
+					$('[for*="help_for"]').removeClass("show");
+				}
+				event.preventDefault();
+			});
+
 		});
 		//]]>
 		</script>
