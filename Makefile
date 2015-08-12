@@ -100,6 +100,7 @@ CORE_DEPENDS?=		apinger \
 			rate \
 			relayd \
 			rrdtool12 \
+			secadm \
 			smartmontools \
 			squid \
 			sshlockout_pf \
@@ -107,9 +108,11 @@ CORE_DEPENDS?=		apinger \
 			sudo \
 			suricata \
 			syslogd \
+			tor \
 			voucher \
 			wol \
-			zip
+			zip \
+			zsh
 
 manifest: force
 	@echo "name: \"${CORE_NAME}\""
