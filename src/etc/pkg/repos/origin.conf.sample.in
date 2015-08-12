@@ -4,5 +4,5 @@ OPNsense: {
   signature_type: "fingerprints",
   mirror_type: "srv",
   priority: 11,
-  enabled: yes
+  enabled: no
 }
