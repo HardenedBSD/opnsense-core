@@ -179,6 +179,28 @@ function print_input_errors($input_errors) {
 	echo "</ul></div></div>";
 }
 
+function print_info_box_apply($msg)
+{
+	$value = gettext('Apply changes');
+	$name= 'apply';
+
+	$savebutton = '<form action="' . $_SERVER['REQUEST_URI'] . '" method="post">';
+	$savebutton .= '<input name="' . $name . '" type="submit" class="btn btn-default" id="' . $name . '" value="' . $value . '" />';
+	if (!empty($_POST['if'])) {
+		$savebutton .= '<input type="hidden" name="if" value="' . htmlspecialchars($_POST['if']) . '" />';
+	}
+	$savebutton .= '</form>';
+
+	echo <<<EOFnp
+	    <div class="col-xs-12">
+		<div class="alert alert-info alert-dismissible" role="alert">
+			{$savebutton}
+            <p>{$msg}</p>
+		</div>
+		</div>
+EOFnp;
+}
+
 function print_info_box_np($msg, $name="apply",$value="", $showapply=false) {
 	if(empty($value)) {
 		$value = gettext("Apply changes");
@@ -205,23 +227,17 @@ EOFnp;
 
 }
 
-function print_info_box_np_undo($msg, $name="apply",$value="Apply changes", $undo) {
-	if(stristr($msg, "apply") != false || stristr($msg, "save") != false || stristr($msg, "create") != false) {
+function print_info_box_apply_undo($msg, $undo)
+{
+	$value = gettext('Apply changes');
+	$name= 'apply';
 
-		$savebutton .= "<input class=\"btn btn-default\"  type=\"button\" value=\"". gettext("Undo") . "\" onclick=\"document.location='{$undo}'\" />";
-		$savebutton .= "<input class=\"btn btn-default\"  name=\"{$name}\" type=\"submit\" class=\"formbtn\" id=\"${name}\" value=\"{$value}\" />";
-
-		if(isset($_POST['if']))
-			$savebutton .= "<input type=\"hidden\" name=\"if\" value=\"" . htmlspecialchars($_POST['if']) . "\" />";
-	} else {
-		$savebutton = "<input class=\"btn btn-default\" value=\"" . gettext("Close") . "\" type=\"button\" onclick=\"$('#redboxtable').hide();\" />";
-	}
-
+	$savebutton .= "<input class=\"btn btn-default\"  type=\"button\" value=\"". gettext("Undo") . "\" onclick=\"document.location='{$undo}'\" />";
+	$savebutton .= "<input class=\"btn btn-default\"  name=\"{$name}\" type=\"submit\" class=\"formbtn\" id=\"${name}\" value=\"{$value}\" />";
 
 	$url = $_SERVER['REQUEST_URI'];
 
 	echo <<<EOFnp
-
 	<div class="col-xs-12" id="redboxtable"><form action="{$url}" method="post">
 		<div class="alert alert-warning"  summary="red box table">
 			<p>{$msg}<br /><br /></p>
@@ -232,14 +248,14 @@ function print_info_box_np_undo($msg, $name="apply",$value="Apply changes", $und
 		</div>
 	</form></div>
 EOFnp;
-
 }
 
-function print_info_box($msg) {
+function print_info_box($msg)
+{
 	print_info_box_np($msg);
 }
 
-function get_std_save_message($ok) {
+function get_std_save_message($ok = '') {
 	global $d_sysrebootreqd_path;
 	$filter_related = false;
 	$filter_pages = array("nat", "filter");
@@ -287,9 +303,9 @@ function pprint_port($port) {
 		return "*";
 	else {
 		$srcport = explode("-", $port);
-		if ((!$srcport[1]) || ($srcport[0] == $srcport[1])) {
+		if ((empty($srcport[1])) || ($srcport[0] == $srcport[1])) {
 			$pport = $srcport[0];
-			if ($wkports[$srcport[0]]) {
+			if (!empty($wkports[$srcport[0]])) {
 				$pport .= " (" . $wkports[$srcport[0]] . ")";
 			}
 		} else

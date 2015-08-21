@@ -67,12 +67,12 @@ function parse_config()
 		$backups = $cnf->getBackups();
 		if (count($backups) > 0) {
 			// load last backup
-			log_error(gettext("No (valid) config.xml found, attempting last known config restore."));
+			syslog(LOG_ERR,	sprintf('parse_config(): %s', gettext('No (valid) config.xml found, attempting last known config restore.')));
 			file_notice("config.xml", gettext("No (valid) config.xml found, attempting last known config restore."), "OPNsenseConfigurator", "");
 			$cnf->restoreBackup($backups[0]);
 		} else {
 			// we don't have backups, try to load the default
-			log_error(gettext('No config.xml found, attempting to restore factory config.'));
+			syslog(LOG_ERR, sprintf('parse_config(): %s', gettext('No config.xml found, attempting to restore factory config.')));
 			$cnf->restoreBackup('/usr/local/etc/config.xml');
 		}
 	}
@@ -213,14 +213,12 @@ function write_config($desc = 'Unknown', $backup = true)
 /****f* config/reset_factory_defaults
  * NAME
  *   reset_factory_defaults - Reset the system to its default configuration.
- * RESULT
- *   integer	- indicates completion
  ******/
 function reset_factory_defaults($sync = true)
 {
 	mwexec('/bin/rm -r /conf/*');
 	disable_security_checks();
-	setup_serial_port();
+	setup_serial_port(false);
 
 	/* as we go through a special case directly reboot */
 	$shutdown_cmd = '/sbin/shutdown -or now';

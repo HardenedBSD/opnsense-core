@@ -895,7 +895,7 @@ function filter_generate_optcfg_array()
 		if (!empty($vips)) {
 			foreach ($vips as $vipidx => $vip) {
 				if (is_ipaddrv4($vip['subnet'])) {
-					if (!is_array($oic['vips']))
+					if (!isset($oic['vips']))
 						$oic['vips'] = array();
 					$oic['vips'][$vipidx]['ip'] = $vip['subnet'];
 					if (empty($vip['subnet_bits']))
@@ -1319,11 +1319,11 @@ function filter_nat_rules_automatic_tonathosts($with_descr = false) {
 	foreach($FilterIflist as $ocname => $oc) {
 		if(interface_has_gateway($ocname))
 			continue;
-		if(is_ipaddr($oc['alias-address'])) {
+		if(isset($oc['alias-address']) && is_ipaddr($oc['alias-address'])) {
 			$tonathosts[] = "{$oc['alias-address']}/{$oc['alias-subnet']}";
 			$descriptions[] = $oc['descr'] . " " . gettext("DHCP alias address");
 		}
-		if($oc['sa']) {
+		if(!empty($oc['sa'])) {
 			$tonathosts[] = "{$oc['sa']}/{$oc['sn']}";
 			$descriptions[] = $oc['descr'];
 			if (isset($oc['vips']) && is_array($oc['vips'])) {
@@ -1789,6 +1789,24 @@ function filter_nat_rules_generate() {
 	}
 
 	$inetd_fd = fopen('/var/etc/inetd.conf', 'w');
+
+	// prevent redirection on ports with "lock out" protection
+	if (!isset($config['system']['webgui']['noantilockout'])) {
+		$alports = filter_get_antilockout_ports();
+		if ( !empty($FilterIflist['lan']['if']) ) {
+			$alintrf = $FilterIflist['lan']['if'];
+		} elseif ( !empty($FilterIflist['wan']['if']) ) {
+			// single-interface deployment, add to WAN
+			$alintrf = $FilterIflist['wan']['if'];
+		} else {
+			$alintrf = null;
+		}
+		if (!empty($alintrf) ) {
+			$natrules .= "# Anti lockout, prevent redirects for protected ports to this interface ip \n";
+			$natrules .= "no rdr on {$alintrf} proto tcp from any to ( {$alintrf} ) port { {$alports} } ";
+		}
+		unset($alports);
+	}
 
 	if(isset($config['nat']['rule'])) {
 		/* start reflection redirects on port 19000 of localhost */
@@ -3168,7 +3186,7 @@ EOD;
 	$ipfrules .= filter_generate_ipsec_rules($log);
 
 	update_filter_reload_status("Creating uPNP rules...");
-	if (is_array($config['installedpackages']['miniupnpd']) && is_array($config['installedpackages']['miniupnpd']['config'][0])) {
+	if (isset($config['installedpackages']['miniupnpd']['config'][0])) {
 		if (isset($config['installedpackages']['miniupnpd']['config'][0]['enable']))
 			$ipfrules .= "anchor \"miniupnpd\"\n";
 

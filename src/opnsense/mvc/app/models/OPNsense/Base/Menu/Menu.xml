@@ -69,9 +69,11 @@
             <NatEdit url="/firewall_nat_edit.php*"/>
             <PortForward VisibleName="Port Forward" url="/firewall_nat.php"/>
             <OneOnOne VisibleName="1:1" url="/firewall_nat_1to1.php"/>
+            <OneOnOneEdit url="/firewall_nat_1to1_edit.php*"/>
             <Outbound url="/firewall_nat_out.php"/>
+            <OutboundEdit url="/firewall_nat_out_edit.php*"/>
             <NPt url="/firewall_nat_npt.php"/>
-            <NPtEdit url="/firewall_nat_npt_edit.php"/>
+            <NPtEdit url="/firewall_nat_npt_edit.php*"/>
         </NAT>
         <Rules url="/firewall_rules.php">
             <RulesEdit url="/firewall_rules_edit.php*"/>
@@ -144,7 +146,6 @@
         <WoL VisibleName="Wake on LAN" url="/services_wol.php">
 		<WoLEdit url="/services_wol_edit.php*"/>
         </WoL>
-        <IDS VisibleName="Intrusion Detection" url="/ui/ids/"/>
     </Services>
 
     <VPN order="5" cssClass="glyphicon glyphicon-lock">

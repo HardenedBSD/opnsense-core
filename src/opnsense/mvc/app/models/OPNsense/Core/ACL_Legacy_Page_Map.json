@@ -54,7 +54,7 @@
     },
     "page-diagnostics-crash-reporter": {
         "name": "WebCfg - Crash reporter",
-        "descr": "Uploads crash reports to pfSense and or deletes crash reports.",
+        "descr": "Uploads crash reports to the developers.",
         "match": [
             "crash_reporter.php*"
         ]
@@ -77,13 +77,6 @@
         "descr": "Allow direct access to all Dashboard widget pages, required for some widgets using AJAX.",
         "match": [
             "*.widget.php*"
-        ]
-    },
-    "page-ipsecxml": {
-        "name": "WebCfg - Diag IPsec XML page",
-        "descr": "Allow access to the 'Diag IPsec XML' page.",
-        "match": [
-            "diag_ipsec_xml.php"
         ]
     },
     "page-diagnostics-arptable": {
@@ -648,8 +641,8 @@
         ]
     },
     "page-pfsensewizardsubsystem": {
-        "name": "WebCfg - pfSense wizard subsystem page",
-        "descr": "Allow access to the 'pfSense wizard subsystem' page.",
+        "name": "WebCfg - Wizard subsystem page",
+        "descr": "Allow access to the 'Wizard subsystem' page.",
         "match": [
             "wizard.php*"
         ]
@@ -1603,14 +1596,6 @@
       "match": [
         "ui/proxy/*",
         "api/proxy/*"
-      ]
-    },
-    "page-services-ids": {
-      "name": "WebCfg - Services: Intrusion Detection page",
-      "descr": "Allow access to the 'Services: Intrusion Detection' page'",
-       "match": [
-           "ui/ids/*",
-           "api/ids/*"
       ]
     }
 }
