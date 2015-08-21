@@ -1,8 +1,7 @@
-OPNsense: {
-  fingerprints: "/usr/local/etc/pkg/fingerprints/OPNsense",
-  url: "pkg+%%CORE_PACKAGESITE%%/${ABI}/%%CORE_REPOSITORY%%",
-  signature_type: "fingerprints",
+HardenedBSD: {
+  url: "pkg+http://pkgs.hardenedbsd.org/OPNSense/pkg/${ABI}",
   mirror_type: "srv",
-  priority: 11,
-  enabled: no
+  signature_type: "pubkey",
+  pubkey: "/usr/share/keys/pkg/trusted/hardenedbsd.crt.2014-09-04",
+  enabled: yes
 }
