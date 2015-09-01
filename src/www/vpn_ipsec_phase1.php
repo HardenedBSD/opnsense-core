@@ -30,10 +30,10 @@
 */
 require_once("guiconfig.inc");
 require_once("vpn.inc");
+require_once("filter.inc");
 require_once("services.inc");
 require_once("pfsense-utils.inc");
 require_once("interfaces.inc");
-
 
 /*
  * ikeid management functions
@@ -59,15 +59,15 @@ function ipsec_ikeid_next() {
 }
 
 
-if (!is_array($config['ipsec'])) {
-		$config['ipsec'] = array();
+if (!isset($config['ipsec']) || !is_array($config['ipsec'])) {
+    $config['ipsec'] = array();
 }
 
-if (!is_array($config['ipsec']['phase1'])) {
+if (!isset($config['ipsec']['phase1'])) {
     $config['ipsec']['phase1'] = array();
 }
 
-if (!is_array($config['ipsec']['phase2'])) {
+if (!isset($config['ipsec']['phase2'])) {
     $config['ipsec']['phase2'] = array();
 }
 
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	$pconfig['interface'] = "wan";
 	$pconfig['iketype'] = "ikev1";
 	$phase1_fields = "mode,protocol,myid_type,myid_data,peerid_type,peerid_data
-	,encryption-algorithm,halgo,dhgroup,lifetime,authentication_method,descr,nat_traversal
+	,encryption-algorithm,hash-algorithm,dhgroup,lifetime,authentication_method,descr,nat_traversal
 	,interface,iketype,dpd_delay,dpd_maxfail,remote-gateway,pre-shared-key,certref
 	,caref,reauth_enable,rekey_enable";
 	if (isset($p1index) && isset($config['ipsec']['phase1'][$p1index])) {
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	    $pconfig['peerid_type'] = "peeraddress";
 	    $pconfig['authentication_method'] = "pre_shared_key";
 	    $pconfig['encryption-algorithm'] = array("name" => "3des") ;
-	    $pconfig['halgo'] = "sha1";
+	    $pconfig['hash-algorithm'] = "sha1";
 	    $pconfig['dhgroup'] = "2";
 	    $pconfig['lifetime'] = "28800";
 	    $pconfig['nat_traversal'] = "on";
@@ -350,9 +350,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	if (!isset($pconfig['encryption-algorithm']) || !is_array($pconfig['encryption-algorithm'])) {
 		$pconfig['encryption-algorithm'] = array();
 	}
-	$pconfig['encryption-algorithm']['name'] = $_POST['encryption-algorithm'];
-	if ($pconfig['ealgo_keylen']) {
-			$pconfig['ealgo']['keylen'] = $_POST['ealgo_keylen'];
+	$pconfig['encryption-algorithm']['name'] = $pconfig['ealgo'];
+	if (!empty($pconfig['ealgo_keylen'])) {
+			$pconfig['encryption-algorithm']['keylen'] = $pconfig['ealgo_keylen'];
 	}
 
 	if (count($input_errors) == 0) {
@@ -890,7 +890,7 @@ endforeach; ?>
 									<tr>
 										<td><i class="fa fa-info-circle text-muted"></i> <?=gettext("Encryption algorithm"); ?></td>
 										<td>
-											<select name="encryption-algorithm" id="ealgo" class="formselect" onchange="ealgosel_change()">
+											<select name="ealgo" id="ealgo" class="formselect" onchange="ealgosel_change()">
 <?php
                       foreach ($p1_ealgos as $algo => $algodata) :
                       ?>
@@ -908,7 +908,7 @@ endforeach; ?>
 									<tr>
 										<td><a id="help_for_halgo" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Hash algorithm"); ?></td>
 										<td>
-											<select name="halgo" class="formselect">
+											<select name="hash-algorithm" class="formselect">
 											<?php
 											$p1_halgos = array(
 												'md5' => 'MD5',
@@ -920,7 +920,7 @@ endforeach; ?>
 											);
 											foreach ($p1_halgos as $algo => $algoname) :
 ?>
-												<option value="<?=$algo;?>" <?= $algo == $pconfig['halgo'] ? "selected=\"selected\"" : "";?>>
+												<option value="<?=$algo;?>" <?= $algo == $pconfig['hash-algorithm'] ? "selected=\"selected\"" : "";?>>
 													<?=$algoname;?>
 												</option>
 <?php								endforeach;

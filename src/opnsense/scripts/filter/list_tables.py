@@ -1,19 +1,18 @@
-<?php
+#!/usr/local/bin/python2.7
 
-/*
-    Copyright (C) 2014-2015 Deciso B.V.
-    Copyright (C) 2009 Bill Marquette
+"""
+    Copyright (c) 2015 Ad Schellevis
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions are met:
 
     1. Redistributions of source code must retain the above copyright notice,
-       this list of conditions and the following disclaimer.
+     this list of conditions and the following disclaimer.
 
     2. Redistributions in binary form must reproduce the above copyright
-       notice, this list of conditions and the following disclaimer in the
-       documentation and/or other materials provided with the distribution.
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
 
     THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
     INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
@@ -25,16 +24,27 @@
     CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-*/
 
-header("Last-Modified: " . gmdate( "D, j M Y H:i:s" ) . " GMT" );
-header("Expires: " . gmdate( "D, j M Y H:i:s", time() ) . " GMT" );
-header("Cache-Control: no-store, no-cache, must-revalidate" ); // HTTP/1.1
-header("Cache-Control: post-check=0, pre-check=0", FALSE );
-header("Pragma: no-cache"); // HTTP/1.0
+    --------------------------------------------------------------------------------------
+    returns a list of pf tables (optional as a json container)
+"""
+import tempfile
+import subprocess
+import os
+import sys
+import ujson
 
-require_once("guiconfig.inc");
-require_once("system.inc");
-require_once("stats.inc");
+result = []
+with tempfile.NamedTemporaryFile() as output_stream:
+    subprocess.call(['/sbin/pfctl','-sT'], stdout=output_stream, stderr=open(os.devnull, 'wb'))
+    output_stream.seek(0)
+    for line in output_stream.read().strip().split('\n'):
+        result.append(line.strip())
 
-echo get_stats();
+# handle command line argument (type selection)
+if len(sys.argv) > 1 and sys.argv[1] == 'json':
+    print(ujson.dumps(result))
+else:
+    # output plain
+    for table in result:
+        print (table)

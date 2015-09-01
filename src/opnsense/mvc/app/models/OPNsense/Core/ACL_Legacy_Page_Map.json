@@ -66,7 +66,6 @@
             "index.php*",
             "*.widget.php*",
             "graph.php*",
-            "graph_cpu.php*",
             "getstats.php*",
             "ifstats.php*",
             "diag_logs_filter_dynamic.php*"
@@ -105,13 +104,6 @@
         "descr": "Allow access to the 'Diagnostics: Configuration History' page.",
         "match": [
             "diag_confbak.php*"
-        ]
-    },
-    "page-diagnostics-cpuutilization": {
-        "name": "WebCfg - Diagnostics: CPU Utilization page",
-        "descr": "Allow access to the 'Diagnostics: CPU Utilization' page.",
-        "match": [
-            "stats.php*"
         ]
     },
     "page-diagnostics-factorydefaults": {
@@ -1023,13 +1015,6 @@
         "descr": "Allow access to the 'Status: CARP' page.",
         "match": [
             "carp_status.php*"
-        ]
-    },
-    "page-status-cpuload": {
-        "name": "WebCfg - Status: CPU load page",
-        "descr": "Allow access to the 'Status: CPU load' page.",
-        "match": [
-            "status_graph_cpu.php*"
         ]
     },
     "page-status-dhcpleases": {

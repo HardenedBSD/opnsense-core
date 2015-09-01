@@ -475,13 +475,6 @@ function upgrade_017_to_018() {
 	}
 }
 
-
-function upgrade_018_to_019() {
-	global $config;
-	$config['theme']="metallic";
-}
-
-
 function upgrade_019_to_020() {
 	global $config;
 	if(is_array($config['ipsec']['tunnel'])) {
@@ -508,7 +501,8 @@ function upgrade_024_to_025() {
 	unset($config['system']['use_rrd_gateway']);
 }
 
-function upgrade_025_to_026() {
+function upgrade_025_to_026()
+{
 	global $config;
 	$cron_item = array();
 	$cron_item['minute'] = "0";
@@ -575,19 +569,7 @@ function upgrade_025_to_026() {
 	$cron_item['command'] = "/usr/local/sbin/expiretable -v -t 3600 virusprot";
 
 	$config['cron']['item'][] = $cron_item;
-
-	$cron_item = array();
-	$cron_item['minute'] = "*/60";
-	$cron_item['hour'] = "*";
-	$cron_item['mday'] = "*";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "/usr/local/sbin/expiretable -t 1800 snort2c";
-
-	$config['cron']['item'][] = $cron_item;
 }
-
 
 function upgrade_028_to_029() {
 	global $config;
@@ -2336,18 +2318,6 @@ function upgrade_061_to_062() {
 	}
 }
 
-function upgrade_062_to_063() {
-	/* Upgrade legacy Themes to the new pfsense_ng */
-	global $config;
-
-	switch($config['theme']) {
-		case "nervecenter":
-			$config['theme'] = "pfsense_ng";
-			break;
-	}
-
-}
-
 function upgrade_063_to_064() {
 	global $config;
 	$j=0;
@@ -3328,15 +3298,18 @@ function upgrade_108_to_109() {
 	}
 }
 
-function upgrade_109_to_110() {
+function upgrade_109_to_110()
+{
 	global $config;
 
-	if (!is_array($config['ipsec']) || !is_array($config['ipsec']['phase2']))
+	if (!isset($config['ipsec']['phase2'])) {
 		return;
+	}
 
 	foreach ($config['ipsec']['phase2'] as &$rule) {
-		if (!empty($rule['uniqid']))
+		if (!empty($rule['uniqid'])) {
 			continue;
+		}
 
 		$rule['uniqid'] = uniqid();
 	}
@@ -3345,16 +3318,6 @@ function upgrade_109_to_110() {
 function upgrade_110_to_111()
 {
 	global $config;
-
-	/* Make sure unbound user exist */
-	mwexec('/usr/sbin/pw groupadd -n unbound -g 59', true);
-	mwexec('/usr/sbin/pw useradd -n unbound -c "Unbound DNS Resolver" -d /var/unbound -s /usr/sbin/nologin -u 59 -g 59', true);
-
-	/* cleanup old unbound package stuffs */
-	@unlink('/usr/local/www/unbound_status.php');
-	@unlink('/usr/local/www/unbound_acls.php');
-	@unlink('/usr/local/bin/unbound_monitor.sh');
-	@unlink('/usr/local/etc/rc.d/unbound.sh');
 
 	/* Remove old menu and service entries */
 	if (isset($config['installedpackages']['menu']) && is_array($config['installedpackages']['menu'])) {

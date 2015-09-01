@@ -133,19 +133,17 @@ function getIndexByUniqueId($uniqid) {
 	return $p2index;
 }
 
-
-if (!is_array($config['ipsec'])) {
-		$config['ipsec'] = array();
+if (!isset($config['ipsec']) || !is_array($config['ipsec'])) {
+    $config['ipsec'] = array();
 }
 
-if (!is_array($config['ipsec']['client'])) {
+if (!isset($config['ipsec']['client'])) {
     $config['ipsec']['client'] = array();
 }
 
-if (!is_array($config['ipsec']['phase2'])) {
+if (!isset($config['ipsec']['phase2'])) {
     $config['ipsec']['phase2'] = array();
 }
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	// lookup p2index
@@ -195,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 			/* defaults */
 	    $pconfig['localid_type'] = "lan";
 	    $pconfig['remoteid_type'] = "network";
-	    $pconfig['proto'] = "esp";
+	    $pconfig['protocol'] = "esp";
 	    $pconfig['ealgos'] = explode(",", "3des,blowfish,cast128,aes");
 	    $pconfig['hash-algorithm-option'] = explode(",", "hmac_sha1,hmac_md5");
 	    $pconfig['pfsgroup'] = "0";
@@ -355,7 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 		}
 
 		/* For ESP protocol, handle encryption algorithms */
-		if ($pconfig['proto'] == "esp") {
+		if ($pconfig['protocol'] == "esp") {
 				$ealgos = pconfig_to_ealgos($pconfig);
 
 				if (!count($ealgos)) {
@@ -445,7 +443,7 @@ include("head.inc");
 $( document ).ready(function() {
 	// old js code..
 	change_mode('<?=$pconfig['mode']?>');
-	change_protocol('<?=$pconfig['proto']?>');
+	change_protocol('<?=$pconfig['protocol']?>');
 	typesel_change_local(<?=$pconfig['localid_netbits']?>);
 <?php if (isset($pconfig['natlocalid_netbits'])):
 ?>
@@ -807,11 +805,11 @@ if (isset($input_errors) && count($input_errors) > 0) {
 								<tr>
 									<td><a id="help_for_proto" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Protocol"); ?></td>
 									<td width="78%" class="vtable">
-										<select name="proto" class="formselect" onchange="change_protocol()">
+										<select name="protocol" class="formselect" onchange="change_protocol()">
 	<?php
 											foreach (array('esp' => 'ESP','ah' => 'AH') as $proto => $protoname) :
 	?>
-											<option value="<?=$proto;?>" <?= $proto == $pconfig['proto'] ? "selected=\"selected\"" : "";?>>
+											<option value="<?=$proto;?>" <?= $proto == $pconfig['protocol'] ? "selected=\"selected\"" : "";?>>
 												<?=$protoname;?>
 											</option>
 										<?php
