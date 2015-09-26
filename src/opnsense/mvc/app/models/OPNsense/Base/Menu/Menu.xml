@@ -10,21 +10,25 @@
             <CertificateAuthority VisibleName="Certificate Authority" url="/system_camanager.php*"/>
             <CertificationRevocation VisibleName="Certification Revocation" url="/system_crlmanager.php*"/>
         </Certificates>
+        <ConfigManager VisibleName="Config Manager" url="/diag_confbak.php">
+            <History url="/diag_confbak.php*"/>
+            <Backups url="/diag_backup.php"/>
+        </ConfigManager>
         <CrashReporter VisibleName="Crash Reporter" url="/crash_reporter.php"/>
         <Firmware url="/ui/core/firmware/"/>
         <HighAvailSync VisibleName="High Availability" url="/system_hasync.php"/>
         <Routing url="/system_gateways.php">
-		<Routes url="/system_routes.php"/>
-		<RoutesEdit url="/system_routes_edit.php*"/>
-		<GatewayGroups url="/system_gateway_groups.php"/>
-		<GatewayGroupsEdit url="/system_gateway_groups_edit.php*"/>
+            <Routes url="/system_routes.php"/>
+            <RoutesEdit url="/system_routes_edit.php*"/>
+            <GatewayGroups url="/system_gateway_groups.php"/>
+            <GatewayGroupsEdit url="/system_gateway_groups_edit.php*"/>
         </Routing>
         <Settings url="/system_general.php">
             <General VisibleName="General" url="/system_general.php"/>
             <Admin_Access VisibleName="Admin Access" url="/system_advanced_admin.php"/>
             <Firewall_NAT VisibleName="Firewall/NAT" url="/system_advanced_firewall.php"/>
             <Networking url="/system_advanced_network.php"></Networking>
-            <Miscellaneos url="/system_advanced_misc.php"/>
+            <Miscellaneous url="/system_advanced_misc.php"/>
             <System_Tunables VisibleName="System Tunables" url="/system_advanced_sysctl.php"/>
             <Notifications url="/system_advanced_notifications.php"/>
         </Settings>
@@ -38,21 +42,30 @@
     </System>
     <Interfaces order="2" cssClass="glyphicon glyphicon-wrench">
         <Assign VisibleName="(Assign)" order="999" url="/interfaces_assign.php">
-            <InterfaceAssignments VisibleName="Interface Addignments" url="/interfaces_assign.php"/>
-            <InterfaceGroups VisibleName="Interface Groups" url="/interfaces_groups.php"/>
-            <Wireless url="/interfaces_wireless.php"/>
-            <VLANs url="/interfaces_vlan.php"/>
-            <QinQs url="/interfaces_qinq.php"/>
-            <PPPs url="/interfaces_ppps.php"/>
-            <GRE url="/interfaces_gre.php"/>
+            <Bridge url="/interfaces_bridge.php"/>
+            <BridgeEdit url="/interfaces_bridge_edit.php*"/>
             <GIF url="/interfaces_gif.php"/>
-            <Bridges url="/interfaces_bridge.php"/>
+            <GIFEdit url="/interfaces_gif_edit.php*"/>
+            <GRE url="/interfaces_gre.php"/>
+            <GREEdit url="/interfaces_gre_edit.php*"/>
+            <Groups url="/interfaces_groups.php"/>
+            <GroupsEdit url="/interfaces_groups_edit.php*"/>
             <LAGG url="/interfaces_lagg.php"/>
+            <LAGGEdit url="/interfaces_lagg_edit.php*"/>
+            <PPP url="/interfaces_ppps.php"/>
+            <PPPEdit url="/interfaces_ppps_edit.php*"/>
+            <QinQ url="/interfaces_qinq.php"/>
+            <QinQEdit url="/interfaces_qinq_edit.php*"/>
+            <VLAN url="/interfaces_vlan.php"/>
+            <VLANEdit url="/interfaces_vlan_edit.php*"/>
+            <Wireless url="/interfaces_wireless.php"/>
+            <WirelessEdit url="/interfaces_wireless_edit.php*"/>
         </Assign>
     </Interfaces>
     <Firewall order="3" cssClass="glyphicon glyphicon-fire">
         <Aliases url="/firewall_aliases.php">
             <AliasesEdit url="/firewall_aliases_edit.php*"/>
+            <AliasesImport url="/firewall_aliases_import.php"/>
             <IP url="/firewall_aliases.php?tab=ip"/>
             <Ports url="/firewall_aliases.php?tab=port"/>
             <URLs url="/firewall_aliases.php?tab=url"/>
@@ -65,8 +78,8 @@
             <OneOnOneEdit url="/firewall_nat_1to1_edit.php*"/>
             <Outbound url="/firewall_nat_out.php"/>
             <OutboundEdit url="/firewall_nat_out_edit.php*"/>
-            <NPt url="/firewall_nat_npt.php"/>
-            <NPtEdit url="/firewall_nat_npt_edit.php*"/>
+            <NPT url="/firewall_nat_npt.php"/>
+            <NPTEdit url="/firewall_nat_npt_edit.php*"/>
         </NAT>
         <Rules url="/firewall_rules.php">
             <RulesEdit url="/firewall_rules_edit.php*"/>
@@ -74,11 +87,11 @@
             <Interface url="/firewall_rules.php?if=*"/>
         </Rules>
         <Schedules url="/firewall_schedule.php">
-		<SchedulesEdit  url="/firewall_schedule_edit.php*"/>
+            <SchedulesEdit url="/firewall_schedule_edit.php*"/>
         </Schedules>
         <TrafficShaper url="/ui/trafficshaper/" VisibleName="Traffic Shaper"/>
         <VirtualIPs VisibleName="Virtual IPs" url="/firewall_virtual_ip.php">
-		<VirtualIPEdit url="/firewall_virtual_ip_edit.php*"/>
+            <VirtualIPEdit url="/firewall_virtual_ip_edit.php*"/>
         </VirtualIPs>
     </Firewall>
 
@@ -94,8 +107,8 @@
         </CaptivePortal>
         <DHCPRelay VisibleName="DHCP Relay" url="/services_dhcp_relay.php"/>
         <DHCPServer VisibleName="DHCP Server" url="/services_dhcp.php">
-		<DHCPServerTab url="/services_dhcp.php?if=*"/>
-		<DHCPServerEdit url="/services_dhcp_edit.php?*"/>
+            <DHCPServerTab url="/services_dhcp.php?if=*"/>
+            <DHCPServerEdit url="/services_dhcp_edit.php?*"/>
         </DHCPServer>
         <DHCPv6Relay VisibleName="DHCPv6 Relay" url="/services_dhcpv6_relay.php"/>
         <DHCPv6ServerRA VisibleName="DHCPv6 Server/RA" url="/services_dhcpv6.php">
@@ -114,7 +127,7 @@
             <DynamicDNSEdit url="/services_dyndns_edit.php"/>
         </DynamicDNS>
         <IGMPProxy VisibleName="IGMP Proxy" url="/services_igmpproxy.php">
-		<IGMPProxyEdit url="/services_igmpproxy_edit.php"/>
+            <IGMPProxyEdit url="/services_igmpproxy_edit.php"/>
         </IGMPProxy>
         <LoadBalancer VisibleName="Load Balancer" url="/load_balancer_pool.php">
             <Edit url="/load_balancer_pool_edit.php"/>
@@ -124,27 +137,26 @@
             <Settings url="/load_balancer_setting.php"/>
         </LoadBalancer>
         <NTP VisibleName="Network Time Protocol" url="/services_ntpd.php">
-		<GPS url="/services_ntpd_gps.php"/>
-		<PPS url="/services_ntpd_pps.php"/>
+            <GPS url="/services_ntpd_gps.php"/>
+            <PPS url="/services_ntpd_pps.php"/>
         </NTP>
-        <PPPoEServer VisibleName="PPPoE Server" url="/services_vpn_pppoe.php">
-		<PPPoeServerEdit url="/vpn_pppoe_edit.php"/>
-		<VPNPPPOE url="/vpn_pppoe.php"/>
+        <PPPoEServer VisibleName="PPPoE Server" url="/vpn_pppoe.php">
+            <PPPoeServerEdit url="/vpn_pppoe_edit.php"/>
         </PPPoEServer>
         <Proxy VisibleName="Proxy Server" url="/ui/proxy/"/>
         <SNMP VisibleName="SNMP" url="/services_snmp.php"/>
         <UPnP VisibleName="Universal Plug and Play" url="/services_upnp.php">
-		<UPnPEdit url="/services_upnp.php?*"/>
+            <UPnPEdit url="/services_upnp.php?*"/>
         </UPnP>
         <WoL VisibleName="Wake on LAN" url="/services_wol.php">
-		<WoLEdit url="/services_wol_edit.php*"/>
+            <WoLEdit url="/services_wol_edit.php*"/>
         </WoL>
     </Services>
 
     <VPN order="5" cssClass="glyphicon glyphicon-lock">
         <IPsec url="/vpn_ipsec.php">
-            <IPsecPhase1Edit  url="/vpn_ipsec_phase1.php*"/>
-            <IPsecPhase2Edit  url="/vpn_ipsec_phase2.php*"/>
+            <IPsecPhase1Edit url="/vpn_ipsec_phase1.php*"/>
+            <IPsecPhase2Edit url="/vpn_ipsec_phase2.php*"/>
             <MobileClients url="/vpn_ipsec_mobile.php"/>
             <Keys url="/vpn_ipsec_keys.php"/>
             <KeysEdit url="/vpn_ipsec_keys_edit.php"/>
@@ -170,14 +182,14 @@
 
     <Status order="6" cssClass="glyphicon glyphicon-tasks">
         <CaptivePortal VisibleName="Captive Portal" url="/status_captiveportal.php">
-		<CaptivePortalDetails url="/status_captiveportal.php?*"/>
+            <CaptivePortalDetails url="/status_captiveportal.php?*"/>
         </CaptivePortal>
         <CARP url="/carp_status.php"/>
         <DHCPLeases VisibleName="DHCP IPv4 Leases" url="/status_dhcp_leases.php">
-		<DHCPLeasesDetails  url="/status_dhcp_leases.php?*"/>
+            <DHCPLeasesDetails url="/status_dhcp_leases.php?*"/>
         </DHCPLeases>
         <DHCPv6Leases VisibleName="DHCP IPv6 Leases" url="/status_dhcpv6_leases.php">
-		<DHCPv6LeasesDetails url="/status_dhcpv6_leases.php?*"/>
+            <DHCPv6LeasesDetails url="/status_dhcpv6_leases.php?*"/>
         </DHCPv6Leases>
         <FilterReload VisibleName="Filter Reload" url="/status_filter_reload.php"/>
         <Gateways url="/status_gateways.php">
@@ -199,7 +211,7 @@
             <Settings url="/status_rrd_graph_settings.php"/>
         </RRDGraphs>
         <Services url="/status_services.php">
-		<ServicesActions url="/status_services.php?*"/>
+            <ServicesActions url="/status_services.php?*"/>
         </Services>
         <SystemLogs VisibleName="System Logs" url="/diag_logs.php">
             <System url="/diag_logs.php">
@@ -225,7 +237,7 @@
         </SystemLogs>
 
         <TrafficGraphs VisibleName="Traffic Graphs" url="/status_graph.php">
-		<TrafficGraphsDetails  url="/status_graph.php?*"/>
+            <TrafficGraphsDetails url="/status_graph.php?*"/>
         </TrafficGraphs>
         <UPnP VisibleName="Universal Plug and Play" url="/status_upnp.php"/>
     </Status>
@@ -233,9 +245,6 @@
     <Diagnostics order="7" cssClass="glyphicon glyphicon-stats">
         <ARPTable VisibleName="ARP Table" url="/diag_arp.php"/>
         <Authentication url="/diag_authentication.php"/>
-        <BackupRestore VisibleName="Backup &amp; Restore" url="/diag_backup.php">
-            <History url="/diag_confbak.php"/>
-        </BackupRestore>
         <DNSLookup VisibleName="DNS Lookup" url="/diag_dns.php"/>
         <FactoryDefaults VisibleName="Factory Defaults" url="/diag_defaults.php"/>
         <HaltSystem VisibleName="Halt System" url="/diag_halt.php"/>
@@ -249,13 +258,13 @@
         <Routes url="/diag_routes.php"/>
         <SmartStatus VisibleName="SMART Status" url="/diag_smart.php"/>
         <Sockets url="/diag_sockets.php">
-		<SocketsDetails url="/diag_sockets.php?*"/>
+            <SocketsDetails url="/diag_sockets.php?*"/>
         </Sockets>
         <States url="/diag_dump_states.php"/>
         <StatesSummary VisibleName="States Summary" url="/diag_states_summary.php"/>
         <SystemActivity VisibleName="System Activity" url="/diag_system_activity.php"/>
         <Tables url="/diag_tables.php">
-                <TablesDetails url="/diag_tables.php*"/>
+            <TablesDetails url="/diag_tables.php*"/>
         </Tables>
         <TestPort VisibleName="Test Port" url="/diag_testport.php"/>
         <Traceroute url="/diag_traceroute.php"/>

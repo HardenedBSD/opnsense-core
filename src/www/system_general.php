@@ -42,6 +42,7 @@ function get_locale_list()
 	/* first one is the default */
 	$locales['en_US'] = gettext('English');
 	$locales['zh_CN'] = gettext('Chinese (Simplified)');
+	$locales['fr_FR'] = gettext('French');
 	$locales['de_DE'] = gettext('German');
 	$locales['ja_JP'] = gettext('Japanese');
 
@@ -113,9 +114,6 @@ if (isset($config['system']['firmware']['flavour'])) {
 	$pconfig['flavour'] = $config['system']['firmware']['flavour'];
 }
 
-$changedesc = gettext("System") . ": ";
-$changecount = 0;
-
 if (isset($_POST['timezone']) && $pconfig['timezone'] <> $_POST['timezone']) {
 	filter_pflog_start();
 }
@@ -131,9 +129,6 @@ foreach($interfaces as $interface) {
 }
 
 if ($_POST) {
-
-	$changecount++;
-
 	unset($input_errors);
 	$pconfig = $_POST;
 
@@ -305,8 +300,7 @@ if ($_POST) {
 			}
 		}
 
-		if ($changecount > 0)
-			write_config($changedesc);
+		write_config();
 
 		$retval = 0;
 		$retval = system_hostname_configure();

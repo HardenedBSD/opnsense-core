@@ -30,16 +30,15 @@
 require_once("config.inc");
 require_once("util.inc");
 
-/* Include authentication routines */
 /* THIS MUST BE ABOVE ALL OTHER CODE */
-if(empty($nocsrf)) {
-
-function csrf_startup() {
+if (empty($nocsrf)) {
+	function csrf_startup()
+	{
 		csrf_conf('rewrite-js', '/csrf/csrf-magic.js');
 		$timeout_minutes = isset($config['system']['webgui']['session_timeout']) ?  $config['system']['webgui']['session_timeout'] : 240;
 		csrf_conf('expires', $timeout_minutes * 60);
 	}
-	require_once("csrf/csrf-magic.php");
+	require_once('csrf/csrf-magic.php');
 }
 
 function set_language($lang)
@@ -54,7 +53,18 @@ function set_language($lang)
 	bind_textdomain_codeset($textdomain, $lang_encoding);
 }
 
+function get_current_theme()
+{
+	global $config;
 
+	$theme = 'opnsense';
+
+	if (isset($config['theme']) && is_dir('/usr/local/opnsense/www/themes/' . $config['theme'])) {
+		$theme = $config['theme'];
+	}
+
+	return $theme;
+}
 
 /* make sure nothing is cached */
 if (isset($omit_nocacheheaders) && $omit_nocacheheaders) {
@@ -147,8 +157,11 @@ $wkports = array(
 	69 => "TFTP",
 	5900 => "VNC");
 
-$wlan_modes = array("bss" => "Infrastructure (BSS)", "adhoc" => "Ad-hoc (IBSS)",
-	"hostap" => "Access Point");
+$wlan_modes = array(
+	'bss' => 'Infrastructure (BSS)',
+	'adhoc' => 'Ad-hoc (IBSS)',
+	'hostap' => 'Access Point'
+);
 
 function do_input_validation($postdata, $reqdfields, $reqdfieldsn, &$input_errors)
 {
@@ -160,7 +173,10 @@ function do_input_validation($postdata, $reqdfields, $reqdfieldsn, &$input_error
 	}
 
 	for ($i = 0; $i < count($reqdfields); $i++) {
-		if ($_POST[$reqdfields[$i]] == "" && $_REQUEST[$reqdfields[$i]] == "") {
+		// why.. do you want to do this? we send data to validate and then validate something else....
+		// can't now for sure if any page uses this wrong behaviour, but it should die eventually.
+		// TODO: kill
+		if (empty($_POST[$reqdfields[$i]]) && empty($_REQUEST[$reqdfields[$i]])) {
 			$input_errors[] = sprintf(gettext("The field %s is required."), $reqdfieldsn[$i]);
 		}
 	}
@@ -208,7 +224,7 @@ function print_info_box_np($msg, $name="apply",$value="", $showapply=false) {
 	if(stristr($msg, gettext("apply")) != false || stristr($msg, gettext("save")) != false || stristr($msg, gettext("create")) != false || $showapply) {
 		$savebutton = "<form action=\"".$_SERVER['REQUEST_URI']."\" method=\"post\">";
 		$savebutton .= "<input name=\"{$name}\" type=\"submit\" class=\"btn btn-default\" id=\"${name}\" value=\"{$value}\" />";
-		if($_POST['if'])
+		if(!empty($_POST['if']))
 			$savebutton .= "<input type=\"hidden\" name=\"if\" value=\"" . htmlspecialchars($_POST['if']) . "\" />";
 		$savebutton.="</form>";
 	} else {
@@ -254,7 +270,7 @@ function print_info_box($msg)
 	print_info_box_np($msg);
 }
 
-function get_std_save_message($ok = '') {
+function get_std_save_message() {
 	global $d_sysrebootreqd_path;
 	$filter_related = false;
 	$filter_pages = array("nat", "filter");
@@ -284,7 +300,7 @@ function pprint_address($adr) {
 	} else if (isset($adr['network'])) {
 		$padr = $specialnets[$adr['network']];
 	} else {
-		$padr = $adr['address'];
+		$padr = isset($adr['address']) ? $adr['address'] : null;
 	}
 
 	if (isset($adr['not']))
@@ -312,48 +328,6 @@ function pprint_port($port) {
 	}
 
 	return $pport;
-}
-
-function firewall_check_for_advanced_options(&$item) {
-	$item_set = "";
-	if($item['os'])
-		$item_set .= "os {$item['os']} ";
-	if($item['dscp'])
-		$item_set .= "dscp {$item['dscp']} ";
-	if($item['max'])
-		$item_set .= "max {$item['max']} ";
-	if($item['max-src-nodes'])
-		$item_set .= "max-src-nodes {$item['max-src-nodes']} ";
-	if($item['max-src-conn'])
-		$item_set .= "max-src-conn {$item['max-src-conn']} ";
-	if($item['max-src-states'])
-		$item_set .= "max-src-states {$item['max-src-states']} ";
-	if(isset($item['nopfsync']))
-		$item_set .= "nopfsync ";
-	if($item['statetype'] != "keep state" && $item['statetype'] != "")
-		$item_set .= "statetype {$item['statetype']} ";
-	if($item['statetimeout'])
-		$item_set .= "statetimeout {$item['statetimeout']} ";
-	if(isset($item['nosync']))
-		$item_set .= "no XMLRPC Sync ";
-	if($item['max-src-conn-rate'])
-		$item_set .= "max-src-conn-rate {$item['max-src-conn-rate']} ";
-	if($item['max-src-conn-rates'])
-		$item_set .= "max-src-conn-rates {$item['max-src-conn-rates']} ";
-	if($item['gateway'])
-		$item_set .= "gateway {$item['gateway']} ";
-	if($item['tag'])
-		$item_set .= "tag {$item['tag']} ";
-	if($item['tagged'])
-		$item_set .= "tagged {$item['tagged']} ";
-	if(isset($item['allowopts']))
-		$item_set .= "allowopts ";
-	if(isset($item['disablereplyto']))
-		$item_set .= "disable reply-to ";
-	if($item['tcpflags_any'] || $item['tcpflags1'] || $item['tcpflags2'])
-		$item_set .= "tcpflags set";
-
-	return $item_set;
 }
 
 function gentitle($title) {
@@ -459,16 +433,19 @@ function update_if_changed($varname, & $orig, $new) {
 function address_to_pconfig($adr, &$padr, &$pmask, &$pnot, &$pbeginport, &$pendport) {
 	if (isset($adr['any']))
 		$padr = "any";
-	else if ($adr['network'])
+	else if (isset($adr['network']))
 		$padr = $adr['network'];
-	else if ($adr['address']) {
-		list($padr, $pmask) = explode("/", $adr['address']);
-		if (!$pmask) {
+	else if (isset($adr['address'])) {
+		if (strpos($adr['address'], '/') !== false) {
+			list($padr, $pmask) = explode("/", $adr['address']);
+		} else {
+			$padr = $adr['address'];
 			if (is_ipaddrv6($padr))
 				$pmask = 128;
 			else
 				$pmask = 32;
 		}
+
 	}
 
 	if (isset($adr['not']))
@@ -476,10 +453,13 @@ function address_to_pconfig($adr, &$padr, &$pmask, &$pnot, &$pbeginport, &$pendp
 	else
 		$pnot = 0;
 
-	if ($adr['port']) {
-		list($pbeginport, $pendport) = explode("-", $adr['port']);
-		if (!$pendport)
+	if (isset($adr['port'])) {
+		if (strpos($adr['port'], '-') !== false) {
+			list($pbeginport, $pendport) = explode("-", $adr['port']);
+		} else {
+			$pbeginport = $adr['port'];
 			$pendport = $pbeginport;
+		}
 	} else if (!is_alias($pbeginport) && !is_alias($pendport)) {
 		$pbeginport = "any";
 		$pendport = "any";
@@ -487,38 +467,39 @@ function address_to_pconfig($adr, &$padr, &$pmask, &$pnot, &$pbeginport, &$pendp
 }
 
 function pconfig_to_address(&$adr, $padr, $pmask, $pnot=false, $pbeginport=0, $pendport=0) {
-	$adr = array();
-
-	if ($padr == "any")
-		$adr['any'] = true;
-	else if (is_specialnet($padr))
-		$adr['network'] = $padr;
-	else {
-		$adr['address'] = $padr;
-		if (is_ipaddrv6($padr)) {
-			if ($pmask != 128)
-				$adr['address'] .= "/" . $pmask;
+		$adr = array();
+		if ($padr == "any") {
+				$adr['any'] = true;
+		} elseif (is_specialnet($padr)) {
+				$adr['network'] = $padr;
+		} elseif (is_alias($padr)) {
+				$adr['address'] = $padr;
 		} else {
-			if ($pmask != 32)
-				$adr['address'] .= "/" . $pmask;
+			$adr['address'] = $padr;
+			if (is_ipaddrv6($padr)) {
+				if ($pmask != 128)
+					$adr['address'] .= "/" . $pmask;
+			} else {
+				if ($pmask != 32)
+					$adr['address'] .= "/" . $pmask;
+			}
 		}
-	}
 
-	if ($pnot)
-		$adr['not'] = true;
-	else
-		unset($adr['not']);
+		if ($pnot) {
+				$adr['not'] = true;
+		} elseif (isset($adr['not'])) {
+				unset($adr['not']);
+		}
 
-	if (($pbeginport != 0) && ($pbeginport != "any")) {
-		if ($pbeginport != $pendport)
-			$adr['port'] = $pbeginport . "-" . $pendport;
-		else
-			$adr['port'] = $pbeginport;
-	}
-
-	if(is_alias($pbeginport)) {
-		$adr['port'] = $pbeginport;
-	}
+		if(is_alias($pbeginport)) {
+				$adr['port'] = $pbeginport;
+		} elseif (($pbeginport != 0) && ($pbeginport != "any")) {
+				if ($pbeginport != $pendport) {
+						$adr['port'] = $pbeginport . "-" . $pendport;
+				} else {
+						$adr['port'] = $pbeginport;
+				}
+		}
 }
 
 function is_specialnet($net) {
@@ -727,15 +708,4 @@ function get_menu_messages()
 	}
 
 	return ($menu_messages);
-}
-
-function get_current_theme()
-{
-	$theme = 'opnsense';
-
-	if (isset($config['theme']) && is_dir('/usr/local/opnsense/www/themes/' . $config['theme'])) {
-		$theme = $config['theme'];
-	}
-
-	return $theme;
 }

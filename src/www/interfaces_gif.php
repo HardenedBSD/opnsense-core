@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2008 Ermal Luçi
@@ -152,7 +153,15 @@ $main_buttons = array(
 										  </strong></span>
 										  <?=gettext("GIF tunnels are configured here."); ?>
 										  <br /><br />
-										  <?php echo gettext("If you are using a GIF tunnel to connect to a Hurricane Electric (he.net) Tunnel Broker on a WAN with a dynamic IP, you may want to add a"); ?> <a href="services_dyndns.php"><?php echo gettext("HE.net Tunnelbroker type DynDNS Entry"); ?></a> <?php echo gettext("to keep your tunnel functional when your IP changes."); ?></p>
+										  <?=sprintf(
+	gettext(
+		'If you are using a GIF tunnel to connect to a Hurricane Electric (he.net) Tunnel Broker ' .
+		'on a WAN with a dynamic IP, you may want to add a %sHE.net Tunnelbroker dynamic DNS entry%s ' .
+		'to keep your tunnel functional when your IP changes.'
+	),
+	'<a href="services_dyndns.php">',
+	'</a>'
+); ?></p>
                                 </div>
 
 		                        </form>

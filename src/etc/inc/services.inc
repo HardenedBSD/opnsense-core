@@ -1600,7 +1600,7 @@ function services_dhcrelay6_configure()
 			}
 		}
 		if (!isset($destif)) {
-			if (is_array($config['staticroutes']['route'])) {
+			if (isset($config['staticroutes']['route'])) {
 				foreach ($config['staticroutes']['route'] as $rtent) {
 					if (ip_in_subnet($srvip, $rtent['network'])) {
 						$a_gateways = return_gateways_array(true);
@@ -1736,7 +1736,7 @@ function services_dyndns_configure($int = '')
 		$gwgroups = return_gateway_groups_array();
 		if (is_array($dyndnscfg)) {
 			if (file_exists("/var/run/booting"))
-				echo gettext("Starting DynDNS clients...");
+				echo gettext("Starting dynamic DNS clients...");
 
 			foreach ($dyndnscfg as $dyndns) {
 				if ((empty($int)) || ($int == $dyndns['interface']) || (is_array($gwgroups[$dyndns['interface']]))) {
@@ -2250,12 +2250,12 @@ EOD;
 					if (($wanip != $cachedipv4) || (($currentTime - $cacheTimev4) > $maxCacheAgeSecs) || $forced) {
 						$upinst .= "update delete {$dnsupdate['host']}. A\n";
 						$upinst .= "update add {$dnsupdate['host']}. {$dnsupdate['ttl']} A {$wanip}\n";
-						$notify_text .= sprintf(gettext('DynDNS updated IP Address (A) for %s on %s (%s) to %s'), $dnsupdate['host'], convert_real_interface_to_friendly_descr($if), $if, $wanip) . "\n";
+						$notify_text .= sprintf(gettext('Dynamic DNS updated IP Address (A) for %s on %s (%s) to %s'), $dnsupdate['host'], convert_real_interface_to_friendly_descr($if), $if, $wanip) . "\n";
 						@file_put_contents($cacheFile, "{$wanip}|{$currentTime}");
-						log_error("phpDynDNS: updating cache file {$cacheFile}: {$wanip}");
+						log_error("Dynamic DNS: updating cache file {$cacheFile}: {$wanip}");
 						$need_update = true;
 					} else {
-						log_error("phpDynDNS: Not updating {$dnsupdate['host']} A record because the IP address has not changed.");
+						log_error("Dynamic DNS: Not updating {$dnsupdate['host']} A record because the IP address has not changed.");
 					}
 				} else
 					@unlink($cacheFile);
@@ -2265,12 +2265,12 @@ EOD;
 					if (($wanipv6 != $cachedipv6) || (($currentTime - $cacheTimev6) > $maxCacheAgeSecs) || $forced) {
 						$upinst .= "update delete {$dnsupdate['host']}. AAAA\n";
 						$upinst .= "update add {$dnsupdate['host']}. {$dnsupdate['ttl']} AAAA {$wanipv6}\n";
-						$notify_text .= sprintf(gettext('DynDNS updated IPv6 Address (AAAA) for %s on %s (%s) to %s'), $dnsupdate['host'], convert_real_interface_to_friendly_descr($if), $if, $wanipv6) . "\n";
+						$notify_text .= sprintf(gettext('Dynamic DNS updated IPv6 Address (AAAA) for %s on %s (%s) to %s'), $dnsupdate['host'], convert_real_interface_to_friendly_descr($if), $if, $wanipv6) . "\n";
 						@file_put_contents("{$cacheFile}.ipv6", "{$wanipv6}|{$currentTime}");
-						log_error("phpDynDNS: updating cache file {$cacheFile}.ipv6: {$wanipv6}");
+						log_error("Dynamic DNS: updating cache file {$cacheFile}.ipv6: {$wanipv6}");
 						$need_update = true;
 					} else {
-						log_error("phpDynDNS: Not updating {$dnsupdate['host']} AAAA record because the IPv6 address has not changed.");
+						log_error("Dynamic DNS: Not updating {$dnsupdate['host']} AAAA record because the IPv6 address has not changed.");
 					}
 				} else
 					@unlink("{$cacheFile}.ipv6");
@@ -2613,29 +2613,32 @@ function service_name_compare($a, $b) {
 }
 
 
-function get_service_status($service) {
-	global $g;
+function get_service_status($service)
+{
 	switch ($service['name']) {
-		case "openvpn":
+		case 'openvpn':
 			$running = isvalidpid("/var/run/openvpn_{$service['mode']}{$service['vpnid']}.pid");
 			break;
-		case "captiveportal":
+		case 'captiveportal':
 			$running = isvalidpid("/var/run/lighty-{$service['zone']}-CaptivePortal.pid");
-			if (isset($config['captiveportal'][$service['zone']]['httpslogin']))
+			if (isset($config['captiveportal'][$service['zone']]['httpslogin'])) {
 				$running = $running && isvalidpid("/var/run/lighty-{$service['zone']}-CaptivePortal-SSL.pid");
+			}
 			break;
-		case "vhosts-http":
-			$running = isvalidpid("/var/run/vhosts-http.pid");
-			break;
-		case "dhcrelay6":
-			$running = isvalidpid("/var/run/dhcrelay6.pid");
+		case 'dhcrelay6':
+			$running = isvalidpid('/var/run/dhcrelay6.pid');
 			break;
 		case 'ipsec':
-			$running = isvalidpid("/var/run/charon.pid");
+			$running = isvalidpid('/var/run/charon.pid');
+			break;
+		case 'ntpd':
+			$running = isvalidpid('/var/run/ntpd.pid');
 			break;
 		default:
 			$running = is_process_running($service['name']);
+			break;
 	}
+
 	return $running;
 }
 

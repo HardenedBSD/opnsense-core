@@ -52,11 +52,11 @@ if (isset($_POST) && count($_POST) > 0) {
     }
 
     if (isset($_POST['ipv6nat_enable']) && $_POST['ipv6nat_enable'] == "yes") {
+	$config['diag']['ipv6nat'] = array();
         $config['diag']['ipv6nat']['enable'] = true;
         $config['diag']['ipv6nat']['ipaddr'] = $_POST['ipv6nat_ipaddr'];
     } elseif (isset($config['diag']['ipv6nat'])) {
-        unset($config['diag']['ipv6nat']['enable']);
-        unset($config['diag']['ipv6nat']['ipaddr']);
+        unset($config['diag']['ipv6nat']);
     }
 
     if (isset($_POST['ipv6allow']) && $_POST['ipv6allow'] == "yes") {
@@ -107,7 +107,6 @@ if (isset($_POST) && count($_POST) > 0) {
         unset($config['system']['disablevlanhwfilter']);
     }
 
-    // save when no errors are found
     if (count($input_errors) == 0) {
         setup_polling();
         if (isset($config['system']['sharednet'])) {
@@ -117,18 +116,11 @@ if (isset($_POST) && count($_POST) > 0) {
         }
         setup_microcode();
 
-        // Write out configuration (config.xml)
         write_config();
+        $savemsg = get_std_save_message();
 
-        // Set preferred protocol
         prefer_ipv4_or_ipv6();
-
-        $retval = filter_configure();
-        if (stristr($retval, "error") <> true) {
-            $savemsg = get_std_save_message(gettext($retval));
-        } else {
-            $savemsg = gettext($retval);
-        }
+        filter_configure();
     }
 }
 

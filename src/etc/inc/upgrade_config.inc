@@ -786,13 +786,15 @@ function upgrade_042_to_043() {
 }
 
 
-function upgrade_043_to_044() {
+function upgrade_043_to_044()
+{
 	global $config;
 
 	/* migrate static routes to the new gateways config */
 	$gateways = return_gateways_array(true);
 	$i = 0;
-	if (is_array($config['staticroutes']['route'])) {
+
+	if (isset($config['staticroutes']['route'])) {
 		$gwmap = array();
 		foreach ($config['staticroutes']['route'] as $idx => $sroute) {
 			$found = false;
@@ -3267,21 +3269,8 @@ function upgrade_105_to_106() {
 	}
 }
 
-function upgrade_106_to_107() {
-	global $config;
-
-}
-
-function upgrade_107_to_108() {
-	global $config;
-
-	if (isset($config['system']['webgui']['noautocomplete']))
-		unset($config['system']['webgui']['noautocomplete']);
-	else
-		$config['system']['webgui']['loginautocomplete'] = true;
-}
-
-function upgrade_108_to_109() {
+function upgrade_108_to_109()
+{
 	global $config;
 
 	if (!isset($config['filter']['rule']) || !is_array($config['filter']['rule']))
@@ -3432,8 +3421,6 @@ function upgrade_111_to_112()
 {
 	global $config;
 
-	$config['theme'] = 'opnsense';
-
 	if (isset($config['system']['ssh']['sshdkeyonly'])) {
 		unset($config['system']['ssh']['sshdkeyonly']);
 	} else {
@@ -3443,5 +3430,14 @@ function upgrade_111_to_112()
 	if (isset($config['system']['enablesshd'])) {
 		$config['system']['ssh']['enabled'] = true;
 		unset($config['system']['enablesshd']);
+	}
+
+	if (isset($config['system']['user'])) {
+		foreach ($config['system']['user'] as &$user) {
+			if ($user['uid'] == '0') {
+				/* root user must be named root */
+				$user['name'] = 'root';
+			}
+		}
 	}
 }
