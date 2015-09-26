@@ -103,6 +103,7 @@ CORE_DEPENDS?=		apinger \
 			relayd \
 			rrdtool12 \
 			secadm \
+			secadm-rules \
 			smartmontools \
 			squid \
 			sshlockout_pf \
