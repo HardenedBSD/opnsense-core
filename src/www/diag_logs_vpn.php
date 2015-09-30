@@ -66,10 +66,11 @@ switch ($vpntype) {
 }
 
 if ($_POST['clear']) {
-	if ($mode != "raw")
-		clear_log_file("/var/log/vpn.log");
-	else
-		clear_log_file("/var/log/{$logname}.log");
+	if ($mode != "raw") {
+		clear_clog("/var/log/vpn.log");
+	} else {
+		clear_clog("/var/log/{$logname}.log");
+	}
 }
 
 function dump_clog_vpn($logfile, $tail) {
@@ -124,7 +125,7 @@ include("head.inc");
 				    <div class="container-fluid">
 
 
-							<? $tab_group = 'vpn'; include('diag_logs_pills.php'); ?>
+							<? $tab_group = 'vpn'; include('diag_logs_pills.inc'); ?>
 
 
 							 <div class="table-responsive">

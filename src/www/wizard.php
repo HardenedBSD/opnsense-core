@@ -70,47 +70,70 @@ function find_ip_interface($ip, $bits = null) {
 }
 
 
-global $g;
-
 $stepid = htmlspecialchars($_GET['stepid']);
 if (isset($_POST['stepid']))
 	$stepid = htmlspecialchars($_POST['stepid']);
 if (!$stepid)
 	$stepid = "0";
 
-$xml = htmlspecialchars($_GET['xml']);
-if($_POST['xml'])
+$xml = '';
+if (isset($_GET['xml'])) {
+	$xml = htmlspecialchars($_GET['xml']);
+} elseif (isset($_POST['xml'])) {
 	$xml = htmlspecialchars($_POST['xml']);
-
-if(empty($xml)) {
-	$xml = "not_defined";
-	print_info_box_np(sprintf(gettext("ERROR:  Could not open %s."), $xml));
-	die;
-} else {
-	if (file_exists("/usr/local/www/wizards/{$xml}")) {
-		global $listtags ;
-		$listtags = array_flip(array('build_port_path', 'depends_on_package', 'onetoone', 'queue', 'rule', 'servernat', 'alias', 'additional_files_needed', 'tab', 'template', 'menu', 'rowhelperfield', 'service', 'step', 'package', 'columnitem', 'option', 'item', 'field', 'package', 'file'));
-		$pkg = parse_xml_config_raw('/usr/local/www/wizards/' . $xml, 'opnsensewizard', false);
-	} else {
-		print_info_box_np(sprintf(gettext("ERROR:  Could not open %s."), $xml));
-		die;
-	}
 }
 
+/*
+ * XXX If we don't want hardcoding we could
+ * probe /usr/local/wizard for viable files.
+ */
+switch ($xml) {
+	case 'openvpn':
+		break;
+	default:
+		$xml = 'setup';
+		break;
+}
+
+global $g, $listtags;
+
+$listtags = array_flip(array(
+	'additional_files_needed',
+	'alias',
+	'build_port_path',
+	'columnitem',
+	'depends_on_package',
+	'field',
+	'file',
+	'item',
+	'menu',
+	'onetoone',
+	'option',
+	'package',
+	'package',
+	'queue',
+	'rowhelperfield',
+	'rule',
+	'servernat',
+	'service',
+	'step',
+	'tab',
+	'template',
+));
+
+$pkg = parse_xml_config_raw("/usr/local/wizard/{$xml}.xml", 'opnsensewizard', false);
 if (!is_array($pkg)) {
-	print_info_box_np(sprintf(gettext("ERROR: Could not parse /usr/local/www/wizards/%s file."), $xml));
+	print_info_box_np(sprintf(gettext("ERROR: Could not parse %s wizard file."), $xml));
 	die;
 }
 
-$title       = preg_replace("/pfSense/i", $g['product_name'], $pkg['step'][$stepid]['title']);
 $description = preg_replace("/pfSense/i", $g['product_name'], $pkg['step'][$stepid]['description']);
-$totalsteps  = $pkg['totalsteps'];
+$title = preg_replace("/pfSense/i", $g['product_name'], $pkg['step'][$stepid]['title']);
+$totalsteps = $pkg['totalsteps'];
 
-if ($pkg['includefile'])
+if ($pkg['includefile']) {
 	require_once($pkg['includefile']);
-
-if ($pkg['step'][$stepid]['includefile'])
-	require_once($pkg['step'][$stepid]['includefile']);
+}
 
 if($pkg['step'][$stepid]['stepsubmitbeforesave']) {
 	eval($pkg['step'][$stepid]['stepsubmitbeforesave']);
@@ -700,11 +723,19 @@ function showchange() {
 				if(!$field['dontcombinecells'])
 					echo "<td class=\"vtable\">";
 				echo "<select class='form-control' name='{$name}' style='max-width:5em;'>\n";
-				for($x=1; $x<33; $x++) {
-					$CHECKED = "";
-					if($value == $x) $CHECKED = " selected=\"selected\"";
-					if($x <> 31)
-						echo "<option value='{$x}' {$CHECKED}>{$x}</option>\n";
+				$CHECKED = ' selected="selected"';
+				for ($x = 1; $x <= 32; $x++) {
+					if ($x == 31) {
+						continue;
+					}
+					if ($value == $x) $CHECKED = " selected=\"selected\"";
+					echo "<option value='{$x}'";
+					if ($value == $x || $x == 32) {
+						echo $CHECKED;
+						/* only used once */
+						$CHECKED = '';
+					}
+					echo ">{$x}</option>\n";
 				}
 				echo "</select>\n";
 

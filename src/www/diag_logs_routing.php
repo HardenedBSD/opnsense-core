@@ -40,7 +40,7 @@ if (empty($config['syslog']['nentries'])) {
 }
 
 if ($_POST['clear']) {
-	clear_log_file($routing_logfile);
+	clear_clog($routing_logfile);
 }
 
 $pgtitle = array(gettext("Status"),gettext("System logs"),gettext("Routing"));
@@ -67,7 +67,7 @@ include("head.inc");
 				    <div class="container-fluid">
 
 
-							<? include('diag_logs_pills.php'); ?>
+							<? include('diag_logs_pills.inc'); ?>
 				    </div>
 
 							 <div class="table-responsive">

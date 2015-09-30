@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2015 Deciso B.V.
 	All rights reserved.
@@ -26,8 +27,7 @@
 */
 
 require_once("guiconfig.inc");
-
-$logfile = '/var/log/squid/cache.log';
+require_once("system.inc");
 
 if (empty($config['syslog']['nentries'])) {
         $nentries = 50;
@@ -35,11 +35,15 @@ if (empty($config['syslog']['nentries'])) {
         $nentries = $config['syslog']['nentries'];
 }
 
-if ($_POST['clear']) {
-        // trash log file
-        $handle = fopen($logfile, 'r+');
-        ftruncate($handle, 0);
-        fclose($handle);
+$type = 'cache';
+if (isset($_GET['type']) && $_GET['type'] === 'access') {
+	$type = $_GET['type'];
+}
+
+$logfile = "/var/log/squid/{$type}.log";
+
+if (isset($_GET['clear'])) {
+	clear_log($logfile);
 }
 
 $pgtitle = array(gettext("Status"),gettext("System logs"),gettext("Proxy"));
@@ -54,17 +58,19 @@ include("head.inc");
     <div class="container-fluid">
         <div class="row">
             <section class="col-xs-12">
-                <? include('diag_logs_tabs.inc'); ?>
+                <?php include('diag_logs_tabs.inc'); ?>
                 <div class="tab-content content-box col-xs-12">
                     <div class="container-fluid">
-                        <p> <?php printf(gettext("Last %s log entries"), $max_logentries);?></p>
-                        <pre><?php
-                                if (file_exists($logfile)) {
-                                        echo trim(implode("", array_slice(file($logfile), -$max_logentries)));
-                                }
-                        ?></pre>
-                        <form method="post">
+                        <?php $tab_group = 'proxy'; include('diag_logs_pills.inc'); ?>
+                        <p><?php printf(gettext("Last %s Proxy log entries"), $nentries);?></p>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sort">
+                                <?php dump_log($logfile, $nentries); ?>
+                            </table>
+                        </div>
+                        <form method="get">
                             <input name="clear" type="submit" class="btn" value="<?= gettext("Clear log");?>" />
+                            <input name="type" type="hidden" value="<?= $type ?>" />
                         </form>
                     </div>
                 </div>

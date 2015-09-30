@@ -41,7 +41,7 @@ if (empty($config['syslog']['nentries'])) {
 }
 
 if (isset($_POST['clear'])) {
-	clear_log_file($system_logfile);
+	clear_clog($system_logfile);
 }
 
 if ($_GET['filtertext']) {
@@ -79,7 +79,7 @@ include("head.inc");
 				    <div class="container-fluid">
 
 
-							<? include('diag_logs_pills.php'); ?>
+							<? include('diag_logs_pills.inc'); ?>
 				    </div>
 
 							 <div class="table-responsive">

@@ -768,21 +768,13 @@ function system_syslogd_start()
 
 	$syslogcfg = $config['syslog'];
 
-	if (file_exists("/var/run/booting"))
-		echo gettext("Starting syslog...");
-
-	// Which logging type are we using this week??
-	if (isset($config['system']['disablesyslogclog'])) {
-		$log_directive = "";
-		$log_create_directive = "/usr/bin/touch ";
-		$log_size = "";
-	} else { // Defaults to CLOG
-		$log_directive = "%";
-		$log_size = isset($config['syslog']['logfilesize']) ? $config['syslog']['logfilesize'] : "10240";
-		$log_create_directive = "/usr/local/sbin/clog -i -s ";
+	if (file_exists('/var/run/booting')) {
+		echo gettext('Starting syslog...');
 	}
 
-	$syslogd_extra = "";
+	$log_directive = '%';
+	$syslogd_extra = '';
+
 	if (isset($syslogcfg)) {
 		$separatelogfacilities = array('ntp','ntpd','ntpdate','charon','openvpn','pptps','poes','l2tps','relayd','hostapd','dnsmasq','filterdns','unbound','dhcpd','dhcrelay','dhclient','dhcp6c','apinger','radvd','routed','olsrd','zebra','ospfd','bgpd','miniupnpd','filterlog');
 		$syslogconf = "";

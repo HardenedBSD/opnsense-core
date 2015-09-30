@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    Copyright (C) 2015 Deciso B.V.
  *
@@ -31,7 +32,6 @@ namespace OPNsense\Base;
 use OPNsense\Core\Config;
 use Phalcon\Mvc\Controller;
 use Phalcon\Translate\Adapter\Gettext;
-use Phalcon\Translate\Adapter\NativeArray;
 
 /**
  * Class ControllerBase implements core controller for OPNsense framework
@@ -41,25 +41,31 @@ class ControllerBase extends ControllerRoot
 {
     /**
      * translate a text
-     * @return NativeArray
+     * @return Gettext
      */
-    public function getTranslator()
+    public function getTranslator($cnf)
     {
-        /*
-        if (function_exists("gettext")) {
-            // gettext installed, return gettext translator
-            return new Gettext(array(
-                "locale" => "en_US",
-                "directory" => "/usr/local/share/locale/",
-                'file' => 'LC_MESSAGES/OPNsense.pot',
-            ));
-        } else {
-        */
-            // no gettext installed, return original content
-            return new NativeArray(array(
-                "content" => array()
-            ));
-        //}
+        $lang = 'en_US';
+
+        foreach ($cnf->object()->system->children() as $key => $node) {
+            if ($key == 'language') {
+                $lang = $node->__toString();
+                break;
+            }
+        }
+
+        $lang_encoding = $lang . '.UTF-8';
+
+        $ret = new Gettext(array(
+            'directory' => '/usr/local/share/locale',
+            'defaultDomain' => 'OPNsense',
+            'locale' => $lang_encoding,
+        ));
+
+        /* this isn't being done by Phalcon */
+        putenv('LANG=' . $lang_encoding);
+
+        return $ret;
     }
 
     /**
@@ -120,6 +126,7 @@ class ControllerBase extends ControllerRoot
     }
 
     /**
+     * parse an xml type form
      * @param $formname
      * @return array
      * @throws \Exception
@@ -187,14 +194,15 @@ class ControllerBase extends ControllerRoot
             'csrf_token' => $this->security->getToken()
         ]);
 
-        // set translator
-        $this->view->setVar('lang', $this->getTranslator());
-
         // link menu system to view, append /ui in uri because of rewrite
         $menu = new Menu\MenuSystem();
 
         // add interfaces to "Interfaces" menu tab... kind of a hack, may need some improvement.
         $cnf = Config::getInstance();
+
+        // set translator
+        $this->view->setVar('lang', $this->getTranslator($cnf));
+
         $ifarr = array();
         foreach ($cnf->object()->interfaces->children() as $key => $node) {
             $ifarr[$key] = $node;

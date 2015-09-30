@@ -42,7 +42,7 @@ if (empty($config['syslog']['nentries'])) {
 }
 
 if ($_POST['clear']) {
-	clear_log_file($wireless_logfile);
+	clear_clog($wireless_logfile);
 }
 
 $pgtitle = array(gettext("Status"),gettext("System logs"),gettext("Wireless"));
@@ -69,7 +69,7 @@ include("head.inc");
 				    <div class="container-fluid">
 
 
-							<? include('diag_logs_pills.php'); ?>
+							<? include('diag_logs_pills.inc'); ?>
 
 
 							 <div class="table-responsive">

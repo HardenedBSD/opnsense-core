@@ -16,6 +16,7 @@
         </ConfigManager>
         <CrashReporter VisibleName="Crash Reporter" url="/crash_reporter.php"/>
         <Firmware url="/ui/core/firmware/"/>
+        <Health url="/ui/diagnostics/systemhealth/" cssClass="fa fa-heartbeat"/>
         <HighAvailSync VisibleName="High Availability" url="/system_hasync.php"/>
         <Routing url="/system_gateways.php">
             <Routes url="/system_routes.php"/>
@@ -32,7 +33,9 @@
             <System_Tunables VisibleName="System Tunables" url="/system_advanced_sysctl.php"/>
             <Notifications url="/system_advanced_notifications.php"/>
         </Settings>
-        <SetupWizard VisibleName="Setup Wizard" url="/wizard.php?xml=setup_wizard.xml"/>
+        <SetupWizard VisibleName="Setup Wizard" url="/wizard.php">
+            <Step url="/wizard.php*"/>
+        </SetupWizard>
         <UserManager VisibleName="User Manager" url="/system_usermanager.php">
             <Users url="/system_usermanager.php"/>
             <Groups url="/system_groupmanager.php"/>
@@ -170,7 +173,6 @@
             <ServerEdit url="/vpn_openvpn_server.php?*"/>
             <Client url="/vpn_openvpn_client.php*"/>
             <CSC url="/vpn_openvpn_csc.php*"/>
-            <Wizards url="/wizard.php?xml=openvpn_wizard.xml"/>
             <ClientExport url="/vpn_openvpn_export.php*"/>
             <SharedKeyExport url="/vpn_openvpn_export_shared.php"/>
         </OpenVPN>
@@ -232,7 +234,9 @@
             <LoadBalancer url="/diag_logs_relayd.php"/>
             <OpenVPN url="/diag_logs_openvpn.php"/>
             <NTP url="/diag_logs_ntpd.php"/>
-            <Proxy url="/diag_logs_proxy.php"/>
+            <Proxy url="/diag_logs_proxy.php">
+                <ProxyActions url="/diag_logs_proxy.php?*"/>
+            </Proxy>
             <Settings url="/diag_logs_settings.php"/>
         </SystemLogs>
 

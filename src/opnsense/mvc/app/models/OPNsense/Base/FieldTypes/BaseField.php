@@ -46,6 +46,11 @@ abstract class BaseField
     protected $internalChildnodes = array();
 
     /**
+     * @var null pointer to parent
+     */
+    protected $internalParentNode = null;
+
+    /**
      * @var bool marks if this is a data node or a container
      */
     protected $internalIsContainer = true;
@@ -96,6 +101,7 @@ abstract class BaseField
     protected $internalAttributes = array();
 
     /**
+     * generate a new UUID v4 number
      * @return string uuid v4 number
      */
     public function generateUUID()
@@ -135,6 +141,7 @@ abstract class BaseField
     }
 
     /**
+     * check if this is a container type without data
      * @return bool returns if this a container type object (no data)
      */
     public function isContainer()
@@ -185,6 +192,16 @@ abstract class BaseField
     public function addChildNode($name, $node)
     {
         $this->internalChildnodes[$name] = $node;
+        $node->setParentNode($this);
+    }
+
+    /**
+     * set pointer to parent node, used by addChildNode to backref this node
+     * @param BaseField $node pointer to parent
+     */
+    private function setParentNode($node)
+    {
+        $this->internalParentNode = $node;
     }
 
     /**
@@ -236,6 +253,7 @@ abstract class BaseField
     }
 
     /**
+     * return string interpretation of this field
      * @return null|string string interpretation of this field
      */
     public function __toString()
@@ -288,6 +306,7 @@ abstract class BaseField
     }
 
     /**
+     * retrieve field attributes
      * @return array Field attributes
      */
     public function getAttributes()
@@ -296,6 +315,7 @@ abstract class BaseField
     }
 
     /**
+     * get this nodes children
      * @return array child items
      */
     public function getChildren()
@@ -304,6 +324,7 @@ abstract class BaseField
     }
 
     /**
+     * return field validators for this field
      * @return array returns validators for this field type (empty if none)
      */
     public function getValidators()
@@ -321,6 +342,8 @@ abstract class BaseField
     }
 
     /**
+     * returns if this node is virtual, the framework uses this to determine if this node maybe should only be used to
+     * clone children. (using ArrayFields)
      * @return bool is virtual node
      */
     public function getInternalIsVirtual()
