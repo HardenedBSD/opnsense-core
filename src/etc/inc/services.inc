@@ -422,7 +422,7 @@ function services_dhcpdv4_configure()
 			exec('cd /;LANG=C /usr/bin/tar -xzf /conf/dhcpleases.tgz 2>&1', $dhcprestore, $dhcpreturn);
 			$dhcprestore = implode(' ', $dhcprestore);
 			if($dhcpreturn <> 0) {
-				log_error(sprintf(gettext('DHCP leases restore failed exited with %1$s, the error is: %2$s%3$s'), $dhcpreturn, $dhcprestore, "\n"));
+				log_error(sprintf(gettext('DHCP leases restore failed exited with %s, the error is: %s'), $dhcpreturn, $dhcprestore));
 			}
 		}
 	}
@@ -1920,6 +1920,7 @@ function services_dnsmasq_configure()
 		$cmd = "/usr/local/sbin/dnsmasq --all-servers {$dns_rebind} {$args}";
 		//log_error("dnsmasq command: {$cmd}");
 		mwexec_bg($cmd);
+		system_dhcpleases_configure();
 		unset($args);
 
 		if (file_exists("/var/run/booting"))
@@ -1949,6 +1950,7 @@ function services_unbound_configure()
 			sleep(1);
 
 		sync_unbound_service();
+		system_dhcpleases_configure();
 		if (file_exists("/var/run/booting"))
 			echo gettext("done.") . "\n";
 	}

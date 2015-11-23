@@ -1,4 +1,5 @@
 <?php
+
 /*
     Copyright (C) 2014-2015 Deciso B.V.
     Copyright (C) 2008 Bill Marquette <bill.marquette@gmail.com>.
@@ -53,9 +54,6 @@ if (isset($id) && $a_action[$id]) {
 	$pconfig['action'] = 'change';
 }
 
-$changedesc = gettext("Load Balancer: Relay Action:") . " ";
-$changecount = 0;
-
 $kv = array('key', 'value');
 $vk = array('value', 'key');
 $hr_actions = array();
@@ -92,8 +90,6 @@ $actions['direction']['response']['header'] = $hr_actions;
 
 
 if ($_POST) {
-	$changecount++;
-
 	unset($input_errors);
 	$pconfig = $_POST;
 
@@ -119,10 +115,9 @@ if ($_POST) {
 
 	if (!$input_errors) {
 		$actent = array();
-		if(isset($id) && $a_action[$id])
+		if (isset($id) && $a_action[$id]) {
 			$actent = $a_action[$id];
-		if($actent['name'] != "")
-			$changedesc .= " " . sprintf(gettext("modified '%s' action:"), $actent['name']);
+		}
 
 		update_if_changed("name", $actent['name'], $pconfig['name']);
 		update_if_changed("protocol", $actent['protocol'], $pconfig['protocol']);
@@ -157,12 +152,9 @@ if ($_POST) {
 		} else {
 			$a_action[] = $actent;
 		}
-		if ($changecount > 0) {
-			/* Mark config dirty */
-			mark_subsystem_dirty('loadbalancer');
-			write_config($changedesc);
-		}
 
+		mark_subsystem_dirty('loadbalancer');
+		write_config();
 		header("Location: load_balancer_relay_action.php");
 		exit;
 	}
@@ -412,13 +404,13 @@ jQuery(document).ready(function() {
 									<tr align="left" id="name">
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("Name"); ?></td>
 										<td width="78%" class="vtable" colspan="2">
-											<input name="name" type="text" <?if(isset($pconfig['name'])) echo "value=\"{$pconfig['name']}\"";?> size="16" maxlength="16">
+											<input name="name" type="text" <?php if(isset($pconfig['name'])) echo "value=\"{$pconfig['name']}\"";?> size="16" maxlength="16">
 										</td>
 									</tr>
 									<tr align="left">
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("Description"); ?></td>
 										<td width="78%" class="vtable" colspan="2">
-											<input name="descr" type="text" <?if(isset($pconfig['descr'])) echo "value=\"{$pconfig['descr']}\"";?>size="64">
+											<input name="descr" type="text" <?php if(isset($pconfig['descr'])) echo "value=\"{$pconfig['descr']}\"";?>size="64">
 										</td>
 									</tr>
 							<!-- Protocol -->
@@ -505,11 +497,11 @@ jQuery(document).ready(function() {
 											</select>
 							<br />
 							<table><tr>
-							<td><div id="input_action_value"><?=gettext("Value"); ?>&nbsp;<input id="option_action_value" name="option_action_value" type="text" <?if(isset($pconfig['options']['value'])) echo "value=\"{$pconfig['options']['value']}\"";?>size="20"></div></td>
+							<td><div id="input_action_value"><?=gettext("Value"); ?>&nbsp;<input id="option_action_value" name="option_action_value" type="text" <?php if(isset($pconfig['options']['value'])) echo "value=\"{$pconfig['options']['value']}\"";?>size="20"></div></td>
 							<td><div id="action_action_value"></div></td>
-							<td><div id="input_action_key"><?=gettext("Key"); ?>&nbsp;<input id="option_action_key" name="option_action_key" type="text" <?if(isset($pconfig['options']['akey'])) echo "value=\"{$pconfig['options']['akey']}\"";?>size="20"></div></td>
+							<td><div id="input_action_key"><?=gettext("Key"); ?>&nbsp;<input id="option_action_key" name="option_action_key" type="text" <?php if(isset($pconfig['options']['akey'])) echo "value=\"{$pconfig['options']['akey']}\"";?>size="20"></div></td>
 							<td><div id="action_action_id"></div></td>
-							<td><div id="input_action_id"><?=gettext("ID"); ?>&nbsp;<input id="option_action_id" name="option_action_id" type="text" <?if(isset($pconfig['options']['id'])) echo "value=\"{$pconfig['options']['id']}\"";?>size="20"></div></td>
+							<td><div id="input_action_id"><?=gettext("ID"); ?>&nbsp;<input id="option_action_id" name="option_action_id" type="text" <?php if(isset($pconfig['options']['id'])) echo "value=\"{$pconfig['options']['id']}\"";?>size="20"></div></td>
 							</tr></table>
 										</td>
 									</tr>

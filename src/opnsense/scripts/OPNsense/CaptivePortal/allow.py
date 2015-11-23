@@ -35,10 +35,10 @@ from lib.arp import ARP
 from lib.ipfw import IPFW
 
 # parse input parameters
-parameters = {'username': '', 'ip_address': None, 'zoneid': None, 'output_type':'plain'}
+parameters = {'username': '', 'ip_address': None, 'zoneid': None, 'authenticated_via': None, 'output_type': 'plain'}
 current_param = None
 for param in sys.argv[1:]:
-    if param[0] == '/':
+    if len(param) > 1 and param[0] == '/':
         current_param = param[1:].lower()
     elif current_param is not None:
         if current_param in parameters:
@@ -56,6 +56,7 @@ if parameters['ip_address'] is not None and parameters['zoneid'] is not None:
         mac_address = None
 
     response = cpDB.add_client(zoneid=parameters['zoneid'],
+                               authenticated_via=parameters['authenticated_via'],
                                username=parameters['username'],
                                ip_address=parameters['ip_address'],
                                mac_address=mac_address
@@ -66,9 +67,9 @@ if parameters['ip_address'] is not None and parameters['zoneid'] is not None:
 
     # add accounting for this ip address
     cpIPFW.add_accounting(parameters['ip_address'])
-    response['state'] = 'AUTHORIZED'
+    response['clientState'] = 'AUTHORIZED'
 else:
-    response = {'state': 'UNKNOWN'}
+    response = {'clientState': 'UNKNOWN'}
 
 
 # output result as plain text or json
@@ -77,4 +78,3 @@ if parameters['output_type'] != 'json':
         print '%20s %s' % (item, response[item])
 else:
     print(ujson.dumps(response))
-

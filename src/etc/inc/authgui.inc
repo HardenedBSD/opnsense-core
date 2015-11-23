@@ -332,7 +332,7 @@ function display_error_form($http_code, $desc)
     global $config, $g;
     $g['theme'] = get_current_theme();
     if (isAjax()) {
-        printf(gettext('Error: %1$s Description: %2$s'), $http_code, $desc);
+        printf(gettext('Error: %s, Description: %s'), $http_code, $desc);
         return;
     }
 
@@ -444,7 +444,7 @@ function display_login_form()
 		<main class="login-modal-container">
 			<header class="login-modal-head" style="height:55px;">
 				<div class="navbar-brand">
-					<img src="/ui/themes/<?=$g['theme'];?>/build/images/default-logo.png" height="30" width="150"/>
+					<img src="/ui/themes/<?=$g['theme'];?>/build/images/default-logo.png" height="30"/>
 				</div>
 			</header>
 
@@ -490,7 +490,7 @@ endif; ?>
 
 			<footer class="login-foot container-fluid">
 			<a target="_blank" href="<?=$g['product_website']?>" class="redlnk"><?=$g['product_name']?></a> is &copy;
-					<?=$g['product_copyright_years']?> by <a href="<?=$g['product_copyright_url']?>" class="tblnk"><?=$g['product_copyright_owner']?></a> All Rights Reserved.
+					<?=$g['product_copyright_years']?> by <a href="<?=$g['product_copyright_url']?>" class="tblnk"><?=$g['product_copyright_owner']?></a>
 			</footer>
 
 		</body>

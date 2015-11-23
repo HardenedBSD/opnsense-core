@@ -326,7 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             ,serverbridge_dhcp_end,dns_domain,dns_server1,dns_server2,dns_server3
             ,dns_server4,push_register_dns,ntp_server1,ntp_server2,netbios_enable
             ,netbios_ntype,netbios_scope,no_tun_ipv6,verbosity_level,wins_server1
-            ,wins_server2,client_mgmt_port";
+            ,wins_server2,client_mgmt_port,strictusercn";
 
             foreach (explode(",", $copy_fields) as $fieldname) {
                 $fieldname = trim($fieldname);
@@ -350,6 +350,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             }
             if (strpos($pconfig['interface'], "|") !== false) {
                 list($server['interface'], $server['ipaddr']) = explode("|", $pconfig['interface']);
+            } else {
+                $server['interface'] = $pconfig['interface'];
             }
 
             $server['custom_options'] = str_replace("\r\n", "\n", $pconfig['custom_options']);
@@ -701,7 +703,7 @@ function tuntap_change() {
             print_input_errors($input_errors);
         }
         if (isset($savemsg)) {
-            print_info_box_np($savemsg);
+            print_info_box($savemsg);
         }
                 ?>
 
@@ -869,17 +871,13 @@ function tuntap_change() {
                                                         $interfaces['lo0'] = "Localhost";
                                                         $interfaces['any'] = "any";
                             foreach ($interfaces as $iface => $ifacename) :
-                                $selected = "";
+                                $selected = '';
                                 if ($iface == $pconfig['interface']) {
-                                    $selected = "selected=\"selected\"";
+                                    $selected = ' selected="selected"';
                                 }
                             ?>
-                            <option value="<?=$iface;
-?>" <?=$selected;?>>
-                                <?=htmlspecialchars($ifacename);?>
-                                                    </option>
-                            <?php
-                            endforeach; ?>
+                            <option value="<?=$iface; ?>"<?=$selected;?>><?=htmlspecialchars($ifacename);?></option>
+                            <?php endforeach; ?>
                         </select> <br />
                       </td>
                     </tr>
@@ -1138,11 +1136,10 @@ endif; ?>
                           <option value="<?=$name;?>"<?=$selected?>>
                                                     <?=htmlspecialchars($desc);?>
                           </option>
-                            <?php
-                            endforeach; ?>
+                            <?php endforeach; ?>
                         </select>
                         <div class="hidden" for="help_for_digest">
-                            <?PHP echo gettext("NOTE: Leave this set to SHA1 unless all clients are set to match. SHA1 is the default for OpenVPN."); ?>
+                            <?php echo gettext("NOTE: Leave this set to SHA1 unless all clients are set to match. SHA1 is the default for OpenVPN."); ?>
                         </div>
                       </td>
                     </tr>
@@ -1161,8 +1158,7 @@ endif; ?>
                           <option value="<?=$name;?>"<?=$selected?>>
                                                     <?=htmlspecialchars($desc);?>
                           </option>
-                            <?php
-                            endforeach; ?>
+                            <?php endforeach; ?>
                         </select>
                       </td>
                     </tr>

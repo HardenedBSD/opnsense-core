@@ -29,14 +29,15 @@
     list connected clients for a captive portal zone
 """
 import sys
+import time
 import ujson
 from lib.db import DB
 
 # parse input parameters
-parameters = {'zoneid': None, 'output_type':'plain'}
+parameters = {'zoneid': None, 'output_type': 'plain'}
 current_param = None
 for param in sys.argv[1:]:
-    if param[0] == '/':
+    if len(param) > 1 and param[0] == '/':
         current_param = param[1:].lower()
     elif current_param is not None:
         if current_param in parameters:
@@ -51,13 +52,21 @@ else:
 
 # output result as plain text or json
 if parameters['output_type'] != 'json':
-    heading = {'sessionid': 'sessionid',
-               'username': 'username',
-               'ip_address': 'ip_address',
-               'mac_address': 'mac_address'
+    heading = {'sessionId': 'sessionid',
+               'userName': 'username',
+               'ipAddress': 'ip_address',
+               'macAddress': 'mac_address',
+               'total_bytes': 'total_bytes',
+               'idletime': 'idletime',
+               'totaltime': 'totaltime'
                }
-    print '%(sessionid)-30s %(username)-20s %(ip_address)-20s %(mac_address)-20s' % heading
+    print '%(sessionId)-30s %(userName)-20s %(ipAddress)-20s %(macAddress)-20s '\
+          + '%(total_bytes)-15s %(idletime)-10s %(totaltime)-10s' % heading
     for item in response:
-        print '%(sessionid)-30s %(username)-20s %(ip_address)-20s %(mac_address)-20s' % item
+        item['total_bytes'] = (item['bytes_out'] + item['bytes_in'])
+        item['idletime'] = time.time() - item['last_accessed']
+        item['totaltime'] = time.time() - item['startTime']
+        print '%(sessionId)-30s %(userName)-20s %(ipAddress)-20s %(macAddress)-20s '\
+              + '%(total_bytes)-15s %(idletime)-10d %(totaltime)-10d' % item
 else:
     print(ujson.dumps(response))

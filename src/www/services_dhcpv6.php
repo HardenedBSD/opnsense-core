@@ -448,7 +448,7 @@ include("head.inc");
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('staticmaps')): ?><p>
-				<?php print_info_box_np(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
@@ -508,12 +508,12 @@ include("head.inc");
                         <form action="services_dhcpv6.php" method="post" name="iform" id="iform">
 
 							<?php if ($dhcrelay_enabled): ?>
-								<p>DHCP Relay is currently enabled. Cannot enable the DHCP Server service while the DHCP Relay is enabled on any interface.</p>
-							<? else: ?>
+              <p><?= gettext('DHCP Relay is currently enabled. Cannot enable the DHCP Server service while the DHCP Relay is enabled on any interface.') ?></p>
+							<?php else: ?>
 
-						    <!--<ul class="nav nav-pills" role="tablist"><? foreach ($tab_array as $tab): ?>
-									<li role="presentation" <? if ($tab[1]):?>class="active"<? endif; ?>><a href="<?=$tab[2];?>"><?=$tab[0];?></a></li>
-								<? endforeach; ?></ul><br />-->
+						    <!--<ul class="nav nav-pills" role="tablist"><?php foreach ($tab_array as $tab): ?>
+									<li role="presentation" <?php if ($tab[1]):?>class="active"<?php endif; ?>><a href="<?=$tab[2];?>"><?=$tab[0];?></a></li>
+								<?php endforeach; ?></ul><br />-->
 
 						    <div class="table-responsive">
 									<table class="table table-striped table-sort">
@@ -887,7 +887,7 @@ include("head.inc");
 										</tr>
 										</table>
 									</div>
-					    <? endif; ?>
+					    <?php endif; ?>
                         </form>
 				</div>
 			    </section>

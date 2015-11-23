@@ -30,10 +30,8 @@
 
 require_once("guiconfig.inc");
 
-// list backups
 $cnf = OPNsense\Core\Config::getInstance();
 $confvers = $cnf->getBackups(true);
-
 
 if (isset($_POST['backupcount'])) {
 	if (is_numeric($_POST['backupcount']) && ($_POST['backupcount'] >= 0)) {
@@ -41,40 +39,38 @@ if (isset($_POST['backupcount'])) {
 	} else {
 		unset($config['system']['backupcount']);
 	}
-	write_config('Changed backup revision count');
-} elseif ($_POST) {
-	if (!isset($_POST['confirm']) || ($_POST['confirm'] != "Confirm") || (!isset($_POST['newver']) && !isset($_POST['rmver']))) {
-		header("Location: diag_confbak.php");
-		return;
-	}
-
-	if($_POST['newver'] != "") {
-		// search item by revision
-		foreach ($confvers as $filename => $revision) {
-			if (isset($revision['time']) && $revision['time'] == $_POST['newver']) {
-				if(config_restore($filename)== 0) {
-					$savemsg = sprintf(gettext('Successfully reverted to timestamp %1$s with description "%2$s".'), date(gettext("n/j/y H:i:s"), $_POST['newver']), $revision['description']);
-				} else {
-					$savemsg = gettext("Unable to revert to the selected configuration.");
-				}
-				break;
+	write_config(gettext('Changed backup revision count.'));
+} elseif (isset($_POST['newver']) && $_POST['newver'] != '') {
+	foreach ($confvers as $filename => $revision) {
+		if (isset($revision['time']) && $revision['time'] == $_POST['newver']) {
+			if (config_restore($filename)== 0) {
+				$savemsg = sprintf(gettext('Successfully reverted to timestamp %s with description "%s".'), date(gettext("n/j/y H:i:s"), $_POST['newver']), $revision['description']);
+			} else {
+				$savemsg = gettext("Unable to revert to the selected configuration.");
 			}
+			break;
 		}
-
 	}
-	if($_POST['rmver'] != "") {
-		// search item by revision
-		foreach ($confvers as $filename => $revision) {
-			if (isset($revision['time']) && $revision['time'] == $_POST['rmver']) {
+} elseif (isset($_POST['rmver']) && $_POST['rmver'] != '') {
+	foreach ($confvers as $filename => $revision) {
+		if (isset($revision['time']) && $revision['time'] == $_POST['rmver']) {
+			if (file_exists($filename)) {
 				@unlink($filename);
-				$savemsg = sprintf(gettext('Deleted backup with timestamp %1$s and description "%2$s".'), date(gettext("n/j/y H:i:s"), $_POST['rmver']),$revision['description']);
-				break;
+				$savemsg = sprintf(gettext('Deleted backup with timestamp %s and description "%s".'), date(gettext("n/j/y H:i:s"), $_POST['rmver']),$revision['description']);
+			} else {
+				$savemsg = gettext("Unable to delete the selected configuration.");
 			}
+			break;
 		}
 	}
 }
 
-if($_GET['getcfg'] != "") {
+if (isset($_POST)) {
+	/* things might have changed */
+	$confvers = $cnf->getBackups(true);
+}
+
+if (isset($_GET['getcfg']) &&  $_GET['getcfg'] != '') {
 	foreach ($confvers as $filename => $revision) {
 		if ($revision['time'] == $_GET['getcfg']) {
 			$exp_name = urlencode("config-{$config['system']['hostname']}.{$config['system']['domain']}-{$_GET['getcfg']}.xml");
@@ -162,39 +158,39 @@ include("head.inc");
 					    <div class="container-fluid tab-content">
 
 							<div class="tab-pane active" id="system">
-									<?PHP if ($_GET["newver"] || $_GET["rmver"]): ?>
+									<?php if ($_GET["newver"] || $_GET["rmver"]): ?>
 									<form action="<?=explode("?", $_SERVER['REQUEST_URI'])[0];?>" method="post">
 									<section>
 				                        <div class="content-box">
 
 				                            <header class="content-box-head container-fluid">
-									        <h3><?PHP echo gettext("Confirm Action"); ?></h3>
+									        <h3><?= gettext('Confirm Action') ?></h3>
 									    </header>
 
 									    <div class="content-box-main col-xs-12">
 
-										    <strong><?PHP echo gettext("Please confirm the selected action"); ?></strong>:
+										    <strong><?= gettext('Please confirm the selected action') ?></strong>:
 												<br />
-												<br /><strong><?PHP echo gettext("Action"); ?>:</strong>
-											<?PHP	if (!empty($_GET["newver"])) {
+												<br /><strong><?= gettext('Action') ?>:</strong>
+											<?php if (!empty($_GET["newver"])) {
 												echo gettext("Restore from Configuration Backup");
 												$target_config = $_GET["newver"]; ?>
-												<input type="hidden" name="newver" value="<?PHP echo htmlspecialchars($_GET["newver"]); ?>" />
-											<?PHP	} elseif (!empty($_GET["rmver"])) {
+												<input type="hidden" name="newver" value="<?= htmlspecialchars($_GET['newver']) ?>" />
+											<?php } elseif (!empty($_GET["rmver"])) {
 												echo gettext("Remove Configuration Backup");
 												$target_config = $_GET["rmver"]; ?>
-												<input type="hidden" name="rmver" value="<?PHP echo htmlspecialchars($_GET["rmver"]); ?>" />
-											<?PHP	} ?>
-												<br /><strong><?PHP echo gettext("Target Configuration"); ?>:</strong>
-												<?PHP echo sprintf(gettext('Timestamp %1$s'), date(gettext("n/j/y H:i:s"), $target_config)); ?>
-												<br /><input type="submit" name="confirm" class="btn btn-primary" value="<?PHP echo gettext("Confirm"); ?>" />
+												<input type="hidden" name="rmver" value="<?= htmlspecialchars($_GET['rmver']) ?>" />
+											<?php } ?>
+												<br /><strong><?= gettext('Target Configuration') ?>:</strong>
+												<?= sprintf(gettext('Timestamp %s'), date(gettext('n/j/y H:i:s'), $target_config)) ?>
+												<br /><input type="submit" name="confirm" class="btn btn-primary" value="<?= gettext('Confirm') ?>" />
 
 									    </div>
 				                        </div>
 									</section>
 									</form>
 
-									<? else: ?>
+									<?php else: ?>
 
 									<form action="<?=$_SERVER['REQUEST_URI'];?>" method="post">
 									<section style="margin-bottom:15px;">
@@ -279,7 +275,7 @@ include("head.inc");
 
 												<div class="container-fluid __mb">
 												<button type="submit" name="diff" class="btn btn-primary pull-left" style="margin-right: 8px;" value="Diff"><?=gettext('View differences');?></button>
-												<?= gettext("To view the differences between an older configuration and a newer configuration, select the older configuration using the left column of radio options and select the newer configuration in the right column, then press the Diff button."); ?>
+												<?= gettext("To view the differences between an older configuration and a newer configuration, select the older configuration using the left column of radio options and select the newer configuration in the right column, then press the button."); ?>
 												</div>
 
 
@@ -341,7 +337,7 @@ include("head.inc");
 										</div>
 									</section>
 									</form>
-									<? endif; endif; ?>
+									<?php endif; endif; ?>
 
 
 

@@ -27,8 +27,9 @@
 	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 	POSSIBILITY OF SUCH DAMAGE.
 */
-require_once("config.inc");
+
 require_once("util.inc");
+require_once("config.inc");
 
 /* THIS MUST BE ABOVE ALL OTHER CODE */
 if (empty($nocsrf)) {
@@ -200,7 +201,7 @@ function print_info_box_apply($msg)
 	$name= 'apply';
 
 	$savebutton = '<form action="' . $_SERVER['REQUEST_URI'] . '" method="post">';
-	$savebutton .= '<input name="' . $name . '" type="submit" class="btn btn-default" id="' . $name . '" value="' . $value . '" />';
+	$savebutton .= '<input name="' . $name . '" type="submit" class="btn btn-primary pull-right" id="' . $name . '" value="' . $value . '" />';
 	if (!empty($_POST['if'])) {
 		$savebutton .= '<input type="hidden" name="if" value="' . htmlspecialchars($_POST['if']) . '" />';
 	}
@@ -216,58 +217,18 @@ function print_info_box_apply($msg)
 EOFnp;
 }
 
-function print_info_box_np($msg, $name="apply",$value="", $showapply=false) {
-	if(empty($value)) {
-		$value = gettext("Apply changes");
-	}
-
-	if(stristr($msg, gettext("apply")) != false || stristr($msg, gettext("save")) != false || stristr($msg, gettext("create")) != false || $showapply) {
-		$savebutton = "<form action=\"".$_SERVER['REQUEST_URI']."\" method=\"post\">";
-		$savebutton .= "<input name=\"{$name}\" type=\"submit\" class=\"btn btn-default\" id=\"${name}\" value=\"{$value}\" />";
-		if(!empty($_POST['if']))
-			$savebutton .= "<input type=\"hidden\" name=\"if\" value=\"" . htmlspecialchars($_POST['if']) . "\" />";
-		$savebutton.="</form>";
-	} else {
-		$savebutton = '<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>';
-	}
-
-	echo <<<EOFnp
-	    <div class="col-xs-12">
-		<div class="alert alert-info alert-dismissible" role="alert">
-			{$savebutton}
-            <p>{$msg}</p>
-		</div>
-		</div>
-EOFnp;
-
-}
-
-function print_info_box_apply_undo($msg, $undo)
-{
-	$value = gettext('Apply changes');
-	$name= 'apply';
-
-	$savebutton .= "<input class=\"btn btn-default\"  type=\"button\" value=\"". gettext("Undo") . "\" onclick=\"document.location='{$undo}'\" />";
-	$savebutton .= "<input class=\"btn btn-default\"  name=\"{$name}\" type=\"submit\" class=\"formbtn\" id=\"${name}\" value=\"{$value}\" />";
-
-	$url = $_SERVER['REQUEST_URI'];
-
-	echo <<<EOFnp
-	<div class="col-xs-12" id="redboxtable"><form action="{$url}" method="post">
-		<div class="alert alert-warning"  summary="red box table">
-			<p>{$msg}<br /><br /></p>
-			<div class="btn-group">
-				{$savebutton}
-				{$undobutton}
-			</div>
-		</div>
-	</form></div>
-EOFnp;
-}
-
 function print_info_box($msg)
 {
-	print_info_box_np($msg);
+	$savebutton = '<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>';
+
+	echo <<<EOFnp
+<div class="col-xs-12">
+	<div class="alert alert-info alert-dismissible" role="alert">
+		{$savebutton}
+		<p>{$msg}</p>
+	</div>
+</div>
+EOFnp;
 }
 
 function get_std_save_message() {
@@ -338,15 +299,6 @@ function gentitle($title) {
 		return join($navlevelsep, $title);
 }
 
-/* update the changedesc and changecount(er) variables */
-function update_changedesc($update) {
-	global $changedesc;
-	global $changecount;
-
-	$changedesc .= " {$update}";
-	$changecount++;
-}
-
 function clear_log($logfile, $restart_syslogd = true)
 {
 	if ($restart_syslogd) {
@@ -358,10 +310,12 @@ function clear_log($logfile, $restart_syslogd = true)
 	}
 
 	/* preserve file ownership and permissions */
-	$handle = fopen($logfile, 'r+');
-	if ($handle) {
-		ftruncate($handle, 0);
-		fclose($handle);
+	if (file_exists($logfile)) {
+		$handle = fopen($logfile, 'r+');
+		if ($handle) {
+			ftruncate($handle, 0);
+			fclose($handle);
+		}
 	}
 
 	if ($restart_syslogd) {
@@ -392,7 +346,9 @@ function print_dump($logarr, $withorig)
 	foreach ($logarr as $logent) {
 		$logent = preg_split("/\s+/", $logent, 6);
 		echo "<tr valign=\"top\">\n";
-		if ($withorig) {
+		if ($logent[0] === 'File') {
+			echo "<td class=\"listlr\" colspan=\"2\">" . htmlspecialchars(join(' ', $logent)) . "</td>\n";
+		} elseif ($withorig) {
 			$entry_date_time = htmlspecialchars(join(" ", array_slice($logent, 0, 3)));
 			$entry_text = ($logent[3] ==  $config['system']['hostname']) ? "" : $logent[3] . " ";
 			$entry_text .= htmlspecialchars($logent[4] . " " . $logent[5]);
@@ -414,21 +370,23 @@ function dump_clog($logfile, $tail, $withorig = true, $grepfor = '', $grepinvert
 	$logarr = '';
 
 	if (is_array($grepfor)) {
-		$grepline .= " | /usr/bin/egrep " . escapeshellarg(implode("|", $grepfor));
+		$grepline .= " | /usr/bin/egrep -i " . escapeshellarg(implode("|", $grepfor));
 	}
 
 	if (is_array($grepinvert)) {
-		$grepline .= " | /usr/bin/egrep -v " . escapeshellarg(implode("|", $grepinvert));
+		$grepline .= " | /usr/bin/egrep -iv " . escapeshellarg(implode("|", $grepinvert));
 	}
 
 	if (is_dir($logfile)) {
 		$logarr = array("File $logfile is a directory.");
 	} elseif (!file_exists($logfile)) {
 		$logarr = array("File $logfile doesn't exist.");
-	} elseif (filesize($logfile) == 0) {
-		$logarr = array("Log file started.");
 	} else {
 		exec("/usr/local/sbin/clog " . escapeshellarg($logfile) . "{$grepline}| grep -v \"CLOG\" | grep -v \"\033\" | /usr/bin/tail {$sor} -n " . escapeshellarg($tail), $logarr);
+	}
+
+	if (!count($logarr)) {
+		$logarr[] = sprintf(gettext('File %s yielded no results.'), $logfile);
 	}
 
 	print_dump($logarr, $withorig);
@@ -443,21 +401,23 @@ function dump_log($logfile, $tail, $withorig = true, $grepfor = '', $grepinvert 
 	$logarr = '';
 
 	if (is_array($grepfor)) {
-		$grepline .= " | /usr/bin/egrep " . escapeshellarg(implode("|", $grepfor));
+		$grepline .= " | /usr/bin/egrep -i " . escapeshellarg(implode("|", $grepfor));
 	}
 
 	if (is_array($grepinvert)) {
-		$grepline .= " | /usr/bin/egrep -v " . escapeshellarg(implode("|", $grepinvert));
+		$grepline .= " | /usr/bin/egrep -iv " . escapeshellarg(implode("|", $grepinvert));
 	}
 
 	if (is_dir($logfile)) {
-		$logarr = array("File $logfile is a directory.");
+		$logarr = array(sprintf(gettext('File %s is a directory.'), $logfile));
 	} elseif (!file_exists($logfile)) {
-		$logarr = array("File $logfile doesn't exist.");
-	} elseif (filesize($logfile) == 0) {
-		$logarr = array("Log file started.");
+		$logarr = array(sprintf(gettext('File %s doesn\'t exist.'), $logfile));
 	} else {
 		exec("cat " . escapeshellarg($logfile) . "{$grepline} | /usr/bin/tail {$sor} -n " . escapeshellarg($tail), $logarr);
+	}
+
+	if (!count($logarr)) {
+		$logarr[] = sprintf(gettext('File %s yielded no results.'), $logfile);
 	}
 
 	print_dump($logarr, $withorig);
@@ -469,26 +429,20 @@ function dump_log($logfile, $tail, $withorig = true, $grepfor = '', $grepinvert 
  * orig = original value
  * new = new value
  */
-function update_if_changed($varname, & $orig, $new) {
+function update_if_changed($varname, &$orig, $new)
+{
 	if (is_array($orig) && is_array($new)) {
 		$a_diff = array_diff($orig, $new);
-		foreach ($a_diff as $diff) {
-			update_changedesc("removed {$varname}: \"{$diff}\"");
-		}
 		$a_diff = array_diff($new, $orig);
-		foreach ($a_diff as $diff) {
-			update_changedesc("added {$varname}: \"{$diff}\"");
-		}
 		$orig = $new;
 		return true;
-
-	} else {
-		if ($orig != $new) {
-			update_changedesc("{$varname}: \"{$orig}\" -> \"{$new}\"");
-			$orig = $new;
-			return true;
-		}
 	}
+
+	if ($orig != $new) {
+		$orig = $new;
+		return true;
+	}
+
 	return false;
 }
 
@@ -661,14 +615,25 @@ function get_crash_report($pedantic = false)
 		'</a>'
 	);
 	$skip_files = array('.', '..', 'minfree', 'bounds', '');
+	$PHP_errors_log = '/tmp/PHP_errors.log';
+	$excludes = array();
 	$count = 0;
 
-	if (file_exists('/tmp/PHP_errors.log')) {
-		if ($pedantic) {
-			$total = `/usr/bin/wc -l /tmp/PHP_errors.log | /usr/bin/awk '{ print $1 }'`;
-		} else {
-			$total = `/usr/bin/grep -v 'PHP Notice:' /tmp/PHP_errors.log | /usr/bin/wc -l | /usr/bin/awk '{ print $1 }'`;
+	if (!$pedantic) {
+		$excludes[] = 'PHP Notice:';
+		$excludes[] = 'PHP Startup: Unable to load dynamic library \'/usr/local/lib/php/20131226/suhosin.so\' - /usr/local/lib/php/20131226/suhosin.so: Undefined symbol "ps_globals" in Unknown on line 0';
+	}
+
+	if (file_exists($PHP_errors_log)) {
+		$extra = '';
+		foreach ($excludes as $exclude) {
+			$extra .= sprintf('/usr/bin/grep -v %s | ', escapeshellarg($exclude));
 		}
+		$total = shell_exec(sprintf(
+			'/bin/cat %s | %s /usr/bin/wc -l | /usr/bin/awk \'{ print $1 }\'',
+			$PHP_errors_log,
+			$extra
+		));
 		if ($total > 0) {
 			$count++;
 		}

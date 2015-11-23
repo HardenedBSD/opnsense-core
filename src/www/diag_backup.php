@@ -71,8 +71,8 @@ function rrd_data_xml() {
 		$basename = basename($rrd_file);
 		$xml_file = preg_replace('/\.rrd$/', ".xml", $rrd_file);
 		exec("$rrdtool dump '{$rrd_file}' '{$xml_file}'");
-		$xml_data = file_get_contents($xml_file);
-		unlink($xml_file);
+		$xml_data = @file_get_contents($xml_file);
+		@unlink($xml_file);
 		if ($xml_data !== false) {
 			$result .= "\t\t<rrddatafile>\n";
 			$result .= "\t\t\t<filename>{$basename}</filename>\n";
@@ -753,14 +753,14 @@ function backuparea_change(obj) {
                                                                                              <th class="col-sm-3"></th>
                                                                                           </thead>
                                                                                           <tbody>
-                                                                                             <tr><td><?=gettext("Enable"); ?> </td> <td><input name="GDriveEnabled" class="formcheckbox" id="GDriveEnabled" type="checkbox" <? if( $config['system']['remotebackup']['GDriveEnabled'] == "on" ) echo "checked";?> >  </td></tr>
-                                                                                             <tr><td><?=gettext("Email Address"); ?> </td><td><input name="GDriveEmail" class="formfld" size="20" value="<? echo $config['system']['remotebackup']['GDriveEmail'];?>" type="text"> </td> </tr>
-                                                                                             <tr><td><?=gettext("P12 key"); ?> <? if (isset($config['system']['remotebackup']['GDriveP12key'])) echo gettext("(replace)"); else echo gettext("(not loaded)"); ?> </td><td> <input name="GDriveP12file" class="formbtn" id="P12file" size="40" type="file"></td> </tr>
-                                                                                             <tr><td><?=gettext("Folder ID"); ?> </td><td> <input name="GDriveFolderID" class="formbtn" id="GDriveFolderID" value="<? echo $config['system']['remotebackup']['GDriveFolderID'];?>" size="40" type="text"></td> </tr>
-                                                                                             <tr><td><?=gettext("Backup Count"); ?> </td><td> <input name="GDriveBackupCount" class="formbtn" id="GDriveBackupCount" value="<? echo $config['system']['remotebackup']['GDriveBackupCount'];?>" size="40" type="text"></td> </tr>
+                                                                                             <tr><td><?=gettext("Enable"); ?> </td> <td><input name="GDriveEnabled" class="formcheckbox" id="GDriveEnabled" type="checkbox" <?php if( $config['system']['remotebackup']['GDriveEnabled'] == "on" ) echo "checked";?> >  </td></tr>
+                                                                                             <tr><td><?=gettext("Email Address"); ?> </td><td><input name="GDriveEmail" class="formfld" size="20" value="<?= $config['system']['remotebackup']['GDriveEmail'] ?>" type="text"> </td> </tr>
+                                                                                             <tr><td><?=gettext("P12 key"); ?> <?php if (isset($config['system']['remotebackup']['GDriveP12key'])) echo gettext("(replace)"); else echo gettext("(not loaded)"); ?> </td><td> <input name="GDriveP12file" class="formbtn" id="P12file" size="40" type="file"></td> </tr>
+                                                                                             <tr><td><?=gettext("Folder ID"); ?> </td><td> <input name="GDriveFolderID" class="formbtn" id="GDriveFolderID" value="<?= $config['system']['remotebackup']['GDriveFolderID'] ?>" size="40" type="text"></td> </tr>
+                                                                                             <tr><td><?=gettext("Backup Count"); ?> </td><td> <input name="GDriveBackupCount" class="formbtn" id="GDriveBackupCount" value="<?= $config['system']['remotebackup']['GDriveBackupCount'] ?>" size="40" type="text"></td> </tr>
                                                                                              <tr><td colspan=2><?=gettext("Password protect your data"); ?> :</td></tr>
-                                                                                             <tr><td><?=gettext("Password :"); ?></td> <td> <input name="GDrivePassword" type="password" class="formfld pwd" size="20" value="<? echo $config['system']['remotebackup']['GDrivePassword'] ;?>" /> </td></tr>
-                                                                                             <tr><td><?=gettext("Confirm :"); ?></td> <td> <input name="GDrivePasswordConfirm" type="password" class="formfld pwd" size="20" value="<? echo $config['system']['remotebackup']['GDrivePassword'] ;?>" /> </td></tr>
+                                                                                             <tr><td><?=gettext("Password :"); ?></td> <td> <input name="GDrivePassword" type="password" class="formfld pwd" size="20" value="<?php echo $config['system']['remotebackup']['GDrivePassword'] ;?>" /> </td></tr>
+                                                                                             <tr><td><?=gettext("Confirm :"); ?></td> <td> <input name="GDrivePasswordConfirm" type="password" class="formfld pwd" size="20" value="<?php echo $config['system']['remotebackup']['GDrivePassword'] ;?>" /> </td></tr>
                                                                                              <tr><td><input name="Submit" class="btn btn-default" id="Gdrive" value="<?=gettext("Setup/Test Google Drive");?>" type="submit"></td><td></td></tr>
                                                                                           </tbody>
                                                                                     </table>

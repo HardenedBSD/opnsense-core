@@ -704,7 +704,6 @@ function import_ldap_users() {
                 if (!$group) :
                 ?>
                     <button class="btn btn-default btn-xs" name="delpriv[]_x" width="17" height="17" border="0"
-                        src="/themes/<?=$g['theme'];?>/images/icons/icon_x.gif"
                         onclick="document.getElementById('privid').value='<?=$i;?>';
                             document.getElementById('userid').value='<?=$id;?>';
                             document.getElementById('act').value='<?php echo "delpriv";?>';
@@ -1061,11 +1060,11 @@ endforeach;
 									<td></td>
 									<td width="20px"></td>
 									<td width="20px"><span class="glyphicon glyphicon-user text-danger"></span></td>
-									<td width="200px">System Admininistrator</td>
+									<td width="200px"><?= gettext('System Admininistrator') ?></td>
 									<td width="20px"><span class="glyphicon glyphicon-user text-muted"></span></td>
-									<td width="200px">Disabled User</td>
+									<td width="200px"><?= gettext('Disabled User') ?></td>
 									<td width="20px"><span class="glyphicon glyphicon-user text-info"></span></td>
-									<td width="200px">Normal User</td>
+									<td width="200px"><?= gettext('Normal User') ?></td>
 									<td></td>
 								</tr>
 							</table>

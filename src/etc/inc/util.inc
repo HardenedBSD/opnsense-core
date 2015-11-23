@@ -25,6 +25,7 @@
 	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 	POSSIBILITY OF SUCH DAMAGE.
 */
+
 require_once("IPv6.inc");
 
 function killbyname($procname, $sig = 'TERM')
@@ -107,10 +108,12 @@ function lock($lock, $op = LOCK_SH)
 
 
 /* unlock configuration file */
-function unlock($cfglckkey = 0)
+function unlock($cfglckkey = null)
 {
-	flock($cfglckkey, LOCK_UN);
-	fclose($cfglckkey);
+	if ($cfglckkey) {
+		flock($cfglckkey, LOCK_UN);
+		fclose($cfglckkey);
+	}
 }
 
 function is_module_loaded($module_name) {
@@ -563,11 +566,6 @@ function group_ports($ports) {
 	return $result;
 }
 
-/* returns true if $val is a valid shaper bandwidth value */
-function is_valid_shaperbw($val) {
-	return (preg_match("/^(\d+(?:\.\d+)?)([MKG]?b|%)$/", $val));
-}
-
 /* returns true if $test is in the range between $start and $end */
 function is_inrange_v4($test, $start, $end) {
 	if ( (ip2ulong($test) <= ip2ulong($end)) && (ip2ulong($test) >= ip2ulong($start)) )
@@ -976,8 +974,7 @@ function mwexec_bg($command, $mute = false)
 /* check if an alias exists */
 function is_alias($name) {
 	global $aliastable;
-
-	return isset($aliastable[$name]);
+	return array_key_exists($name, $aliastable);
 }
 
 function alias_get_type($name) {
@@ -997,12 +994,13 @@ function alias_get_type($name) {
 function alias_expand($name) {
 	global $aliastable;
 
-	if (isset($aliastable[$name]))
+	if (array_key_exists($name, $aliastable)) {
 		return "\${$name}";
-	else if (is_ipaddr($name) || is_subnet($name) || is_port($name) || is_portrange($name))
+	} elseif (is_ipaddr($name) || is_subnet($name) || is_port($name) || is_portrange($name)) {
 		return "{$name}";
-	else
+	} else {
 		return null;
+	}
 }
 
 function subnet_size($subnet) {

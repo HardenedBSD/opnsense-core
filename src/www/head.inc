@@ -78,6 +78,9 @@ $pagetitle = gentitle( $pgtitle );
 		<!-- nvd3 -->
 		<script type="text/javascript" src="/ui/js/nv.d3.min.js"></script>
 
+		<!-- append some helper functions to integrate into the legacy code -->
+		<script type="text/javascript" src="/javascript/opnsense_legacy.js"></script>
+
 		<?php
 		/*
 		 *	Find all javascript files that need to be included
@@ -142,11 +145,22 @@ $pagetitle = gentitle( $pgtitle );
 				event.preventDefault();
 			});
 
+			// hide submenu items
+			$('#mainmenu .list-group-item').click(function(){
+				if($(this).attr('href').substring(0,1) == '#') {
+						$('#mainmenu .list-group-item').each(function(){
+								if ($(this).attr('aria-expanded') == 'true' && $(this).data('parent') != '#mainmenu') {
+									$("#"+$(this).attr('href').substring(1,999)).collapse('hide');
+								}
+						});
+				}
+			});
+
 		});
 		//]]>
 		</script>
 
-		<? endif; ?>
+		<?php endif; ?>
 
 
-<?php if (!isset($closehead) || !$closehead):?></head><? endif;?>
+<?php if (!isset($closehead) || !$closehead):?></head><?php endif;?>

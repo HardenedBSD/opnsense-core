@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $a_1to1[$id]['disabled'] = true;
         }
-        if (write_config("Firewall: NAT: Outbound, enable/disable NAT rule")) {
+        if (write_config(gettext('Toggled NAT rule'))) {
             mark_subsystem_dirty('natconf');
         }
         header("Location: firewall_nat_1to1.php");
@@ -188,7 +188,7 @@ display_top_tabs($tab_array);
         if (isset($savemsg))
           print_info_box($savemsg);
         if (is_subsystem_dirty('natconf'))
-          print_info_box_np(gettext("The NAT configuration has been changed.") .
+          print_info_box_apply(gettext("The NAT configuration has been changed.") .
             "<br />" .
             gettext("You must apply the changes in order for them to take effect."));
 ?>

@@ -1,6 +1,7 @@
 <?php
+
 /*
-		Copyright (C) 2014-2015 Deciso B.V.
+	Copyright (C) 2014-2015 Deciso B.V.
         Copyright (C) 2008 Bill Marquette <bill.marquette@gmail.com>.
         All rights reserved.
 
@@ -26,10 +27,8 @@
         POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 require_once("guiconfig.inc");
 require_once("services.inc");
-
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/load_balancer_relay_protocol.php');
 
@@ -54,14 +53,7 @@ if (isset($id) && $a_protocol[$id]) {
 	$pconfig['type'] = 'http';
 }
 
-$changedesc = gettext("Load Balancer: Relay Protocol:") . " ";
-$changecount = 0;
-
-
-
 if ($_POST) {
-	$changecount++;
-
 	unset($input_errors);
 	$pconfig = $_POST;
 
@@ -91,10 +83,10 @@ if ($_POST) {
 
 	if (!$input_errors) {
 		$protent = array();
-		if(isset($id) && $a_protocol[$id])
+
+		if(isset($id) && $a_protocol[$id]) {
 			$protent = $a_protocol[$id];
-		if($protent['name'] != "")
-			$changedesc .= " " . sprintf(gettext("modified '%s' load balancing protocol:"), $protent['name']);
+		}
 
 		update_if_changed(gettext("name"), $protent['name'], $pconfig['name']);
 		update_if_changed(gettext("type"), $protent['type'], $pconfig['type']);
@@ -113,14 +105,10 @@ if ($_POST) {
 			$a_protocol[$id] = $protent;
 		} else {
 			$a_protocol[] = $protent;
-    }
-
-		if ($changecount > 0) {
-			/* Mark config dirty */
-			mark_subsystem_dirty('loadbalancer');
-			write_config($changedesc);
 		}
 
+		mark_subsystem_dirty('loadbalancer');
+		write_config();
 		header("Location: load_balancer_relay_protocol.php");
 		exit;
 	}
@@ -198,7 +186,7 @@ jQuery(document).ready(function(){
 									<tr align="left">
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("Name"); ?></td>
 										<td width="78%" class="vtable" colspan="2">
-											<input name="name" type="text" <?if(isset($pconfig['name'])) echo "value=\"{$pconfig['name']}\"";?> size="16" maxlength="16">
+											<input name="name" type="text" <?php if(isset($pconfig['name'])) echo "value=\"{$pconfig['name']}\"";?> size="16" maxlength="16">
 										</td>
 									</tr>
 									<tr align="left">
@@ -221,7 +209,7 @@ jQuery(document).ready(function(){
 									<tr align="left">
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("Description"); ?></td>
 										<td width="78%" class="vtable" colspan="2">
-											<input name="descr" type="text" <?if(isset($pconfig['descr'])) echo "value=\"{$pconfig['descr']}\"";?>size="64">
+											<input name="descr" type="text" <?php if(isset($pconfig['descr'])) echo "value=\"{$pconfig['descr']}\"";?>size="64">
 										</td>
 									</tr>
 									<tr>

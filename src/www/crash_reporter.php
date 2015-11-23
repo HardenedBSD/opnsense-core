@@ -94,6 +94,14 @@ if (isset($_POST['Submit'])) {
         $email = trim($_POST['Email']);
         if (!empty($email)) {
             $crash_report_header .= "Email {$email}\n";
+            if (!isset($config['system']['contact_email']) ||
+                $config['system']['contact_email'] !== $email) {
+                $config['system']['contact_email'] = $email;
+                write_config('Updated crash reporter contact email.');
+            }
+        } elseif (isset($config['system']['contact_email'])) {
+            unset($config['system']['contact_email']);
+            write_config('Removed crash reporter contact email.');
         }
         $desc = trim($_POST['Desc']);
         if (!empty($desc)) {
@@ -104,10 +112,15 @@ if (isset($_POST['Submit'])) {
         @copy('/var/run/dmesg.boot', '/var/crash/dmesg.boot');
         exec('/usr/bin/gzip /var/crash/*');
         $files_to_upload = glob('/var/crash/*');
-        $resp = upload_crash_report($files_to_upload, $user_agent);
-        array_map('unlink', $files_to_upload);
+        upload_crash_report($files_to_upload, $user_agent);
+        foreach ($files_to_upload as $file_to_upload) {
+            @unlink($file_to_upload);
+	}
     } elseif ($_POST['Submit'] == 'no') {
-        array_map('unlink', glob('/var/crash/*'));
+        $files_to_upload = glob('/var/crash/*');
+        foreach ($files_to_upload as $file_to_upload) {
+            @unlink($file_to_upload);
+        }
         @unlink('/tmp/PHP_errors.log');
     } elseif ($_POST['Submit'] == 'new') {
         /* force a crash report generation */
@@ -117,6 +130,8 @@ if (isset($_POST['Submit'])) {
     /* if there is no user activity probe for a crash report */
     $has_crashed = get_crash_report(true) != '';
 }
+
+$email = isset($config['system']['contact_email']) ? $config['system']['contact_email'] : '';
 
 if ($has_crashed) {
     $crash_files = glob("/var/crash/*");
@@ -157,9 +172,10 @@ if ($has_crashed) {
     echo "<button name=\"Submit\" type=\"submit\" class=\"btn btn-primary pull-right\" style=\"margin-right: 8px;\" value=\"yes\">" . gettext('Submit this report') . "</button>";
     echo "<p><strong>" . gettext("Unfortunately we have detected at least one programming bug.") . "</strong></p>";
     echo "<p>" . gettext("Would you like to submit this crash report to the developers?") . "</p>";
-    echo "<hr><p>" . gettext("You can help us further by optionally adding your contact information and a problem description.") . "</p>";
-    echo "<p><input type=\"text\" placeholder=\"your@email.com\" name=\"Email\"></p>";
-    echo "<p><textarea rows=\"5\" placeholder=\"A short problem description or steps to reproduce.\" name=\"Desc\"></textarea></p>";
+    echo '<hr><p>' . gettext('You can help us further by adding your contact information and a problem description. ' .
+        'Please note that providing your contact information greatly improves the chances of bugs being fixed.') . '</p>';
+    echo sprintf('<p><input type="text" placeholder="%s" name="Email" value="%s"></p>', gettext('your@email.com'), $email);
+    echo sprintf('<p><textarea rows="5" placeholder="%s" name="Desc"></textarea></p>', gettext('A short problem description or steps to reproduce.'));
     echo "<hr><p>" . gettext("Please double-check the following contents to ensure you are comfortable submitting the following information.") . "</p>";
     foreach ($crash_reports as $report => $content) {
         echo "<p>{$report}:<br/><pre>{$content}</pre></p>";

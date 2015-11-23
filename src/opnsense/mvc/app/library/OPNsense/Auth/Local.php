@@ -47,9 +47,18 @@ class Local implements IAuthConnector
     }
 
     /**
+     * unused
+     * @return array mixed named list of authentication properties
+     */
+    public function getLastAuthProperties()
+    {
+        return array();
+    }
+
+    /**
      * authenticate user against local database (in config.xml)
-     * @param $username username to authenticate
-     * @param $password user password
+     * @param string $username username to authenticate
+     * @param string $password user password
      * @return bool authentication status
      */
     public function authenticate($username, $password)
@@ -77,7 +86,7 @@ class Local implements IAuthConnector
             }
             $passwd = crypt($password, (string)$userObject->password);
             if ($passwd == (string)$userObject->password) {
-                // password ok, return successfully authen
+                // password ok, return successfully authentication
                 return true;
             }
         }

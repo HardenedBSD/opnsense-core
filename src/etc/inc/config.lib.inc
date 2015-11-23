@@ -46,8 +46,9 @@ function alias_make_table($config)
 
 	if (isset($config['aliases']['alias'])) {
 		foreach ($config['aliases']['alias'] as $alias) {
-			if ($alias['name'])
-				$aliastable[$alias['name']] = $alias['address'];
+			if ($alias['name']) {
+				$aliastable[$alias['name']] = isset($alias['address']) ? $alias['address'] : null;
+			}
 		}
 	}
 }
@@ -66,12 +67,11 @@ function parse_config()
 		$backups = $cnf->getBackups();
 		if (count($backups) > 0) {
 			// load last backup
-			syslog(LOG_ERR,	sprintf('parse_config(): %s', gettext('No (valid) config.xml found, attempting last known config restore.')));
-			file_notice("config.xml", gettext("No (valid) config.xml found, attempting last known config restore."), "OPNsenseConfigurator", "");
+			syslog(LOG_ERR,	gettext('No valid config.xml found, attempting last known config restore.'));
 			$cnf->restoreBackup($backups[0]);
 		} else {
 			// we don't have backups, try to load the default
-			syslog(LOG_ERR, sprintf('parse_config(): %s', gettext('No config.xml found, attempting to restore factory config.')));
+			syslog(LOG_ERR, gettext('No valid config.xml found, attempting to restore factory config.'));
 			$cnf->restoreBackup('/usr/local/etc/config.xml');
 		}
 	}
@@ -140,7 +140,7 @@ function convert_config()
 	}
 
 	if ($prev_version != $config['version']) {
-		write_config(sprintf(gettext('Upgraded config version level from %1$s to %2$s'), $prev_version, $config['version']));
+		write_config(sprintf(gettext('Upgraded config version level from %s to %s'), $prev_version, $config['version']));
 	}
 }
 
@@ -194,8 +194,7 @@ function write_config($desc = 'Unknown', $backup = true)
 		$cnf->save($revision_info, $backup);
 	} catch (OPNsense\Core\ConfigException $e) {
 		// write failure
-		log_error(gettext("WARNING: Config contents could not be saved. Could not open file!"));
-		file_notice('config.xml', sprintf("%s\n", gettext('Unable to open /conf/config.xml for writing in write_config()')));
+		syslog(LOG_ERR, gettext('WARNING: Config contents could not be saved. Could not open file!'));
 		return -1;
 	}
 

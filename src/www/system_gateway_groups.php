@@ -39,7 +39,7 @@ function openvpn_resync_gwgroup($gwgroupname = "") {
 	global $g, $config;
 
 	if ($gwgroupname <> "") {
-		if (is_array($config['openvpn']['openvpn-server'])) {
+		if (isset($config['openvpn']['openvpn-server'])) {
 			foreach ($config['openvpn']['openvpn-server'] as & $settings) {
 				if ($gwgroupname == $settings['interface']) {
 					log_error("Resyncing OpenVPN for gateway group " . $gwgroupname . " server " . $settings["description"] . ".");
@@ -48,7 +48,7 @@ function openvpn_resync_gwgroup($gwgroupname = "") {
 			}
 		}
 
-		if (is_array($config['openvpn']['openvpn-client'])) {
+		if (isset($config['openvpn']['openvpn-client'])) {
 			foreach ($config['openvpn']['openvpn-client'] as & $settings) {
 				if ($gwgroupname == $settings['interface']) {
 					log_error("Resyncing OpenVPN for gateway group " . $gwgroupname . " client " . $settings["description"] . ".");
@@ -78,7 +78,6 @@ if (!is_array($config['gateways']['gateway_group'])) {
 
 $a_gateway_groups = &$config['gateways']['gateway_group'];
 $a_gateways = &$config['gateways']['gateway_item'];
-$changedesc = gettext("Gateway Groups") . ": ";
 
 if ($_POST) {
     $pconfig = $_POST;
@@ -112,14 +111,13 @@ if ($_POST) {
 
 if ($_GET['act'] == "del") {
     if ($a_gateway_groups[$_GET['id']]) {
-        $changedesc .= gettext("removed gateway group") . " {$_GET['id']}";
         foreach ($config['filter']['rule'] as $idx => $rule) {
             if ($rule['gateway'] == $a_gateway_groups[$_GET['id']]['name']) {
                 unset($config['filter']['rule'][$idx]['gateway']);
             }
         }
         unset($a_gateway_groups[$_GET['id']]);
-        write_config($changedesc);
+        write_config();
         mark_subsystem_dirty('staticroutes');
         header("Location: system_gateway_groups.php");
         exit;
@@ -150,7 +148,7 @@ $main_buttons = array(
 } ?>
 				<?php if (is_subsystem_dirty('staticroutes')) :
 ?><br/>
-				<?php print_info_box_np(sprintf(gettext("The gateway configuration has been changed.%sYou must apply the changes in order for them to take effect."), "<br />"));?><br /><br />
+				<?php print_info_box_apply(sprintf(gettext("The gateway configuration has been changed.%sYou must apply the changes in order for them to take effect."), "<br />"));?><br /><br />
 				<?php
 endif; ?>
 

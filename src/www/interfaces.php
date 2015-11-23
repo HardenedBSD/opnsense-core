@@ -90,7 +90,7 @@ function startElement_attr($parser, $name, $attrs) {
 
 	} else if (isset($ptr)) {
 		/* multiple entries not allowed for this element, bail out */
-		die(sprintf(gettext('XML error: %1$s at line %2$d cannot occur more than once') . "\n",
+		die(sprintf(gettext('XML error: %s at line %d cannot occur more than once') . "\n",
 				$name,
 				xml_get_current_line_number($parser)));
 	} else if (isset($writeattrs)) {
@@ -212,7 +212,7 @@ function parse_xml_config_raw_attr($cffile, $rootobj, &$parsed_attributes, $isst
 
 	while ($data = fread($fp, 4096)) {
 		if (!xml_parse($xml_parser, $data, feof($fp))) {
-			log_error(sprintf(gettext('XML error: %1$s at line %2$d') . "\n",
+			log_error(sprintf(gettext('XML error: %s at line %d') . "\n",
 						xml_error_string(xml_get_error_code($xml_parser)),
 						xml_get_current_line_number($xml_parser)));
 			if (isset($parsed_attributes)) {
@@ -838,7 +838,7 @@ if ($_POST['apply']) {
 			do_input_validation($_POST, $reqdfields, $reqdfieldsn, $input_errors);
 			break;
 		case "none":
-			if(is_array($config['virtualip']['vip'])) {
+			if (isset($config['virtualip']['vip'])) {
 				foreach ($config['virtualip']['vip'] as $vip) {
 					if (is_ipaddrv6($vip['subnet']) && $vip['interface'] == $if)
 						$input_errors[] = gettext("This interface is referenced by IPv6 VIPs. Please delete those before setting the interface to 'none' configuration.");
@@ -1838,7 +1838,7 @@ $types6 = array("none" => gettext("None"), "staticv6" => gettext("Static IPv6"),
 
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (is_subsystem_dirty('interfaces')): ?><p>
-				<?php print_info_box_np(sprintf(gettext("The %s configuration has been changed."),$wancfg['descr'])."<p>".gettext("You must apply the changes in order for them to take effect.")."</p><p>".gettext("Don't forget to adjust the DHCP Server range if needed after applying."));?><br />
+				<?php print_info_box_apply(sprintf(gettext("The %s configuration has been changed."),$wancfg['descr'])."<br/>".gettext("You must apply the changes in order for them to take effect.")."<br/>".gettext("Don't forget to adjust the DHCP Server range if needed after applying."));?>
 				<?php endif; ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 

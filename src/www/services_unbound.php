@@ -84,14 +84,15 @@ if ($_POST) {
 		system_resolvconf_generate();
 	} else {
 		$pconfig = $_POST;
+
 		if (isset($_POST['enable']) && isset($config['dnsmasq']['enable']))
-			$input_errors[] = "The system dns-forwarder is still active. Disable it before enabling the DNS Resolver.";
+			$input_errors[] = gettext("The DNS Forwarder is still active. Disable it before enabling the DNS Resolver.");
 
 		if (empty($_POST['active_interface']))
-			$input_errors[] = "A single network interface needs to be selected for the DNS Resolver to bind to.";
+			$input_errors[] = gettext("A single network interface needs to be selected for the DNS Resolver to bind to.");
 
 		if (empty($_POST['outgoing_interface']))
-			$input_errors[] = "A single outgoing network interface needs to be selected for the DNS Resolver to use for outgoing DNS requests.";
+			$input_errors[] = gettext("A single outgoing network interface needs to be selected for the DNS Resolver to use for outgoing DNS requests.");
 
 		if ($_POST['port'])
 			if (is_port($_POST['port']))
@@ -192,7 +193,7 @@ function show_advanced_dns() {
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('unbound')): ?><br/>
-				<?php print_info_box_np(gettext("The configuration for the DNS Resolver, has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The configuration for the DNS Resolver, has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 				<form action="services_unbound.php" method="post" name="iform" id="iform" onsubmit="presubmit()">

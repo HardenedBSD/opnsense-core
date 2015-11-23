@@ -51,9 +51,7 @@ function interfaces_carp_set_maintenancemode($carp_maintenancemode)
 }
 
 
-unset($interface_arr_cache);
 unset($carp_interface_count_cache);
-unset($interface_ip_arr_cache);
 
 $status = get_carp_status();
 if ($_POST['carp_maintenancemode'] <> "") {
@@ -115,7 +113,7 @@ include("head.inc");
                     print_info_box($savemsg);
 } ?>
 
-				<?PHP	if ($carp_detected_problems) {
+				<?php if ($carp_detected_problems) {
                     print_info_box(gettext("CARP has detected a problem and this unit has been demoted to BACKUP status.") . "<br />" . gettext("Check link status on all interfaces with configured CARP VIPs."));
 } ?>
 

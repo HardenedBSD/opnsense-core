@@ -44,10 +44,42 @@ class CaptivePortal extends BaseModel
     public function getByZoneID($zoneid)
     {
         foreach ($this->zones->zone->__items as $zone) {
-            if ($zoneid == (string)$zone->zoneid) {
+            if ((string)$zoneid === (string)$zone->zoneid) {
                 return $zone;
             }
         }
         return null;
+    }
+
+    /**
+     * check if module is enabled
+     * @return bool is the captive portal enabled (1 or more active zones)
+     */
+    public function isEnabled()
+    {
+        foreach ($this->zones->zone->__items as $zone) {
+            if ((string)$zone->enabled == "1") {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * find ttemplate by name or return a new object
+     * @param $name template name
+     * @return mixed
+     */
+    public function getTemplateByName($name)
+    {
+        foreach ($this->templates->template->__items as $template) {
+            if ((string)$template->name === $name) {
+                return $template;
+            }
+        }
+        $newItem = $this->templates->template->Add();
+        $newItem->name = $name;
+        $newItem->fileid = uniqid();
+        return $newItem;
     }
 }

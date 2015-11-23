@@ -39,6 +39,8 @@ class AuthenticationFactory
 {
     /**
      * search already known local userDN's into simple mapping if auth method is current standard method
+     * @param string $authserver auth server name
+     * @return array list of dn's
      */
     private function fetchUserDNs($authserver = null)
     {
@@ -80,13 +82,14 @@ class AuthenticationFactory
 
     /**
      * get new authenticator
-     * @param $authserver authentication server name
+     * @param string $authserver authentication server name
      * @return IAuthConnector|null
      */
     public function get($authserver)
     {
         $localUserMap = array();
         $servers = $this->listServers();
+        $servers['Local API'] = array("name" => "Local API Database", "type" => "api");
 
         // create a new auth connector
         if (isset($servers[$authserver]['type'])) {
@@ -97,6 +100,15 @@ class AuthenticationFactory
                 case 'ldap':
                     $authObject = new LDAP();
                     $localUserMap = $this->fetchUserDNs();
+                    break;
+                case 'radius':
+                    $authObject = new Radius();
+                    break;
+                case 'voucher':
+                    $authObject = new Voucher();
+                    break;
+                case 'api':
+                    $authObject = new API();
                     break;
                 default:
                     $authObject = null;

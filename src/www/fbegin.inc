@@ -121,8 +121,8 @@ if($need_alert_display == true) {
 		<div class="container-fluid">
 			<div class="navbar-header">
 				<a class="navbar-brand" href="/index.php">
-				<img class="brand-logo" src="/ui/themes/<?=$g['theme'];?>/build/images/default-logo.png" height="30" width="150"/>
-				<img class="brand-icon" src="/ui/themes/<?=$g['theme'];?>/build/images/icon-logo.png" height="30" width="29"/>
+				<img class="brand-logo" src="/ui/themes/<?=$g['theme'];?>/build/images/default-logo.png" height="30"/>
+				<img class="brand-icon" src="/ui/themes/<?=$g['theme'];?>/build/images/icon-logo.png" height="30"/>
 				</a>
 				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
 					<span class="sr-only">Toggle navigation</span>
@@ -146,8 +146,8 @@ if($need_alert_display == true) {
 							echo '<li>'.get_shortcut_log_link($shortcut_section, false).'</li>';
 						}
 					?>
-					<li><a href="<?php echo "/help.php?page={$pagename}"; ?>" target="_blank" title="<?php echo gettext("Help for items on this page"); ?>">Help</a></li>
-					<li class="active"><a href="/index.php?logout">Logout</a></li>
+					<li><a href="<?= "/help.php?page={$pagename}" ?>" target="_blank" title="<?= gettext('Help for items on this page') ?>"><?= gettext('Help') ?></a></li>
+					<li class="active"><a href="/index.php?logout"><?= gettext('Logout') ?></a></li>
 				</ul>
 
 			</div>
@@ -171,7 +171,7 @@ if($need_alert_display == true) {
                             foreach($topMenuItem->Children as $subMenuItem): ?>
 <?php
                               if ($subMenuItem->Url == '' ):?>
-                               <a href="#<?=$topMenuItem->Id;?>_<?=$subMenuItem->Id;?>" class="list-group-item <?=$subMenuItem->Selected ? "active-menu-title" : "";?>" data-toggle="collapse" data-parent="#<?=$topMenuItem->Id;?>">
+                               <a href="#<?=$topMenuItem->Id;?>_<?=$subMenuItem->Id;?>" class="list-group-item <?=$subMenuItem->Selected ? "active-menu-title" : "";?>" data-toggle="collapse" data-parent="#<?=$topMenuItem->Id;?>" aria-expanded="<?=$subMenuItem->Selected ? "true" : "false";?>">
                                   <div style="display: table;width: 100%;">
                                     <div style="display: table-row">
                                       <div style="display: table-cell"><?=gettext($subMenuItem->VisibleName);?></div>
@@ -194,7 +194,7 @@ if($need_alert_display == true) {
                                 </div>
 <?php
                               elseif ($subMenuItem->IsExternal == "Y" ):?>
-                                <a href="<?=$subMenuItem->Url;?>" target="_new" class="list-group-item <?=$subMenuItem->Selected ? "active" : "";?>">
+                                <a href="<?=$subMenuItem->Url;?>" target="_new" class="list-group-item <?=$subMenuItem->Selected ? "active" : "";?>" aria-expanded="<?=$subMenuItem->Selected ? "true" : "false";?>">
                                   <div style="display: table;width: 100%;">
                                     <div style="display: table-row">
                                       <div style="display: table-cell"><?=gettext($subMenuItem->VisibleName);?></div>
@@ -258,19 +258,17 @@ if($need_alert_display == true) {
 
 						?>
 
-						<? if (!empty($main_buttons)): foreach ($main_buttons as $button): ?>
+						<?php if (!empty($main_buttons)): foreach ($main_buttons as $button): ?>
 							<a href="<?=$button['href'];?>" class="btn btn-primary"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span><?=$button['label'];?></a>
-						<? endforeach; endif; ?>
+						<?php endforeach; endif; ?>
 
-						<? if (isset($widgetfiles)): ?>
+						<?php if (isset($widgetfiles)): ?>
 
 
 							<a href="#" id="updatepref" style="display:none" onclick="return updatePref();" class="btn btn-primary"><?=gettext("Save Settings");?></a>
 
-							<button type="button" class="btn btn-default" data-toggle="modal" data-target="#modal_widgets"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span>Add widget</button>
-						<? endif; ?>
-
-						<!-- <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal_widgets"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span>Add widget</button> -->
+							<button type="button" class="btn btn-default" data-toggle="modal" data-target="#modal_widgets"><span class="glyphicon glyphicon-plus-sign __iconspacer"></span><?= gettext('Add widget') ?></button>
+						<?php endif; ?>
 					</li>
 				</ul>
 			    </form>

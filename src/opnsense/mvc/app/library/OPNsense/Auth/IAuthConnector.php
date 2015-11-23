@@ -42,9 +42,15 @@ interface IAuthConnector
     public function setProperties($config);
 
     /**
+     * after authentication, you can call this method to retrieve optional return data from the authenticator
+     * @return mixed named list of authentication properties, may be returned by the authenticator
+     */
+    public function getLastAuthProperties();
+
+    /**
      * authenticate user
-     * @param $username username to authenticate
-     * @param $password user password
+     * @param string $username username to authenticate
+     * @param string $password user password
      * @return bool
      */
     public function authenticate($username, $password);

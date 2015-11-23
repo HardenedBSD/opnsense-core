@@ -312,7 +312,7 @@ if (isset($_POST['submit'])) {
 				if (empty($map['ipaddr']))
 					$noip = true;
 		if ($_POST['staticarp'] && $noip)
-			$input_errors[] = "Cannot enable static ARP when you have static map entries without IP addresses. Ensure all static maps have IP addresses and try again.";
+			$input_errors[] = gettext("Cannot enable static ARP when you have static map entries without IP addresses. Ensure all static maps have IP addresses and try again.");
 
 		if(is_array($pconfig['numberoptions']['item'])) {
 			foreach ($pconfig['numberoptions']['item'] as $numberoption) {
@@ -688,7 +688,7 @@ include("head.inc");
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('staticmaps')): ?><br/>
-				<?php print_info_box_np(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
@@ -820,12 +820,7 @@ include("head.inc");
 												<td width="35%" class="listhdrr"><?=gettext("Pool End");?></td>
 												<td width="20%" class="listhdrr"><?=gettext("Description");?></td>
 												<td width="10%" class="list">
-												<table border="0" cellspacing="0" cellpadding="1" summary="pool">
-												<tr>
-												<td valign="middle" width="17"></td>
-												<td valign="middle"><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=newpool" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a></td>
-												</tr>
-												</table>
+												<a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=newpool" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a>
 												</td>
 											</tr>
 												<?php if(is_array($a_pools)): ?>
@@ -841,13 +836,9 @@ include("head.inc");
 											<td class="listr" ondblclick="document.location='services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;pool=<?=$i;?>';">
 												<?=htmlspecialchars($poolent['descr']);?>&nbsp;
 											</td>
-											<td valign="middle" class="list nowrap">
-												<table border="0" cellspacing="0" cellpadding="1" summary="icons">
-												<tr>
-												<td valign="middle"><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;pool=<?=$i;?>"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_e.gif" width="17" height="17" border="0" alt="edit" /></a></td>
-												<td valign="middle"><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=delpool&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this pool?");?>')"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_x.gif" width="17" height="17" border="0" alt="delete" /></a></td>
-												</tr>
-												</table>
+											<td>
+												<a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;pool=<?=$i;?>"><button type="button" class="btn btn-xs btn-default"><span class="fa fa-pencil"></span></button></a>
+												<a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=delpool&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this pool?");?>')"><button type="button" class="btn btn-xs btn-default"><span class="fa fa-trash-o"></span></button></a>
 											</td>
 											</tr>
 											<?php endif; ?>
@@ -1205,7 +1196,7 @@ include("head.inc");
 									</table>
 									<?php endif; ?>
 								</div>
-								<? endif; ?>
+								<?php endif; ?>
 		                        </form>
 
 						</div>

@@ -230,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         foreach ($a_phase1 as $ph1tmp) {
             if ($p1index <> $t) {
                 if (isset($ph1tmp['remote-gateway']) && $ph1tmp['remote-gateway'] == $pconfig['remote-gateway'] && !isset($ph1tmp['disabled'])) {
-                    $input_errors[] = sprintf(gettext('The remote gateway "%1$s" is already used by phase1 "%2$s".'), $pconfig['remote-gateway'], $ph1tmp['descr']);
+                    $input_errors[] = sprintf(gettext('The remote gateway "%s" is already used by phase1 "%s".'), $pconfig['remote-gateway'], $ph1tmp['descr']);
                 }
             }
             $t++;
@@ -342,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (!empty($pconfig['iketype']) && $pconfig['iketype'] != "ikev1" && $pconfig['iketype'] != "ikev2") {
-        $input_errors[] = gettext("Valid arguments for IKE type is v1 or v2");
+        $input_errors[] = gettext('Invalid argument for key exchange protocol version.');
     }
 
     /* build our encryption algorithms array */
@@ -976,7 +976,7 @@ endforeach; ?>
                   <tr>
                     <td><a id="help_for_rekey_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Disable Rekey");?></td>
                     <td>
-                      <input name="rekey_enable" type="checkbox" id="rekey_enable" value="yes" <?=isset($pconfig['rekey_enable']) ? "checked=\"checked\"" : ""; ?> />
+                      <input name="rekey_enable" type="checkbox" id="rekey_enable" value="yes" <?= !empty($pconfig['rekey_enable']) ? "checked=\"checked\"" : ""; ?> />
                       <div class="hidden" for="help_for_rekey_enable">
                         <?=gettext("Whether a connection should be renegotiated when it is about to expire."); ?>
                       </div>
@@ -985,7 +985,7 @@ endforeach; ?>
                   <tr>
                     <td><a id="help_for_reauth_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a>  <?=gettext("Disable Reauth");?></td>
                     <td>
-                      <input name="reauth_enable" type="checkbox" id="reauth_enable" value="yes" <?= isset($pconfig['reauth_enable']) ? "checked=\"checked\"" : "";?> />
+                      <input name="reauth_enable" type="checkbox" id="reauth_enable" value="yes" <?= !empty($pconfig['reauth_enable']) ? "checked=\"checked\"" : "";?> />
                       <div class="hidden" for="help_for_reauth_enable">
                         <?=gettext("Whether rekeying of an IKE_SA should also reauthenticate the peer. In IKEv1, reauthentication is always done."); ?>
                       </div>

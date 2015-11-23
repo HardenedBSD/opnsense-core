@@ -68,7 +68,7 @@ if ($_POST) {
 
 	foreach ($iflist as $gif => $gdescr) {
 		if ($gdescr == $_POST['ifname'] || $gif == $_POST['ifname'])
-			$input_errors[] = "The specified group name is already used by an interface. Please choose another name.";
+			$input_errors[] = gettext("The specified group name is already used by an interface. Please choose another name.");
 	}
 	$members = "";
 	$isfirst = 0;
@@ -324,8 +324,8 @@ function removeRow(el) {
 												</a>
 									      </a>
 											<br /><br />
-											<strong><?PHP echo gettext("NOTE:");?></strong>
-											<?PHP echo gettext("Rules for WAN type interfaces in groups do not contain the reply-to mechanism upon which Multi-WAN typically relies.");?>
+											<strong><?= gettext('NOTE:') ?></strong>
+											<?= gettext('Rules for WAN type interfaces in groups do not contain the reply-to mechanism upon which Multi-WAN typically relies.') ?>
 											</td>
 									  </tr>
 									  <tr>

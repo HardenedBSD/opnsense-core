@@ -43,7 +43,7 @@ function lagg_inuse($num) {
 			return true;
 	}
 
-	if (is_array($config['vlans']['vlan']) && count($config['vlans']['vlan'])) {
+	if (isset($config['vlans']['vlan'])) {
                 foreach ($config['vlans']['vlan'] as $vlan) {
                         if($vlan['if'] == $a_laggs[$num]['laggif'])
 				return true;
@@ -54,9 +54,9 @@ function lagg_inuse($num) {
 
 if ($_GET['act'] == "del") {
         if (!isset($_GET['id']))
-                $input_errors[] = getext("Wrong parameters supplied");
+                $input_errors[] = gettext("Wrong parameters supplied");
         else if (empty($a_laggs[$_GET['id']]))
-                $input_errors[] = getext("Wrong index supplied");
+                $input_errors[] = gettext("Wrong index supplied");
 	/* check if still in use */
 	else if (lagg_inuse($_GET['id'])) {
 		$input_errors[] = gettext("This LAGG interface cannot be deleted because it is still being used.");
@@ -76,7 +76,7 @@ $shortcut_section = "interfaces";
 include("head.inc");
 
 $main_buttons = array(
-	array('href'=>'interfaces_lagg_edit.php', 'label'=>'Add'),
+	array('href'=>'interfaces_lagg_edit.php', 'label'=>gettext('Add')),
 );
 
 ?>

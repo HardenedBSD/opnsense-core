@@ -80,9 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($tonathosts as $tonathost) {
                 foreach ($automatic_rules as $natent) {
                     $natent['source']['network'] = $tonathost['subnet'];
-                    $natent['descr'] .= sprintf(gettext(' - %1$s to %2$s'),
-                      $tonathost['descr'],
-                      convert_real_interface_to_friendly_descr($natent['interface']));
+                    $natent['descr'] .= ' - ' . $tonathost['descr'] . ' -> ' . convert_real_interface_to_friendly_descr($natent['interface']);
                     $natent['created'] = make_config_revision_entry(null, gettext("Manual Outbound NAT Switch"));
 
                     /* Try to detect already auto created rules and avoid duplicate them */
@@ -257,7 +255,7 @@ display_top_tabs($tab_array);
         if (isset($savemsg))
             print_info_box($savemsg);
         if (is_subsystem_dirty('natconf'))
-            print_info_box_np(gettext("The NAT configuration has been changed.")."<br />".gettext("You must apply the changes in order for them to take effect."));
+            print_info_box_apply(gettext("The NAT configuration has been changed.")."<br />".gettext("You must apply the changes in order for them to take effect."));
 ?>
         <form action="firewall_nat_out.php" method="post" name="iform" id="iform">
           <input type="hidden" id="id" name="id" value="" />

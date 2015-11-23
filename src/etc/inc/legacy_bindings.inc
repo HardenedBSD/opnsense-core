@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    Copyright (C) 2015 Deciso B.V.
  *
@@ -26,26 +27,7 @@
  *    POSSIBILITY OF SUCH DAMAGE.
  *
  */
-
-// initialize transitional components
-use Phalcon\DI\FactoryDefault;
-use Phalcon\Loader;
-
-$di = new FactoryDefault();
-$phalcon_config = include_once("/usr/local/opnsense/mvc/app/config/config.php");
-
-$loader = new Loader();
-$loader->registerDirs(
-    array(
-        $phalcon_config->application->controllersDir,
-        $phalcon_config->application->modelsDir,
-        $phalcon_config->application->libraryDir
-    )
-)->register();
-
-$di->set('config', $phalcon_config);
-
-unset($phalcon_config);
+require_once('script/load_phalcon.php');
 
 /**
  * wrap config run
@@ -84,15 +66,16 @@ function legacy_html_escape_form_data(&$settings)
 }
 
 /**
- *  list aliasses by type
+ *  list aliases by type
  *  @param string $type type port or network
  */
-function legacy_list_aliasses($type) {
+function legacy_list_aliases($type)
+{
     global $config;
     $result = array();
     if (isset($config['aliases']['alias'])) {
         foreach ($config['aliases']['alias'] as $alias) {
-            if (!empty($alias['address'])) {
+            if (!empty($alias['address']) || !empty($alias['url'])) {
                 if ($type == "port") {
                     if (preg_match("/port/i", $alias['type'])) {
                         $result[] = $alias;

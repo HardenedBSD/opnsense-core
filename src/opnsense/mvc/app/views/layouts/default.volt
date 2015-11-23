@@ -67,6 +67,16 @@
                         $("#mainmenu").find('[href="#' + $(this).attr('id') + '"]').remove();
                     }
                 });
+                // hide submenu items
+                $('#mainmenu .list-group-item').click(function(){
+                    if($(this).attr('href').substring(0,1) == '#') {
+                        $('#mainmenu .list-group-item').each(function(){
+                            if ($(this).attr('aria-expanded') == 'true'  && $(this).data('parent') != '#mainmenu') {
+                                $("#"+$(this).attr('href').substring(1,999)).collapse('hide');
+                            }
+                        });
+                    }
+                });
 
                 initFormHelpUI();
                 initFormAdvancedUI();
@@ -96,8 +106,8 @@
 			<div class="container-fluid">
 				<div class="navbar-header">
 					<a class="navbar-brand" href="/">
-						<img class="brand-logo" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/default-logo.png" height="30" width="150"/>
-						<img class="brand-icon" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/icon-logo.png" height="30" width="29"/>
+						<img class="brand-logo" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/default-logo.png" height="30"/>
+						<img class="brand-icon" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/icon-logo.png" height="30"/>
 					</a>
 					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
 						<span class="sr-only">Toggle navigation</span>
@@ -114,8 +124,8 @@
 						<li></li><li></li><li></li>
 
 
-						<li><a href="/help.php?page=firewall_virtual_ip.php" target="_blank" title="Help for items on this page">Help</a></li>
-						<li class="active"><a href="/index.php?logout">Logout</a></li>
+						<li><a href="/help.php?page=firewall_virtual_ip.php" target="_blank" title="{{ lang._('Help for items on this page') }}">{{ lang._('Help') }}</a></li>
+						<li class="active"><a href="/index.php?logout">{{ lang._('Logout') }}</a></li>
 					</ul>
 
 				</div>
@@ -158,8 +168,8 @@
         <!-- page footer -->
 		<footer class="page-foot col-sm-push-2">
 			<div class="container-fluid">
-				<a target="_blank" href="https://www.opnsense.org/" class="redlnk">OPNsense</a> is &copy;2014 - 2015 by <a href="http://www.deciso.com" class="tblnk">Deciso B.V.</a> All Rights Reserved.
-				[<a href="/license.php" class="tblnk">view license</a>]
+				<a target="_blank" href="https://opnsense.org/" class="redlnk">OPNsense</a> (c) 2014-2015 <a href="https://www.deciso.com" class="tblnk">Deciso B.V.</a>
+				(<a href="/license.php" class="tblnk">{{ lang._('view license') }}</a>)
 			</div>
 		</footer>
 

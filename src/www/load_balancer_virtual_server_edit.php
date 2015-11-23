@@ -1,6 +1,7 @@
 <?php
+
 /*
-		Copyright (C) 2014-2015 Deciso B.V.
+	Copyright (C) 2014-2015 Deciso B.V.
         Copyright (C) 2005-2008 Bill Marquette <bill.marquette@gmail.com>.
         All rights reserved.
 
@@ -51,9 +52,6 @@ if (isset($id) && $a_vs[$id]) {
   $pconfig['mode'] = 'redirect';
 }
 
-$changedesc = gettext("Load Balancer: Virtual Server:") . " ";
-$changecount = 0;
-
 if ($_POST) {
 	unset($input_errors);
 	$pconfig = $_POST;
@@ -94,12 +92,10 @@ if ($_POST) {
 
 	if (!$input_errors) {
 		$vsent = array();
-		if(isset($id) && $a_vs[$id])
+
+		if (isset($id) && $a_vs[$id]) {
 			$vsent = $a_vs[$id];
-		if($vsent['name'] != "")
-			$changedesc .= " " . sprintf(gettext("modified '%s' vs:"), $vsent['name']);
-		else
-			$changedesc .= " " . sprintf(gettext("created '%s' vs:"), $_POST['name']);
+		}
 
 		update_if_changed("name", $vsent['name'], $_POST['name']);
 		update_if_changed("descr", $vsent['descr'], $_POST['descr']);
@@ -119,15 +115,12 @@ if ($_POST) {
 				cleanup_lb_mark_anchor($a_vs[$id]['name']);
 			}
 			$a_vs[$id] = $vsent;
-		} else
+		} else {
 			$a_vs[] = $vsent;
-
-		if ($changecount > 0) {
-			/* Mark virtual server dirty */
-			mark_subsystem_dirty('loadbalancer');
-			write_config($changedesc);
 		}
 
+		mark_subsystem_dirty('loadbalancer');
+		write_config();
 		header("Location: load_balancer_virtual_server.php");
 		exit;
 	}
@@ -170,19 +163,19 @@ include("head.inc");
 					                <tr align="left">
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("Name"); ?></td>
 					                  <td width="78%" class="vtable" colspan="2">
-					                    <input name="name" type="text" <?if(isset($pconfig['name'])) echo "value=\"" . htmlspecialchars($pconfig['name']) . "\"";?> size="32" maxlength="32" />
+					                    <input name="name" type="text" <?php if(isset($pconfig['name'])) echo "value=\"" . htmlspecialchars($pconfig['name']) . "\"";?> size="32" maxlength="32" />
 					                  </td>
 								</tr>
 					                <tr align="left">
 										<td width="22%" valign="top" class="vncell"><?=gettext("Description"); ?></td>
 					                  <td width="78%" class="vtable" colspan="2">
-					                    <input name="descr" type="text" <?if(isset($pconfig['descr'])) echo "value=\"" . htmlspecialchars($pconfig['descr']) . "\"";?> size="64" />
+					                    <input name="descr" type="text" <?php if(isset($pconfig['descr'])) echo "value=\"" . htmlspecialchars($pconfig['descr']) . "\"";?> size="64" />
 					                  </td>
 								</tr>
 					                <tr align="left">
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("IP Address"); ?></td>
 					                  <td width="78%" class="vtable" colspan="2">
-					                    <input class="formfldalias" id="ipaddr" name="ipaddr" type="text" <?if(isset($pconfig['ipaddr'])) echo "value=\"" . htmlspecialchars($pconfig['ipaddr']) . "\"";?> size="39" maxlength="39" />
+					                    <input class="formfldalias" id="ipaddr" name="ipaddr" type="text" <?php if(isset($pconfig['ipaddr'])) echo "value=\"" . htmlspecialchars($pconfig['ipaddr']) . "\"";?> size="39" maxlength="39" />
 										<br /><?=gettext("This is normally the WAN IP address that you would like the server to listen on.  All connections to this IP and port will be forwarded to the pool cluster."); ?>
 										<br /><?=gettext("You may also specify a host alias listed in Firewall -&gt; Aliases here."); ?>
 										<script type="text/javascript">
@@ -196,7 +189,7 @@ include("head.inc");
 					                <tr align="left">
 										<td width="22%" valign="top" class="vncell"><?=gettext("Port"); ?></td>
 					                  <td width="78%" class="vtable" colspan="2">
-					                    <input class="formfldalias" name="port" id="port" type="text" <?if(isset($pconfig['port'])) echo "value=\"" . htmlspecialchars($pconfig['port']) . "\"";?> size="16" maxlength="16" />
+					                    <input class="formfldalias" name="port" id="port" type="text" <?php if(isset($pconfig['port'])) echo "value=\"" . htmlspecialchars($pconfig['port']) . "\"";?> size="16" maxlength="16" />
 										<br /><?=gettext("This is the port that the clients will connect to.  All connections to this port will be forwarded to the pool cluster."); ?>
 										<br /><?=gettext("If left blank, listening ports from the pool will be used."); ?>
 										<br /><?=gettext("You may also specify a port alias listed in Firewall -&gt; Aliases here."); ?>

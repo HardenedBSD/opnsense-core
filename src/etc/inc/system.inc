@@ -608,7 +608,7 @@ function compare_hostname_to_dnscache($hostname) {
         }
 
         if(trim($oldcontents) != trim($contents)) {
-                log_error(sprintf(gettext('DNSCACHE: Found old IP %1$s and new IP %2$s'), $oldcontents, $contents));
+                log_error(sprintf(gettext('DNSCACHE: Found old IP %s and new IP %s'), $oldcontents, $contents));
                 return ($oldcontents);
         } else {
                 return false;
@@ -1373,24 +1373,23 @@ function system_firmware_configure()
 {
 	global $config;
 
+	/* our own ABI prefix on the mirror */
+	$osabi = '15.7';
+
 	/* rewrite the config via the defaults */
 	$origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
 	copy("${origin_conf}.sample", $origin_conf);
 
 	if (isset($config['system']['firmware']['mirror'])) {
-		/* XXX create a proper backend call */
-		mwexecf(
-			'/usr/local/sbin/opnsense-update -sm %s',
+		configd_run('firmware mirror ' . escapeshellarg(
 			str_replace('/', '\/', $config['system']['firmware']['mirror'])
-		);
+		));
 	}
 
 	if (isset($config['system']['firmware']['flavour'])) {
-		/* XXX create a proper backend call */
-		mwexecf(
-			'/usr/local/sbin/opnsense-update -sn %s',
-			str_replace('/', '\/', $config['system']['firmware']['flavour'])
-		);
+		configd_run('firmware flavour ' . escapeshellarg(
+			str_replace('/', '\/', $osabi . '/' . $config['system']['firmware']['flavour'])
+		));
 	}
 }
 

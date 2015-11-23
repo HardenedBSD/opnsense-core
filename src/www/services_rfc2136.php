@@ -51,7 +51,7 @@ $pgtitle = array(gettext("Services"), gettext("RFC 2136 clients"));
 include("head.inc");
 
 $main_buttons = array(
-	array('label'=>'Add', 'href'=>'services_rfc2136_edit.php'),
+	array('label' => gettext('Add'), 'href' => 'services_rfc2136_edit.php'),
 );
 ?>
 
@@ -168,8 +168,12 @@ $main_buttons = array(
 										  ?>
 										  </td>
 										  <td valign="middle" class="list nowrap">
-											<a href="services_rfc2136_edit.php?id=<?=$i;?>"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_e.gif" width="17" height="17" border="0" alt="edit" /></a>
-											&nbsp;<a href="services_rfc2136.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this client?");?>')"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_x.gif" width="17" height="17" border="0" alt="delete" /></a>
+											<a href="services_rfc2136_edit.php?id=<?=$i;?>">
+											<button type="button" class="btn btn-xs btn-default"><span class="fa fa-pencil"></span></button>
+											</a>
+											<a href="services_rfc2136.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this client?");?>')">
+											<button type="button" class="btn btn-xs btn-default"><span class="fa fa-trash-o"></span></button>
+											</a>
 										  </td>
 										</tr>
 										<?php $i++; endforeach; ?>

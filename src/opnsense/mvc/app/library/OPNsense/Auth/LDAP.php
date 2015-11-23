@@ -109,7 +109,7 @@ class LDAP implements IAuthConnector
 
     /**
      * search ldap tree
-     * @param $filter ldap filter string to use
+     * @param string $filter ldap filter string to use
      * @param string $ldap_scope scope either one or tree
      * @return array|bool result list or false on errors
      */
@@ -144,7 +144,7 @@ class LDAP implements IAuthConnector
 
     /**
      * construct a new LDAP connector
-     * @param null $baseSearchDN setup base searchDN or list of DN's separated by ;
+     * @param null|string $baseSearchDN setup base searchDN or list of DN's separated by ;
      * @param int $ldapVersion setup ldap version
      */
     public function __construct($baseSearchDN = null, $ldapVersion = 3)
@@ -201,8 +201,8 @@ class LDAP implements IAuthConnector
     /**
      * initiate a connection.
      * @param $bind_url string url to use
-     * @param null $userdn connect dn to use, leave empty for anonymous
-     * @param null $password password
+     * @param null|string $userdn connect dn to use, leave empty for anonymous
+     * @param null|string $password password
      * @param int $timeout network timeout
      * @return bool connect status (success/fail)
      */
@@ -210,9 +210,9 @@ class LDAP implements IAuthConnector
     {
         $this->closeLDAPHandle();
         $this->ldapHandle = @ldap_connect($bind_url);
-        ldap_set_option($this->ldapHandle, LDAP_OPT_NETWORK_TIMEOUT, $timeout);
 
         if ($this->ldapHandle !== false) {
+            ldap_set_option($this->ldapHandle, LDAP_OPT_NETWORK_TIMEOUT, $timeout);
             ldap_set_option($this->ldapHandle, LDAP_OPT_REFERRALS, 0);
             ldap_set_option($this->ldapHandle, LDAP_OPT_DEREF, LDAP_DEREF_SEARCHING);
             ldap_set_option($this->ldapHandle, LDAP_OPT_PROTOCOL_VERSION, (int)$this->ldapVersion);
@@ -228,9 +228,9 @@ class LDAP implements IAuthConnector
 
     /**
      * search user by name or expression
-     * @param $username string username(s) to search
-     * @param $userNameAttribute string ldap attribute to use for the search
-     * @param $extendedQuery string|null additional search criteria (narrow down search)
+     * @param string $username username(s) to search
+     * @param string $userNameAttribute ldap attribute to use for the search
+     * @param string|null $extendedQuery additional search criteria (narrow down search)
      * @return array|bool
      */
     public function searchUsers($username, $userNameAttribute, $extendedQuery = null)
@@ -287,9 +287,18 @@ class LDAP implements IAuthConnector
     }
 
     /**
+     * unused
+     * @return array mixed named list of authentication properties
+     */
+    public function getLastAuthProperties()
+    {
+        return array();
+    }
+
+    /**
      * authenticate user against ldap server
-     * @param $username username to authenticate
-     * @param $password user password
+     * @param string $username username to authenticate
+     * @param string $password user password
      * @return bool authentication status
      */
     public function authenticate($username, $password)

@@ -1,4 +1,5 @@
 <?php
+
 /*
   Copyright (C) 2014 Deciso B.V.
   Copyright (C) 2008 Shrew Soft Inc
@@ -268,6 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     if ($pconfig['localid_type'] == "address") {
                         $input_errors[] = gettext("You cannot configure a network type address for NAT while only an address type is selected for local source.");
                     }
+                    // address rules also apply to network type (hence, no break)
                 case "address":
                     if (!empty($pconfig['natlocalid_address']) && !is_ipaddr($pconfig['natlocalid_address'])) {
                         $input_errors[] = gettext("A valid NAT local network IP address must be specified.");
@@ -284,7 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 if (($pconfig['remoteid_netbits'] != 0 && !$pconfig['remoteid_netbits']) || !is_numeric($pconfig['remoteid_netbits'])) {
                     $input_errors[] = gettext("A valid remote network bit count must be specified.");
                 }
-                break;
+                // address rules also apply to network type (hence, no break)
             case "address":
                 if (!$pconfig['remoteid_address'] || !is_ipaddr($pconfig['remoteid_address'])) {
                     $input_errors[] = gettext("A valid remote network IP address must be specified.");
@@ -457,6 +459,11 @@ $( document ).ready(function() {
   typesel_change_remote(<?=$pconfig['remoteid_netbits']?>);
     <?php
 endif; ?>
+
+  $( document ).ready(function() {
+      // hook in, ipv4/ipv6 selector events
+      hook_ipv4v6('ipv4v6net', 'network-id');
+  });
 });
 
 function change_mode() {
@@ -616,8 +623,6 @@ function change_protocol() {
 //]]>
 </script>
 
-
-
 <?php
 if (isset($input_errors) && count($input_errors) > 0) {
     print_input_errors($input_errors);
@@ -714,7 +719,7 @@ endforeach;
                   <td>
                     <input name="localid_address" type="text" id="localid_address" size="28" value="<?=$pconfig['localid_address'];?>" />
                     /
-                    <select name="localid_netbits" id="localid_netbits">
+                    <select name="localid_netbits" data-network-id="localid_address" class="ipv4v6net" id="localid_netbits">
 <?php              for ($i = 128; $i >= 0; $i--) :
 ?>
                       <option value="<?=$i;
@@ -753,7 +758,7 @@ endfor; ?>
                   <td>
                     <input name="natlocalid_address" type="text" class="formfld unknown ipv4v6" id="natlocalid_address" size="28" value="<?=isset($pconfig['natlocalid_address']) ? $pconfig['natlocalid_address'] : "";?>" />
                     /
-                    <select name="natlocalid_netbits" class="formselect ipv4v6" id="natlocalid_netbits">
+                    <select name="natlocalid_netbits"  data-network-id="natlocalid_address" class="formselect ipv4v6net" id="natlocalid_netbits">
                     <?php for ($i = 128; $i >= 0; $i--) :
 ?>
                       <option value="<?=$i;?>" <?php if (isset($pconfig['natlocalid_netbits']) && $i == $pconfig['natlocalid_netbits']) {
@@ -813,7 +818,7 @@ endif; ?>
                 <tr>
                   <td><a id="help_for_proto" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Protocol"); ?></td>
                   <td width="78%" class="vtable">
-                    <select name="protocol" class="formselect" onchange="change_protocol()">
+                    <select name="protocol" id="proto" class="formselect" onchange="change_protocol()">
     <?php
     foreach (array('esp' => 'ESP','ah' => 'AH') as $proto => $protoname) :
     ?>
@@ -875,7 +880,7 @@ endif; ?>
     <?php                    foreach ($p2_halgos as $algo => $algoname) :
     ?>
                     <input type="checkbox" name="hash-algorithm-option[]" value="<?=$algo;
-?>" <?=in_array($algo, $pconfig['hash-algorithm-option']) ?  "checked=\"checked\"" : "";?>/>
+?>" <?= isset($pconfig['hash-algorithm-option']) && in_array($algo, $pconfig['hash-algorithm-option']) ?  'checked="checked"' : '';?>/>
                     <?=$algoname;?>
                     </br>
     <?php

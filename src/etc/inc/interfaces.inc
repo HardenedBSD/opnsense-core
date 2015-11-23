@@ -97,21 +97,6 @@ function interfaces_bring_up($interface)
 	legacy_interface_flags($interface, 'up');
 }
 
-/*
- * Return the interface array
- */
-function get_interface_arr($flush = false)
-{
-	global $interface_arr_cache;
-
-	/* If the cache doesn't exist, build it */
-	if (!isset($interface_arr_cache) or $flush) {
-		$interface_arr_cache = legacy_interface_listget();
-	}
-
-	return $interface_arr_cache;
-}
-
 function interface_override_flags()
 {
 	global $config;
@@ -126,24 +111,14 @@ function interface_override_flags()
 	);
 }
 
-function does_interface_exist($interface, $flush = true)
+function does_interface_exist($interface)
 {
-	global $config;
-
-	if(!$interface) {
+	$ints = legacy_interface_listget();
+	if (empty($interface) || $ints == null || !in_array($interface, $ints)) {
 		return false;
+	} else {
+		return true;
 	}
-
-	$ints = get_interface_arr($flush);
-	if ($ints == null) {
-		return false;
-	}
-
-	if (!in_array($interface, $ints)) {
-		return false;
-	}
-
-	return true;
 }
 
 
@@ -310,9 +285,6 @@ function interface_vlan_configure(&$vlan)
 
 	interfaces_bring_up($vlanif);
 
-	/* invalidate interface cache */
-	get_interface_arr(true);
-
 	/* XXX: ermal -- for now leave it here at the moment it does not hurt. */
 	interfaces_bring_up($if);
 
@@ -365,9 +337,6 @@ function interface_qinq_configure(&$vlan, $fd = NULL) {
 		fwrite($fd, "name {$qinqif}:lower {$vlanif}qinq\n");
 		fwrite($fd, "connect {$qinqif}: {$vlanif}qinq: upper nomatch\n");
 	}
-
-	/* invalidate interface cache */
-	get_interface_arr(true);
 
 	if (!stristr($qinqif, "_vlan"))
 		mwexec("/sbin/ifconfig {$qinqif} promisc\n");
@@ -433,9 +402,6 @@ function interface_qinq2_configure(&$qinq, $fd, $macaddr) {
 	fwrite($fd, "msg {$if}qinq: addfilter { vlan={$tag} hook=\"{$if}{$tag}\" }\n");
 	fwrite($fd, "msg {$if}h{$tag}: setifname \"{$vlanif}\"\n");
 	fwrite($fd, "msg {$if}h{$tag}: set {$macaddr}\n");
-
-	/* invalidate interface cache */
-	get_interface_arr(true);
 
 	return $vlanif;
 }
@@ -1568,7 +1534,7 @@ function interface_ppps_configure($interface)
 					$localips[$pid] = "0.0.0.0";
 				}
 				if(!is_ipaddr($gateways[$pid])){
-					log_error(sprintf(gettext('Could not get a PPTP/L2TP Remote IP address from %1$s for %2$s in interfaces_ppps_configure.'), $dhcp_gateway, $gway));
+					log_error(sprintf(gettext('Could not get a PPTP/L2TP Remote IP address from %s for %s in interfaces_ppps_configure.'), $dhcp_gateway, $gway));
 					return 0;
 				}
 				pfSense_ngctl_attach(".", $port);
@@ -2242,7 +2208,7 @@ function interface_wireless_clone($realif, $wlcfg)
 		// example:  wlan2
 		exec("/sbin/ifconfig wlan create wlandev {$baseif} {$mode} bssid 2>&1", $out, $ret);
 		if($ret <> 0) {
-			log_error(sprintf(gettext('Failed to clone interface %1$s with error code %2$s, output %3$s'), $baseif, $ret, $out[0]));
+			log_error(sprintf(gettext('Failed to clone interface %s with error code %s, output %s'), $baseif, $ret, $out[0]));
 			return false;
 		}
 		$newif = trim($out[0]);
@@ -2873,8 +2839,6 @@ function interface_vlan_adapt_mtu($vlanifs, $mtu) {
 function interface_configure($interface = 'wan', $reloadall = false, $linkupevent = false)
 {
 	global $config;
-	global $interface_sn_arr_cache, $interface_ip_arr_cache;
-	global $interface_snv6_arr_cache, $interface_ipv6_arr_cache;
 
 	$wancfg = $config['interfaces'][$interface];
 
@@ -2967,7 +2931,7 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
 				" link " . escapeshellarg($random_mac));
 			$wancfg['spoofmac'] = $random_mac;
 			write_config();
-			file_notice("MAC Address altered", sprintf(gettext('The INVALID MAC address (ff:ff:ff:ff:ff:ff) on interface %1$s has been automatically replaced with %2$s'), $realif, $random_mac), "Interfaces");
+			file_notice("MAC Address altered", sprintf(gettext('The INVALID MAC address (ff:ff:ff:ff:ff:ff) on interface %s has been automatically replaced with %s'), $realif, $random_mac), "Interfaces");
 		}
 	}
 
@@ -2988,13 +2952,6 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
 	if (!stristr($realif, "_vlan") && is_array($options)) {
 		legacy_interface_flags($realhwif, interface_override_flags());
 	}
-
-	/* invalidate interface/ip/sn cache */
-	get_interface_arr(true);
-	unset($interface_ip_arr_cache[$realif]);
-	unset($interface_sn_arr_cache[$realif]);
-	unset($interface_ipv6_arr_cache[$realif]);
-	unset($interface_snv6_arr_cache[$realif]);
 
 	$tunnelif = substr($realif, 0, 3);
 	switch ($wancfg['ipaddr']) {
@@ -3194,8 +3151,6 @@ function interface_track6_configure($interface = 'lan', $wancfg, $linkupevent = 
 function interface_track6_6rd_configure($interface = 'lan', $lancfg)
 {
 	global $config;
-	global $interface_ipv6_arr_cache;
-	global $interface_snv6_arr_cache;
 
 	if (!is_array($lancfg))
 		return;
@@ -3245,8 +3200,6 @@ function interface_track6_6rd_configure($interface = 'lan', $lancfg)
 	$oip = find_interface_ipv6($lanif);
 	if (is_ipaddrv6($oip))
 		mwexec("/sbin/ifconfig {$lanif} inet6 {$oip} delete");
-	unset($interface_ipv6_arr_cache[$lanif]);
-	unset($interface_snv6_arr_cache[$lanif]);
 	log_error("rd6 {$interface} with ipv6 address {$rd6lan} based on {$lancfg['track6-interface']} ipv4 {$ip4address}");
 	mwexec("/sbin/ifconfig {$lanif} inet6 {$rd6lan} prefixlen 64");
 
@@ -3256,8 +3209,6 @@ function interface_track6_6rd_configure($interface = 'lan', $lancfg)
 function interface_track6_6to4_configure($interface = 'lan', $lancfg)
 {
 	global $config;
-	global $interface_ipv6_arr_cache;
-	global $interface_snv6_arr_cache;
 
 	if (!is_array($lancfg))
 		return;
@@ -3303,8 +3254,6 @@ function interface_track6_6to4_configure($interface = 'lan', $lancfg)
 	$oip = find_interface_ipv6($lanif);
 	if (is_ipaddrv6($oip))
 		mwexec("/sbin/ifconfig {$lanif} inet6 {$oip} delete");
-	unset($interface_ipv6_arr_cache[$lanif]);
-	unset($interface_snv6_arr_cache[$lanif]);
 	log_error("sixto4 {$interface} with ipv6 address {$sixto4lan} based on {$lancfg['track6-interface']} ipv4 {$ip4address}");
 	mwexec("/sbin/ifconfig {$lanif} inet6 {$sixto4lan} prefixlen 64");
 
@@ -4540,133 +4489,71 @@ function link_interface_to_gif($interface)
 /*
  * find_interface_ip($interface): return the interface ip (first found)
  */
-function find_interface_ip($interface, $flush = false) {
-	global $interface_ip_arr_cache;
-
-	if (!isset($interface_ip_arr_cache) || !is_array($interface_ip_arr_cache)) {
-		$interface_ip_arr_cache = array() ;
-	}
-
-	$interface = str_replace("\n", "", $interface);
-
-	if (!does_interface_exist($interface))
-		return;
-
-	/* Setup IP cache */
-	if (!isset($interface_ip_arr_cache[$interface]) or $flush) {
-		$ifinfo = pfSense_get_interface_addresses($interface);
-		if (isset($ifinfo['ipaddr'])) {
-			$interface_ip_arr_cache[$interface] = $ifinfo['ipaddr'];
-		} else  {
-			return null;
+function find_interface_ip($interface) {
+		$interface = trim($interface);
+		if (does_interface_exist($interface)) {
+				$ifinfo = pfSense_get_interface_addresses($interface);
+				if (isset($ifinfo['ipaddr'])) {
+						return $ifinfo['ipaddr'];
+				}
 		}
-	}
-
-	return $interface_ip_arr_cache[$interface];
+		return null;
 }
 
 /*
  * find_interface_ipv6($interface): return the interface ip (first found)
  */
-function find_interface_ipv6($interface, $flush = false) {
-	global $interface_ipv6_arr_cache;
-	global $config;
-
-	if (!isset($interface_ipv6_arr_cache) || !is_array($interface_ipv6_arr_cache)) {
-		$interface_ipv6_arr_cache = array();
-	}
-
-	$interface = trim($interface);
-	$interface = get_real_interface($interface);
-
-	if (!does_interface_exist($interface))
-		return;
-
-	/* Setup IP cache */
-	if (!isset($interface_ipv6_arr_cache[$interface]) or $flush) {
-		$ifinfo = pfSense_get_interface_addresses($interface);
-		if (isset($ifinfo['ipaddr6'])) {
-			$interface_ipv6_arr_cache[$interface] = $ifinfo['ipaddr6'];
-		} else {
-			return null;
+function find_interface_ipv6($interface) {
+		// a bit obscure, why should this be different then find_interface_ip?
+		$interface = get_real_interface(trim($interface));
+		if (does_interface_exist($interface)) {
+				$ifinfo = pfSense_get_interface_addresses($interface);
+				if (isset($ifinfo['ipaddr6'])) {
+						return $ifinfo['ipaddr6'];
+				}
 		}
-	}
-
-	return $interface_ipv6_arr_cache[$interface];
+		return null;
 }
 
 /*
  * find_interface_ipv6_ll($interface): return the interface ipv6 link local (first found)
  */
-function find_interface_ipv6_ll($interface, $flush = false) {
-	global $interface_llv6_arr_cache;
-	global $config;
-
-	$interface = str_replace("\n", "", $interface);
-
-	if (!does_interface_exist($interface))
-		return;
-
-	/* Setup IP cache */
-	if (!isset($interface_llv6_arr_cache[$interface]) or $flush) {
-		$ifinfo = pfSense_getall_interface_addresses($interface);
-		foreach($ifinfo as $line) {
-			if (strstr($line, ":")) {
-				$parts = explode("/", $line);
-				if(is_linklocal($parts[0])) {
-					$ifinfo['linklocal'] = $parts[0];
+function find_interface_ipv6_ll($interface) {
+		$interface = trim($interface);
+		if (does_interface_exist($interface)) {
+				$ifinfo = pfSense_getall_interface_addresses($interface);
+				foreach($ifinfo as $line) {
+						if (strstr($line, ":")) {
+								$parts = explode("/", $line);
+								if(is_linklocal($parts[0])) {
+										return $parts[0];
+								}
+						}
 				}
-			}
 		}
-		$interface_llv6_arr_cache[$interface] = $ifinfo['linklocal'];
-	}
-	return $interface_llv6_arr_cache[$interface];
+		return null;
 }
 
-function find_interface_subnet($interface, $flush = false) {
-	global $interface_sn_arr_cache;
-
-	if (!isset($interface_sn_arr_cache) || !is_array($interface_sn_arr_cache)){
-		$interface_sn_arr_cache = array();
-	}
-
-	$interface = str_replace("\n", "", $interface);
-	if (does_interface_exist($interface) == false)
-		return;
-
-	if (!isset($interface_sn_arr_cache[$interface]['subnetbits']) || $flush) {
-		$ifinfo = pfSense_get_interface_addresses($interface);
-		if (isset($ifinfo['subnetbits'])) {
-			$interface_sn_arr_cache[$interface] = $ifinfo['subnetbits'];
-		} else {
-			return null;
+function find_interface_subnet($interface) {
+		$interface = trim($interface);
+		if (does_interface_exist($interface)) {
+				$ifinfo = pfSense_get_interface_addresses($interface);
+				if (isset($ifinfo['subnetbits'])) {
+						return $ifinfo['subnetbits'];
+				}
 		}
-	}
-
-	return $interface_sn_arr_cache[$interface];
+		return null;
 }
 
-function find_interface_subnetv6($interface, $flush = false) {
-	global $interface_snv6_arr_cache;
-
-	if (!isset($interface_snv6_arr_cache) || !is_array($interface_snv6_arr_cache)) {
-		$interface_snv6_arr_cache = array();
-	}
-
-	$interface = str_replace("\n", "", $interface);
-	if (does_interface_exist($interface) == false)
-		return;
-
-	if (!isset($interface_snv6_arr_cache[$interface]['subnetbits6']) || $flush) {
-		$ifinfo = pfSense_get_interface_addresses($interface);
-		if (isset($ifinfo['subnetbits6'])) {
-			$interface_snv6_arr_cache[$interface] = $ifinfo['subnetbits6'];
-		} else {
-			return null ;
+function find_interface_subnetv6($interface) {
+		$interface = trim($interface);
+		if (does_interface_exist($interface)) {
+				$ifinfo = pfSense_get_interface_addresses($interface);
+				if (isset($ifinfo['subnetbits6'])) {
+						return $ifinfo['subnetbits6'];
+				}
 		}
-	}
-
-	return $interface_snv6_arr_cache[$interface];
+		return null;
 }
 
 function ip_in_interface_alias_subnet($interface, $ipalias) {
@@ -5220,10 +5107,12 @@ function get_interface_info($ifdescr)
 			}
 
 			if (preg_match("/status: (.*)$/", $ici, $matches)) {
-				if ($matches[1] != "active")
+				if ($matches[1] != 'active') {
 					$ifinfo['status'] = $matches[1];
-				if($ifinfo['status'] == gettext("running"))
-					$ifinfo['status'] = gettext("up");
+				}
+				if ($ifinfo['status'] == 'running') {
+					$ifinfo['status'] = 'up';
+				}
 			}
 			if (preg_match("/channel (\S*)/", $ici, $matches)) {
 				$ifinfo['channel'] = $matches[1];

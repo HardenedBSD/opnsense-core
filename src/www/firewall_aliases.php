@@ -154,7 +154,7 @@ $( document ).ready(function() {
     var id = $(this).attr("id").split('_').pop(-1);
     BootstrapDialog.show({
         type:BootstrapDialog.TYPE_INFO,
-        title: "<?= gettext("Aliasses");?>",
+        title: "<?= gettext("Aliases");?>",
         message: "<?=gettext("Do you really want to delete this alias? All elements that still use it will become invalid (e.g. filter rules)!");?>",
         buttons: [{
                 label: "<?= gettext("No");?>",
@@ -177,7 +177,7 @@ $( document ).ready(function() {
       <div class="row">
 <?php if (isset($savemsg)) print_info_box($savemsg); ?>
 <?php if (is_subsystem_dirty('aliases')): ?>
-<?php print_info_box_np(gettext("The alias list has been changed.") . "<br />" . gettext("You must apply the changes in order for them to take effect."));?>
+<?php print_info_box_apply(gettext("The alias list has been changed.") . "<br />" . gettext("You must apply the changes in order for them to take effect."));?>
 <?php endif; ?>
         <section class="col-xs-12">
           <div class="content-box">

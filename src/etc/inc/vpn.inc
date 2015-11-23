@@ -576,7 +576,7 @@ EOD;
             }
 
             $rightsourceip = NULL;
-            if (!empty($a_client['pool_address'])) {
+            if (!empty($a_client['pool_address']) && isset($ph1ent['mobile']) ) {
                 $rightsourceip = "\trightsourceip = {$a_client['pool_address']}/{$a_client['pool_netbits']}\n";
             }
 
@@ -621,6 +621,11 @@ EOD;
                 $rekey = "rekey = yes";
             }
 
+            $forceencaps = 'forceencaps = no' ;
+            if (!empty($ph1ent['nat_traversal']) && $ph1ent['nat_traversal'] == 'force') {
+                $forceencaps = 'forceencaps = yes';
+            }
+
             $ipseclifetime = 0;
             $rightsubnet_spec = array();
             $leftsubnet_spec = array();
@@ -655,14 +660,6 @@ EOD;
                                 continue;
                             }
                             if (!empty($ph2ent['natlocalid'])) {
-                                $natleftsubnet_data =  ipsec_idinfo_to_cidr($ph2ent['natlocalid'], false, $ph2ent['mode']);
-                                if ($ph2ent['natlocalid']['type'] != "address") {
-                                    if (is_subnet($natleftsubnet_data))
-                                        $leftsubnet_data = "{$natleftsubnet_data}|{$leftsubnet_data}";
-                                } else {
-                                    if (is_ipaddr($natleftsubnet_data))
-                                        $leftsubnet_data = "{$natleftsubnet_data}|{$leftsubnet_data}";
-                                }
                                 $natfilterrules = true;
                             }
                         }
@@ -781,6 +778,7 @@ conn con<<connectionId>>
   keyexchange = {$keyexchange}
   {$reauth}
   {$rekey}
+  {$forceencaps}
   reqid = {$ikeid}
   installpolicy = yes
   {$tunneltype}
