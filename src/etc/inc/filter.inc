@@ -169,7 +169,10 @@ function filter_configure_sync($delete_states_if_needed = true)
 
 
     filter_pflog_start();
-    update_filter_reload_status(gettext("Initializing"));
+    update_filter_reload_status(gettext("Initializing"), true);
+
+    /* invalidate interface cache */
+    get_interface_arr(true);
 
     /* Get interface list to work with. */
     filter_generate_optcfg_array();
@@ -865,7 +868,13 @@ function filter_get_direct_networks_list($returnsubnetsonly = true) {
 
 function filter_generate_optcfg_array()
 {
-    global $config;
+    global $config, $FilterIflist;
+
+    // Nasty hack to avoid unkown status of $FilterIflist, every piece of code using $FilterIflist should use
+    // this function to retrieve it's content.
+    if (isset($FilterIflist) && is_array($FilterIflist) && count($FilterIflist) > 0) {
+        return $FilterIflist;
+    }
 
     $FilterIflist = array();
 

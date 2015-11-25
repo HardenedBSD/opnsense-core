@@ -784,17 +784,14 @@ function tuntap_change() {
                                                             $authmodes = array();
                                                         }
                                                         $auth_servers = auth_get_authserver_list();
-                                                        foreach ($auth_servers as $auth_server) :
+                                                        foreach ($auth_servers as $auth_key => $auth_server) :
                                                                 $selected = "";
-                                                            if (in_array($auth_server['name'], $authmodes)) {
+                                                            if (in_array($auth_key, $authmodes)) {
                                                                     $selected = "selected=\"selected\"";
                                                             }
                                                         ?>
-                                                        <option value="<?=htmlspecialchars($auth_server['name']);
-?>" <?=$selected;
-?>><?=htmlspecialchars($auth_server['name']);?></option>
-                                                        <?php
-                                                        endforeach; ?>
+                                                        <option value="<?=htmlspecialchars($auth_key); ?>" <?=$selected; ?>><?=htmlspecialchars($auth_server['name']);?></option>
+                                                        <?php endforeach; ?>
                                                         </select>
        </td>
                     </tr>
@@ -1678,16 +1675,13 @@ endif; ?>
                         <select name="verbosity_level" class="form-control">
                         <?php
                         foreach ($openvpn_verbosity_level as $verb_value => $verb_desc) :
-                            $selected = "";
+                            $selected = '';
                             if ($pconfig['verbosity_level'] == $verb_value) {
-                                $selected = "selected=\"selected\"";
+                                $selected = 'selected="selected"';
                             }
                         ?>
-                        <option value="<?=$verb_value;
-?>" <?=$selected;
-?>><?=$verb_desc;?></option>
-                        <?php
-                        endforeach; ?>
+                        <option value="<?=$verb_value; ?>" <?=$selected; ?>><?=$verb_desc;?></option>
+                        <?php endforeach; ?>
                         </select>
                         <div class="hidden" for="help_for_verbosity_level">
                             <?=gettext("Each level shows all info from the previous levels. Level 3 is recommended if you want a good summary of what's happening without being swamped by output"); ?>.<br /> <br />

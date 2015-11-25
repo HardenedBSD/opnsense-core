@@ -27,22 +27,6 @@
  *
  */
 
-/****f* legacy/have_ruleint_access
- * NAME
- *   have_ruleint_access
- * INPUTS
- *	none
- * RESULT
- *   returns true if user has access to edit a specific firewall interface
- ******/
-function have_ruleint_access($if) {
-	$security_url = "firewall_rules.php?if=". strtolower($if);
-	if(isAllowedPage($security_url))
-		return true;
-	return false;
-}
-
-
 /****f* legacy/is_private_ip
  * NAME
  *   is_private_ip
@@ -152,11 +136,10 @@ function setup_polling()
 function setup_microcode() {
 
 	/* if list */
-	$ifs = legacy_interface_listget();
+	$ifs = get_interface_arr();
 
-	foreach($ifs as $if) {
+	foreach($ifs as $if)
 		enable_hardware_offloading($if);
-	}
 }
 
 /****f* legacy/get_carp_status
