@@ -241,16 +241,6 @@ function get_firmware_mirrors()
 	$mirrors = array();
 
 	$mirrors['default'] = '(default)';
-	$mirrors['https://opnsense.aivian.org'] = 'Aivian (Shaoxing, CN)';
-	$mirrors['https://opnsense.c0urier.net'] = 'c0urier.net (Lund, SE)';
-	$mirrors['https://fleximus.org/mirror/opnsense'] = 'Fleximus (Roubaix, FR)';
-	$mirrors['http://mirror.ams1.nl.leaseweb.net/opnsense'] = 'LeaseWeb (Amsterdam, NL)';
-	$mirrors['http://mirror.fra10.de.leaseweb.net/opnsense'] = 'LeaseWeb (Frankfurt, DE)';
-	$mirrors['http://mirror.sfo12.us.leaseweb.net/opnsense'] = 'LeaseWeb (San Francisco, US)';
-	$mirrors['http://mirror.wdc1.us.leaseweb.net/opnsense'] = 'LeaseWeb (Washington, D.C., US)';
-	$mirrors['http://mirrors.nycbug.org/pub/opnsense'] = 'NYC*BUG (New York, US)';
-	$mirrors['http://pkg.opnsense.org'] = 'OPNsense (Amsterdam, NL)';
-	$mirrors['http://mirrors.supranet.net/pub/opnsense'] = 'Supranet Communications (Middleton, US)';
 
 	return $mirrors;
 }
