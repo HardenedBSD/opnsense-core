@@ -223,6 +223,8 @@ sleep 10
 /usr/local/etc/rc.bootup
 rm /var/run/booting
 
+/bin/sh /etc/rc.d/casperd onestart
+
 # If a shell was selected from recovery
 # console then just drop to the shell now.
 if [ -f "/tmp/donotbootup" ]; then
