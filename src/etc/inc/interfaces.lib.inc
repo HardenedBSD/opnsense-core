@@ -47,6 +47,21 @@ function legacy_interface_listget($flag = '')
 		$ifs = explode(' ', $out[0]);
 	}
 
+	/*
+	 * If we are running -CURRENT, wireless devices are exposed
+	 * via the sysctl net.wlan.devices.
+	 */
+	unset($out);
+	unset($ret);
+	exec('/sbin/sysctl -n net.wlan.devices', $out, $ret);
+	if ($ret) {
+		return ($ifs);
+	}
+
+	foreach (explode(' ', trim($out[0])) as $wlandev) {
+		$ifs[] = $wlandev;
+	}
+
 	return ($ifs);
 }
 
