@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2005 Scott Ullrich (sullrich@gmail.com)
@@ -26,13 +27,10 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-$pgtitle = array(gettext("VPN"),gettext("L2TP"),gettext("Users"));
-$shortcut_section = "l2tps";
-
 require_once("guiconfig.inc");
 require_once("vpn.inc");
 
-if (!is_array($config['l2tp']['user'])) {
+if (!isset($config['l2tp']['user'])) {
     $config['l2tp']['user'] = array();
 }
 $a_secret = &$config['l2tp']['user'];
@@ -45,7 +43,7 @@ if ($_POST) {
         if (!is_subsystem_dirty('rebootreq')) {
             $retval = vpn_l2tp_configure();
         }
-        $savemsg = get_std_save_message($retval);
+        $savemsg = get_std_save_message();
         if ($retval == 0) {
             if (is_subsystem_dirty('l2tpusers')) {
                 clear_subsystem_dirty('l2tpusers');
@@ -59,7 +57,7 @@ if ($_GET['act'] == "del") {
         unset($a_secret[$_GET['id']]);
         write_config();
         mark_subsystem_dirty('l2tpusers');
-        redirectHeader("vpn_l2tp_users.php");
+        header("Location: vpn_l2tp_users.php");
         exit;
     }
 }
@@ -88,7 +86,7 @@ $main_buttons = array(
 } ?>
 				<?php if (is_subsystem_dirty('l2tpusers')) :
 ?><br/>
-				<?php print_info_box_np(gettext("The l2tp user list has been modified") . ".<br />" . gettext("You must apply the changes in order for them to take effect") . ".<br /><b>" . gettext("Warning: this will terminate all current l2tp sessions!") . "</b>");?>
+				<?php print_info_box_apply(gettext("The l2tp user list has been modified") . ".<br />" . gettext("You must apply the changes in order for them to take effect") . ".<br /><b>" . gettext("Warning: this will terminate all current l2tp sessions!") . "</b>");?>
 				<?php
 endif; ?>
 
@@ -96,13 +94,6 @@ endif; ?>
 
 
 			    <section class="col-xs-12">
-
-				<?php
-                        $tab_array = array();
-                        $tab_array[0] = array(gettext("Configuration"), false, "vpn_l2tp.php");
-                        $tab_array[1] = array(gettext("Users"), true, "vpn_l2tp_users.php");
-                        display_top_tabs($tab_array);
-                    ?>
 
 					<div class="tab-content content-box col-xs-12">
 
@@ -132,7 +123,7 @@ endif; ?>
 
                                         <a href="vpn_l2tp_users.php?act=del&amp;id=<?=$i;
 ?>" class="btn btn-default" onclick="return confirm('<?=gettext("Do you really want to delete this user?");
-?>')"title="<?=gettext("delete user"); ?>"><span class="glyphicon glyphicon-remove"></span></a>
+?>')"title="<?=gettext("delete user"); ?>"><span class="fa fa-trash text-muted"></span></a>
 
 					                 </td>
 								</tr>

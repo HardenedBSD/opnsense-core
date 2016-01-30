@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2003-2005 Bob Zoller <bob@kludgebox.com> and Manuel Kasper <mk@neon1.net>.
@@ -27,6 +28,10 @@
 */
 
 require_once("guiconfig.inc");
+require_once("system.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
+require_once("pfsense-utils.inc");
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/services_dnsmasq.php');
 
@@ -106,8 +111,8 @@ if ($_POST) {
        }
 }
 
-$pgtitle = array(gettext("Services"),gettext("DNS forwarder"),gettext("Edit Domain Override"));
-$shortcut_section = "resolver";
+$service_hook = 'dnsmasq';
+
 include("head.inc");
 
 ?>

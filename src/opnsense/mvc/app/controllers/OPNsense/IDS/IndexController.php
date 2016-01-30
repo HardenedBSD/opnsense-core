@@ -34,6 +34,10 @@ namespace OPNsense\IDS;
  */
 class IndexController extends \OPNsense\Base\IndexController
 {
+    /**
+     * default ids index page
+     * @throws \Exception
+     */
     public function indexAction()
     {
         $this->view->title = "Intrusion Detection";
@@ -43,6 +47,8 @@ class IndexController extends \OPNsense\Base\IndexController
         $this->view->formDialogAlert = $this->getForm("dialogAlert");
         // link IDS general settings
         $this->view->formGeneralSettings = $this->getForm("generalSettings");
+        // link alert list dialog
+        $this->view->formDialogRuleset = $this->getForm("dialogRuleset");
         // choose template
         $this->view->pick('OPNsense/IDS/index');
     }

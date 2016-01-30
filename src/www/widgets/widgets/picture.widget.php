@@ -30,7 +30,6 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("pfsense-utils.inc");
-require_once("functions.inc");
 
 if ($_GET['getpic']=="true") {
     $pic_type_s = explode(".", $config['widgets']['picturewidget_filename']);
@@ -82,7 +81,7 @@ if ($_POST) {
 			</tr>
 			<tr>
 				<td>
-					<input id="submita" name="submita" type="submit" class="btn btn-primary formbtn" value="Upload" />
+					<input id="submita" name="submita" type="submit" class="btn btn-primary formbtn" value="<?= gettext('Upload') ?>" />
 				</td>
 			</tr>
 		</table>

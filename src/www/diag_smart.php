@@ -1,8 +1,9 @@
 <?php
+
 /*
-	Copyritgh (C) 2014 Deciso B.V.
-	Copyright (C) 2010 - Jim Pingle
-	Copyright (C) 2006, Eric Friesen
+	Copyright (C) 2014 Deciso B.V.
+	Copyright (C) 2010 Jim Pingle
+	Copyright (C) 2006 Eric Friesen
 	All rights reserved
 
 	Redistribution and use in source and binary forms, with or without
@@ -29,7 +30,6 @@
 
 require_once("guiconfig.inc");
 
-$pgtitle = array(gettext("Diagnostics"), gettext("S.M.A.R.T. Monitor Tools"));
 $smartctl = "/usr/local/sbin/smartctl";
 $smartd = "/usr/local/sbin/smartd";
 $start_script = "/usr/local/etc/rc.d/smartd.sh";
@@ -38,11 +38,9 @@ $valid_test_types = array("offline", "short", "long", "conveyance");
 $valid_info_types = array("i", "H", "c", "A", "a");
 $valid_log_types = array("error", "selftest");
 
-$closehead = false;
 include("head.inc");
 ?>
 
-</head>
 <body>
 
 <?php
@@ -179,7 +177,7 @@ switch($action) {
 				// Don't know what all this means, but it addes the config changed header when config is saved
 				$retval = 0;
 				if(stristr($retval, "error") <> true)
-					$savemsg = get_std_save_message($retval);
+					$savemsg = get_std_save_message();
 				else
 					$savemsg = $retval;
 

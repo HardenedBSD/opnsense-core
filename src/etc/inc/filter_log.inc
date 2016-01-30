@@ -1,7 +1,7 @@
 <?php
 
 /*
-	Copyritgh (C) 2014 Deciso B.V.
+	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) Scott Ullrich
 	Copyright (C) 2009 Jim Pingle
 	All rights reserved.
@@ -27,8 +27,6 @@
 	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 	POSSIBILITY OF SUCH DAMAGE.
 */
-
-require 'config.inc';
 
 global $buffer_rules_rdr, $buffer_rules_normal;
 $buffer_rules_rdr = array();

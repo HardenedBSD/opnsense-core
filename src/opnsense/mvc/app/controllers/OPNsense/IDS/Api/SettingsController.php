@@ -41,6 +41,9 @@ use \OPNsense\Core\Config;
  */
 class SettingsController extends ApiControllerBase
 {
+    /**
+     * @var null|IDS IDS model to share across some methods (see getModel)
+     */
     private $idsModel = null;
 
     /**
@@ -119,6 +122,7 @@ class SettingsController extends ApiControllerBase
                 foreach ($result['rows'] as &$row) {
                     $row['enabled_default'] = $row['enabled'];
                     $row['enabled'] = $this->getModel()->getRuleStatus($row['sid'], $row['enabled']);
+                    $row['action'] = $this->getModel()->getRuleAction($row['sid'], $row['action'], true);
                 }
 
                 $result['rowCount'] = count($result['rows']);
@@ -141,6 +145,8 @@ class SettingsController extends ApiControllerBase
      */
     public function getRuleInfoAction($sid)
     {
+        // disable output cleansing, this method delivers html formatted output.
+        $this->disableOutputCleansing();
         // request list of installed rules
         $backend = new Backend();
         $response = $backend->configdpRun("ids query rules", array(1, 0,'sid/'.$sid));
@@ -150,7 +156,9 @@ class SettingsController extends ApiControllerBase
             $row = $data['rows'][0];
             // set current enable status (default + registered offset)
             $row['enabled_default'] = $row['enabled'];
+            $row['action_default'] = $row['action'];
             $row['enabled'] = $this->getModel()->getRuleStatus($row['sid'], $row['enabled']);
+            $row['action'] = $this->getModel()->getRuleAction($row['sid'], $row['action']);
             //
             if (isset($row['reference']) && $row['reference'] != '') {
                 // browser friendly reference data
@@ -211,17 +219,16 @@ class SettingsController extends ApiControllerBase
     }
 
     /**
-     * list all installable rules including current status
-     * @return array|mixed
-     * @throws \Exception
+     * list all installable rules including configuration additions
+     * @return array
      */
-    public function listInstallableRulesetsAction()
+    private function listInstallableRules()
     {
+        $result = array();
         $backend = new Backend();
         $response = $backend->configdRun("ids list installablerulesets");
         $data = json_decode($response, true);
         if ($data != null && array_key_exists("items", $data)) {
-            $result = array("items"=>array());
             ksort($data['items']);
             foreach ($data['items'] as $filename => $fileinfo) {
                 $item = array();
@@ -230,52 +237,126 @@ class SettingsController extends ApiControllerBase
 
                 // format timestamps
                 if ($fileinfo['modified_local'] == null) {
-                    $item['modified_local'] = null ;
+                    $item['modified_local'] = null;
                 } else {
-                    $item['modified_local'] = date('Y/m/d G:i', $fileinfo['modified_local']) ;
+                    $item['modified_local'] = date('Y/m/d G:i', $fileinfo['modified_local']);
                 }
                 // retrieve status from model
-                $item['enabled'] = (string)$this->getModel()->getFileNode($fileinfo['filename'])->enabled;
-                $result['rows'][] = $item;
+                $fileNode = $this->getModel()->getFileNode($fileinfo['filename']);
+                $item['enabled'] = (string)$fileNode->enabled;
+                $item['filter'] = $fileNode->filter->getNodeData(); // filter (option list)
+                $item['filter_str'] = (string)$fileNode->filter; // filter current value
+                $result[] = $item;
             }
-            $result['rowCount'] = count($result['rows']);
-            $result['total'] = count($result['rows']);
-            $result['current'] = 1;
-            return $result;
-        } else {
-            return array();
         }
+        return $result;
+
+    }
+
+    /**
+     * list all installable rules including current status
+     * @return array|mixed list of items when $id is null otherwise the selected item is returned
+     * @throws \Exception
+     */
+    public function listRulesetsAction()
+    {
+        $result = array();
+        $result['rows'] = $this->listInstallableRules();
+        $result['rowCount'] = count($result['rows']);
+        $result['total'] = count($result['rows']);
+        $result['current'] = 1;
+        return $result;
+    }
+
+    /**
+     * get ruleset list info (file)
+     * @param string $id list filename
+     * @return array|mixed list details
+     */
+    public function getRulesetAction($id)
+    {
+        $rules = $this->listInstallableRules();
+        foreach ($rules as $rule) {
+            if ($rule['filename'] == $id) {
+                return $rule;
+            }
+        }
+        return array();
+    }
+
+    /**
+     * set ruleset attributes
+     * @param $filename rule filename (key)
+     * @return array
+     */
+    public function setRulesetAction($filename)
+    {
+        $result = array("result" => "failed");
+        if ($this->request->isPost()) {
+            // we're only allowed to edit filenames which have an install ruleset, request valid ones from configd
+            $backend = new Backend();
+            $response = $backend->configdRun("ids list installablerulesets");
+            $data = json_decode($response, true);
+            if ($data != null && array_key_exists("items", $data) && array_key_exists($filename, $data['items'])) {
+                // filename exists, input ruleset data
+                $mdlIDS = $this->getModel();
+                $node = $mdlIDS->getFileNode($filename);
+
+                // send post attributes to model
+                $node->setNodes($_POST);
+
+                $validations = $mdlIDS->validate($node->__reference . ".", "");
+                if (count($validations)) {
+                    $result['validations'] = $validations;
+                } else {
+                    // serialize model to config and save
+                    $mdlIDS->serializeToConfig();
+                    Config::getInstance()->save();
+                    $result["result"] = "saved";
+                }
+            }
+        }
+        return $result;
     }
 
     /**
      * toggle usage of rule file or set enabled / disabled depending on parameters
-     * @param $filename (target) rule file name
+     * @param $filenames (target) rule file name, or list of filenames separated by a comma
      * @param $enabled desired state enabled(1)/disabled(1), leave empty for toggle
      * @return array status 0/1 or error
      * @throws \Exception
      * @throws \Phalcon\Validation\Exception
      */
-    public function toggleInstalledRulesetAction($filename, $enabled = null)
+    public function toggleRulesetAction($filenames, $enabled = null)
     {
+        $update_count = 0;
         $result = array("status" => "none");
         if ($this->request->isPost()) {
             $backend = new Backend();
             $response = $backend->configdRun("ids list installablerulesets");
             $data = json_decode($response, true);
-            if ($data != null && array_key_exists("items", $data) && array_key_exists($filename, $data['items'])) {
-                $node = $this->getModel()->getFileNode($filename);
-                if ($enabled == "0" || $enabled == "1") {
-                    $node->enabled = (string)$enabled;
-                } elseif ((string)$node->enabled == "1") {
-                    $node->enabled = "0";
+            foreach (explode(",", $filenames) as $filename) {
+                if ($data != null && array_key_exists("items", $data) && array_key_exists($filename, $data['items'])) {
+                    $node = $this->getModel()->getFileNode($filename);
+                    if ($enabled == "0" || $enabled == "1") {
+                        $node->enabled = (string)$enabled;
+                    } elseif ((string)$node->enabled == "1") {
+                        $node->enabled = "0";
+                    } else {
+                        $node->enabled = "1";
+                    }
+                    // only update result state if all items until now are ok
+                    if ($result['status'] != 'error') {
+                        $result['status'] = (string)$node->enabled;
+                    }
+                    $update_count++;
                 } else {
-                    $node->enabled = "1";
+                    $result['status'] = "error";
                 }
-                $result['status'] = $node->enabled;
+            }
+            if ($update_count > 0) {
                 $this->getModel()->serializeToConfig();
                 Config::getInstance()->save();
-            } else {
-                $result['status'] = "error";
             }
         }
         return $result;
@@ -283,25 +364,85 @@ class SettingsController extends ApiControllerBase
 
     /**
      * toggle rule enable status
-     * @param $sid
-     * @return array
+     * @param string $sids unique id
+     * @param string|int $enabled desired state enabled(1)/disabled(1), leave empty for toggle
+     * @return array empty
      */
-    public function toggleRuleAction($sid)
+    public function toggleRuleAction($sids, $enabled = null)
     {
-        $ruleinfo = $this->getRuleInfoAction($sid);
-        if (count($ruleinfo) > 0) {
-            if ($ruleinfo['enabled_default'] != $ruleinfo['enabled']) {
-                // if we're switching back to default, remove alter rule
-                $this->getModel()->removeRule($sid) ;
-            } elseif ($ruleinfo['enabled'] == 1) {
-                $this->getModel()->disableRule($sid) ;
-            } else {
-                $this->getModel()->enableRule($sid) ;
+        if ($this->request->isPost()) {
+            $update_count = 0;
+            foreach (explode(",", $sids) as $sid) {
+                $ruleinfo = $this->getRuleInfoAction($sid);
+                if (count($ruleinfo) > 0) {
+                    if ($enabled == null) {
+                        // toggle state
+                        if ($ruleinfo['enabled'] == 1) {
+                            $new_state = 0;
+                        } else {
+                            $new_state = 1;
+                        }
+                    } elseif ($enabled == 1) {
+                        $new_state = 1;
+                    } else {
+                        $new_state = 0;
+                    }
+
+                    if ($ruleinfo['enabled_default'] == $new_state &&
+                        array_key_exists($ruleinfo['action_default'], $ruleinfo['action']) &&
+                        $ruleinfo['action'][$ruleinfo['action_default']]['selected'] == 1
+                        ) {
+                        // if we're switching back to default, remove alter rule
+                        $this->getModel()->removeRule($sid);
+                    } elseif ($new_state == 1) {
+                        $this->getModel()->enableRule($sid);
+                    } else {
+                        $this->getModel()->disableRule($sid);
+                    }
+                    $update_count++;
+                }
             }
-            $this->getModel()->serializeToConfig();
-            Config::getInstance()->save();
+            if ($update_count > 0) {
+                $this->getModel()->serializeToConfig();
+                Config::getInstance()->save();
+            }
         }
         return array();
+    }
+
+    /**
+     * set rule action
+     * @param $sid item unique id
+     * @return array
+     */
+    public function setRuleAction($sid)
+    {
+        $result = array("result" => "failed");
+        if ($this->request->isPost() && $this->request->hasPost("action")) {
+            $ruleinfo = $this->getRuleInfoAction($sid);
+            $newAction = $this->request->getPost("action", "striptags", null);
+            if (count($ruleinfo) > 0) {
+                $mdlIDS = $this->getModel();
+                if ($ruleinfo['enabled_default'] == $ruleinfo['enabled'] &&
+                    $ruleinfo['action_default'] == $newAction
+                    ) {
+                    // if we're switching back to default, remove alter rule
+                    $mdlIDS->removeRule($sid);
+                } else {
+                    $mdlIDS->setAction($sid, $newAction);
+                }
+
+                $validations = $mdlIDS->validate();
+                if (count($validations)) {
+                    $result['validations'] = $validations;
+                } else {
+                    $mdlIDS->serializeToConfig();
+                    Config::getInstance()->save();
+                    $result["result"] = "saved";
+                }
+            }
+        }
+        return $result;
     }
 
     /**
@@ -335,17 +476,10 @@ class SettingsController extends ApiControllerBase
             $mdlIDS = $this->getModel();
             $mdlIDS->setNodes($this->request->getPost("ids"));
 
-            // perform validation
-            $valMsgs = $mdlIDS->performValidation();
-            foreach ($valMsgs as $field => $msg) {
-                if (!array_key_exists("validations", $result)) {
-                    $result["validations"] = array();
-                }
-                $result["validations"]["ids.".$msg->getField()] = $msg->getMessage();
-            }
-
-            // serialize model to config and save
-            if ($valMsgs->count() == 0) {
+            $validations = $mdlIDS->validate(null, "ids.");
+            if (count($validations)) {
+                $result['validations'] = $validations;
+            } else {
                 $mdlIDS->serializeToConfig();
                 Config::getInstance()->save();
                 $result["result"] = "saved";

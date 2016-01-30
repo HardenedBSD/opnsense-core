@@ -40,7 +40,7 @@
 function getFormData(parent) {
 
     var data = {};
-    $( "#"+parent+"  input,#"+parent+" select" ).each(function( index ) {
+    $( "#"+parent+"  input,#"+parent+" select,#"+parent+" textarea" ).each(function( index ) {
         if ($(this).prop('id') == undefined) {
             // we need an id.
             return;
@@ -96,7 +96,7 @@ function getFormData(parent) {
  * @param data named array structure
  */
 function setFormData(parent,data) {
-    $( "#"+parent+"  input,#"+parent+" select,#"+parent+" span" ).each(function( index ) {
+    $( "#"+parent+"  input,#"+parent+" select,#"+parent+" span,#"+parent+" textarea" ).each(function( index ) {
         if ($(this).prop('id') == undefined) {
             // we need an id.
             return;
@@ -149,7 +149,7 @@ function setFormData(parent,data) {
  * @param validationErrors
  */
 function handleFormValidation(parent,validationErrors) {
-    $( "#"+parent+"  input,#"+parent+" select" ).each(function( index ) {
+    $( "#"+parent).find("*").each(function( index ) {
         if (validationErrors != undefined && $(this).prop('id') in validationErrors) {
             $("*[for='" + $(this).prop('id') + "']").addClass("has-error");
             $("span[for='" + $(this).prop('id') + "']").text(validationErrors[$(this).prop('id')]);

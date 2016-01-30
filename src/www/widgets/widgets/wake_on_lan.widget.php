@@ -30,6 +30,7 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("widgets/include/wake_on_lan.inc");
+require_once("interfaces.inc");
 
 if (isset($config['wol']['wolentry'])) {
     $wolcomputers = $config['wol']['wolentry'];
@@ -76,4 +77,4 @@ if (count($wolcomputers) > 0) {
 }
 ?>
 </table>
-<center><a href="status_dhcp_leases.php" class="navlink">DHCP Leases Status</a></center>
+<center><a href="status_dhcp_leases.php" class="navlink"><?= gettext('DHCP Leases Status') ?></a></center>

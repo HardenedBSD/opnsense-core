@@ -6,6 +6,14 @@
         <help>enable IDS</help>
     </field>
     <field>
+        <id>ids.general.ips</id>
+        <label>IPS mode</label>
+        <type>checkbox</type>
+        <help><![CDATA[enable protection mode (block traffic).
+        before enabling, please disable all hardware offloading first. <br><a href="/system_advanced_network.php">in advanced network</a>
+        ]]></help>
+    </field>
+    <field>
         <id>ids.general.interfaces</id>
         <label>interfaces</label>
         <type>select_multiple</type>

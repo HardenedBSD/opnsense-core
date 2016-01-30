@@ -1,8 +1,5 @@
 """
     Copyright (c) 2015 Ad Schellevis
-
-    part of OPNsense (https://www.opnsense.org/)
-
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -25,12 +22,12 @@
     CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
-    --------------------------------------------------------------------------------------
 """
+
 import sys
 
-def updateParams(parameters):
+
+def update_params(parameters):
     """ update predefined parameters with given list from shell (as switches)
         for example /a valA /b valB
         converts to
@@ -39,11 +36,11 @@ def updateParams(parameters):
     :param parameters: parameter dictionary
     :return:
     """
-    cmd=None
+    cmd = None
     for arg in sys.argv[1:]:
         if cmd is None:
-            cmd=arg[1:]
+            cmd = arg[1:]
         else:
             if cmd in parameters and arg.strip() != '':
                 parameters[cmd] = arg.strip()
-            cmd=None
+            cmd = None

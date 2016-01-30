@@ -30,6 +30,8 @@
 
 require_once("guiconfig.inc");
 require_once("filter_log.inc");
+require_once("system.inc");
+require_once("interfaces.inc");
 
 $filter_logfile = '/var/log/filter.log';
 
@@ -40,13 +42,11 @@ $nentries = 50;
 handle_ajax($nentries, $nentries + 20);
 
 if (isset($_POST['clear'])) {
-	clear_log_file($filter_logfile);
+	clear_clog($filter_logfile);
 }
 
 $filterlog = conv_log_filter($filter_logfile, $nentries, $nentries + 100);
 
-$pgtitle = array(gettext("Status"),gettext("System logs"),gettext("Firewall (Dynamic View)"));
-$shortcut_section = "firewall";
 include("head.inc");
 
 ?>
@@ -85,26 +85,32 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
+				<?php print_service_banner('firewall'); ?>
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 
-				<? $active_tab = "/diag_logs_filter.php"; include('diag_logs_tabs.inc'); ?>
-
 					<div class="tab-content content-box col-xs-12">
-				    <div class="container-fluid">
-
-
-							<? $tab_group = 'firewall'; include('diag_logs_pills.php'); ?>
-
-
 
 							<div class="table-responsive">
 								<table class="table table-striped table-sort">
 									<thead>
 									<tr>
 										<td colspan="6" class="listtopic">
-										<?php printf(gettext("Last %s records"),$nentries);?>.   &nbsp;&nbsp;&nbsp;<input type="checkbox" onclick="javascript:toggle_pause();" />&nbsp;<?=gettext("Pause");?>
+										<strong><?php printf(gettext("Showing last %s records."),$nentries);?></strong>
+										</td>
+									</tr>
+									<tr>
+										<td colspan="5" class="listtopic">
+											<input type="checkbox" onclick="javascript:toggle_pause();" />&nbsp;<?=gettext("Pause");?>
+										</td>
+										<td>
+											<form method="post">
+												<div class="pull-right">
+													<input name="clear" type="submit" class="btn" value="<?= gettext("Clear log");?>" />
+													&nbsp;
+												</div>
+											</form>
 										</td>
 									</tr>
 									<tr>
@@ -124,7 +130,20 @@ include("head.inc");
 									$rowIndex++;?>
 									<tr class="<?=$evenRowClass?>">
 										<td class="listMRlr nowrap" align="center">
-										<a href="#" onclick="javascript:getURL('diag_logs_filter.php?getrulenum=<?php echo "{$filterent['rulenum']},{$filterent['act']}"; ?>', outputrule);"  title="<?php echo $filterent['act'];?>"><span class="glyphicon glyphicon-remove"></span>
+										<a href="#" onclick="javascript:getURL('diag_logs_filter.php?getrulenum=<?php echo "{$filterent['rulenum']},{$filterent['act']}"; ?>', outputrule);"  title="<?php echo $filterent['act'];?>"><span class="glyphicon glyphicon-<?php switch ($filterent['act']) {
+									    case 'pass':
+                                                                                echo "play";  /* icon triangle */
+                                                                                break;
+                                                                            case 'match':
+                                                                                echo "random";
+                                                                                break;
+                                                                            case 'reject':
+									    case 'block':
+									    default:
+                                                                            echo 'remove'; /* a x*/
+                                                                            break;
+									  }
+									  ?>"></span>
 										</a>
 										</td>
 										<td class="listMRr nowrap"><?php echo htmlspecialchars($filterent['time']);?></td>
@@ -141,9 +160,6 @@ include("head.inc");
 									<tr style="display:none;"><td></td></tr>
 									</tbody>
 								</table>
-							</div>
-
-							<p><span class="vexpl"><a href="http://en.wikipedia.org/wiki/Transmission_Control_Protocol"><?=gettext("TCP Flags"); ?></a>: F - FIN, S - SYN, A or . - ACK, R - RST, P - PSH, U - URG, E - ECE, C - CWR</span></p></div>
 				    </div>
 			</section>
 			</div>

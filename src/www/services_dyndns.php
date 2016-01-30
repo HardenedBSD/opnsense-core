@@ -28,14 +28,18 @@
 */
 
 require_once("guiconfig.inc");
+require_once("interfaces.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
+require_once("pfsense-utils.inc");
 
-if (!is_array($config['dyndnses']['dyndns']))
+if (!isset($config['dyndnses']['dyndns'])) {
 	$config['dyndnses']['dyndns'] = array();
+}
 
 $a_dyndns = &$config['dyndnses']['dyndns'];
 
 if ($_GET['act'] == "del") {
-
 	$conf = $a_dyndns[$_GET['id']];
 	@unlink("/conf/dyndns_{$conf['interface']}{$conf['type']}" . escapeshellarg($conf['host']) . "{$conf['id']}.cache");
 	unset($a_dyndns[$_GET['id']]);
@@ -47,11 +51,10 @@ if ($_GET['act'] == "del") {
 	exit;
 }
 
-$pgtitle = array(gettext("Services"), gettext("Dynamic DNS clients"));
 include("head.inc");
 
 $main_buttons = array(
-	array('label'=>'Add', 'href'=>'services_dyndns_edit.php'),
+	array('label'=>gettext('Add'), 'href'=>'services_dyndns_edit.php'),
 );
 
 ?>
@@ -69,15 +72,7 @@ $main_buttons = array(
 
 			    <section class="col-xs-12">
 
-				<?php
-						$tab_array = array();
-						$tab_array[] = array(gettext("DynDns"), true, "services_dyndns.php");
-						$tab_array[] = array(gettext("RFC 2136"), false, "services_rfc2136.php");
-						display_top_tabs($tab_array);
-					?>
-
 					<div class="tab-content content-box col-xs-12">
-
 
 					  <form action="services_dyndns.php" method="post" name="iform" id="iform">
 
@@ -177,7 +172,7 @@ $main_buttons = array(
 										  </td>
 										  <td valign="middle" class="list nowrap">
 											<a href="services_dyndns_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-											&nbsp;<a href="services_dyndns.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this entry?");?>')" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a>
+											&nbsp;<a href="services_dyndns.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this entry?");?>')" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a>
 										  </td>
 										</tr>
 										<?php $i++; endforeach; ?>

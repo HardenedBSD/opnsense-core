@@ -29,6 +29,7 @@
 namespace OPNsense\Base\FieldTypes;
 
 use Phalcon\Validation\Validator\Regex;
+use Phalcon\Validation\Validator\PresenceOf;
 
 /**
  * Class TextField
@@ -56,20 +57,22 @@ class TextField extends BaseField
     }
 
     /**
+     * retrieve field validators for this field type
      * @return array returns Text/regex validator
      */
     public function getValidators()
     {
+        $validators = array() ;
         if ($this->internalValidationMessage == null) {
             $msg = "text validation error" ;
         } else {
             $msg = $this->internalValidationMessage;
         }
-        if (($this->internalIsRequired == true || $this->internalValue != null) && $this->internalMask != null) {
-            return array(new Regex(array('message' => $msg,'pattern'=>trim($this->internalMask))));
-        } else {
-            // empty field and not required, skip this validation.
-            return array();
+        if ($this->internalIsRequired && empty($this->internalValue)) {
+            $validators[] = new PresenceOf(array('message' => $msg)) ;
+        } elseif ($this->internalValue != null && $this->internalMask != null) {
+            $validators[] = new Regex(array('message' => $msg,'pattern'=>trim($this->internalMask)));
         }
+        return $validators;
     }
 }

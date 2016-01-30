@@ -34,23 +34,14 @@ POSSIBILITY OF SUCH DAMAGE.
     function updateStatus() {
         // update UI
         $('#updatelist').empty();
-        $('#maintabs li:eq(1) a').tab('show');
+        $('#updatetab > a').tab('show');
         $("#checkupdate_progress").addClass("fa fa-spinner fa-pulse");
-        $('#updatestatus').attr('class', 'text-info');
-        $('#updatestatus').html("{{ lang._('Updating.... (may take up to 30 seconds)') }}");
+        $('#updatestatus').html("{{ lang._('Fetching... (may take up to 30 seconds)') }}");
 
         // request status
         ajaxGet('/api/core/firmware/status',{},function(data,status){
-            // update UI
-            if (data['status'] == 'unknown') {
-                $('#updatestatus').attr('class', 'text-warning');
-            } else if (data['status'] == 'error') {
-                $('#updatestatus').attr('class', 'text-danger');
-            } else if (data['status'] == 'none' || data['status'] == 'ok') {
-                $('#updatestatus').attr('class', 'text-info');
-            }
-            $('#updatestatus').html(data['status_msg']);
             $("#checkupdate_progress").removeClass("fa fa-spinner fa-pulse");
+            $('#updatestatus').html(data['status_msg']);
 
             if (data['status'] == "ok") {
                 $.upgrade_action = data['status_upgrade_action'];
@@ -62,6 +53,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
                 // unhide upgrade button
                 $("#upgrade").attr("style","");
+
                 // show upgrade list
                 $("#updatelist").html("<tr><th>{{ lang._('Package Name') }}</th>" +
                 "<th>{{ lang._('Current Version') }}</th><th>{{ lang._('New Version') }}</th></tr>");
@@ -83,6 +75,8 @@ POSSIBILITY OF SUCH DAMAGE.
                 });
             }
 
+            // update list so plugins sync as well
+            packagesInfo();
         });
     }
 
@@ -90,12 +84,25 @@ POSSIBILITY OF SUCH DAMAGE.
      * perform upgrade, install poller to update status
      */
     function upgrade(){
-        $('#maintabs li:eq(2) a').tab('show');
-        $('#updatestatus').html("{{ lang._('Starting Upgrade.. Please do not leave this page while upgrade is in progress.') }}");
+        $('#progresstab > a').tab('show');
+        $('#updatestatus').html("{{ lang._('Upgrading... (do not leave this page while upgrade is in progress)') }}");
         $("#upgrade_progress").addClass("fa fa-spinner fa-pulse");
 
         ajaxCall('/api/core/firmware/upgrade',{upgrade:$.upgrade_action},function() {
-            $("#upgrade_progress").removeClass("fa fa-spinner fa-pulse");
+            $('#updatelist').empty();
+            setTimeout(trackStatus, 500);
+        });
+    }
+
+    /**
+     * perform package action, install poller to update status
+     */
+    function action(pkg_act, pkg_name)
+    {
+        $('#progresstab > a').tab('show');
+        $('#updatestatus').html("{{ lang._('Executing... (do not leave this page while execute is in progress)') }}");
+
+        ajaxCall('/api/core/firmware/'+pkg_act+'/'+pkg_name,{},function() {
             $('#updatelist').empty();
             setTimeout(trackStatus, 500);
         });
@@ -110,7 +117,7 @@ POSSIBILITY OF SUCH DAMAGE.
             BootstrapDialog.show({
                 type:BootstrapDialog.TYPE_WARNING,
                 title: 'Reboot required',
-                message: 'This upgrade may require a reboot, when needed the firewall will automatically reboot!',
+                message: 'The firewall will be rebooted directly after this firmware update.',
                 buttons: [{
                     label: 'Ok',
                     action: function(dialogRef){
@@ -139,7 +146,7 @@ POSSIBILITY OF SUCH DAMAGE.
             setTimeout(rebootWait, 2500);
         }).done(function () {
             $(location).attr('href',"/");
-	});
+        });
     }
 
     /**
@@ -152,19 +159,19 @@ POSSIBILITY OF SUCH DAMAGE.
                 $('#update_status').scrollTop($('#update_status')[0].scrollHeight);
             }
             if (data['status'] == 'done') {
+                $("#upgrade_progress").removeClass("fa fa-spinner fa-pulse");
                 $('#updatestatus').html("{{ lang._('Upgrade done!') }}");
+                $("#upgrade").attr("style","display:none");
                 packagesInfo();
             } else if (data['status'] == 'reboot') {
-                // reboot required, tell the user to wait until this is finished and redirect after 5 minutes
                 BootstrapDialog.show({
                     type:BootstrapDialog.TYPE_INFO,
                     title: "{{ lang._('Your device is rebooting') }}",
-                    message: "{{ lang._('The upgrade is finished and your device is being rebooted at the moment, please wait.') }}",
                     closable: false,
                     onshow:function(dialogRef){
                         dialogRef.setClosable(false);
                         dialogRef.getModalBody().html(
-                            "{{ lang._('The upgrade is finished and your device is being rebooted at the moment, please wait...') }}" +
+                            "{{ lang._('The upgrade has finished and your device is being rebooted at the moment, please wait...') }}" +
                             ' <i class="fa fa-cog fa-spin"></i>'
                         );
                         setTimeout(rebootWait, 30000);
@@ -181,13 +188,90 @@ POSSIBILITY OF SUCH DAMAGE.
      * show package info
      */
     function packagesInfo() {
-        $('#packageslist').empty();
         ajaxGet('/api/core/firmware/info', {}, function (data, status) {
+            $('#packageslist').empty();
+            $('#pluginlist').empty();
+            var installed = {};
+
             $("#packageslist").html("<tr><th>{{ lang._('Name') }}</th>" +
-            "<th>{{ lang._('Version') }}</th><th>{{ lang._('Comment') }}</th></tr>");
+            "<th>{{ lang._('Version') }}</th><th>{{ lang._('Size') }}</th>" +
+            "<th>{{ lang._('Comment') }}</th><th></th></tr>");
+            $("#pluginlist").html("<tr><th>{{ lang._('Name') }}</th>" +
+            "<th>{{ lang._('Version') }}</th><th>{{ lang._('Size') }}</th>" +
+            "<th>{{ lang._('Comment') }}</th><th></th></tr>");
+
             $.each(data['local'], function(index, row) {
-                $('#packageslist').append('<tr><td>'+row['name']+'</td>' +
-                "<td>"+row['version']+"</td><td>"+row['comment']+"</td></tr>");
+                $('#packageslist').append(
+                    '<tr>' +
+                    '<td>' + row['name'] + '</td>' +
+                    '<td>' + row['version'] + '</td>' +
+                    '<td>' + row['flatsize'] + '</td>' +
+                    '<td>' + row['comment'] + '</td>' +
+                    '<td>' +
+                    '<button class="btn btn-default btn-xs act_reinstall" data-package="' + row['name'] + '">' +
+                    '<span data-toggle="tooltip" data-placement="left" title="Reinstall ' + row['name'] + '" class="fa fa-recycle">' +
+                    '</span></button> ' + (row['locked'] === '1' ?
+                        '<button class="btn btn-default btn-xs act_unlock" data-package="' + row['name'] + '">' +
+                        '<span data-toggle="tooltip" data-placement="left" title="Unlock ' + row['name'] + '" class="fa fa-lock">' +
+                        '</span></button>' :
+                        '<button class="btn btn-default btn-xs act_lock" data-package="' + row['name'] + '">' +
+                        '<span data-toggle="tooltip" data-placement="left" title="Lock ' + row['name'] + '" class="fa fa-unlock">' +
+                        '</span></button>'
+                    ) + '</td>' +
+                    '</tr>'
+                );
+                if (!row['name'].match(/^os-/g)) {
+                    return 1;
+                }
+                installed[row['name']] = row;
+            });
+
+            $.each(data['remote'], function(index, row) {
+                if (!row['name'].match(/^os-/g)) {
+                    return 1;
+                }
+                $('#pluginlist').append(
+                    '<tr>' + '<td>' + row['name'] + '</td>' +
+                    '<td>' + row['version'] + '</td>' +
+                    '<td>' + row['flatsize'] + '</td>' +
+                    '<td>' + row['comment'] + '</td>' +
+                    '<td>' + (row['name'] in installed ?
+                        '<button class="btn btn-default btn-xs act_remove" data-package="' + row['name'] + '">' +
+                        '<span data-toggle="tooltip" data-placement="left" title="Remove ' + row['name'] + '" class="fa fa-trash">' +
+                        '</span></button>' :
+                        '<button class="btn btn-default btn-xs act_install" data-package="' + row['name'] + '">' +
+                        '<span data-toggle="tooltip" data-placement="left" title="Install ' + row['name'] + '" class="fa fa-plus">' +
+                        '</span></button>'
+                    ) + '</td>' + '</tr>'
+                );
+            });
+
+            if (!data['remote'].length) {
+                $('#pluginlist').append(
+                    '<tr><td colspan=5>{{ lang._('Fetch updates to view available plugins.') }}</td></tr>'
+                );
+            }
+
+            // link buttons to actions
+            $(".act_reinstall").click(function(event) {
+                event.preventDefault();
+                action('reinstall', $(this).data('package'));
+            });
+            $(".act_unlock").click(function(event) {
+                event.preventDefault();
+                action('unlock', $(this).data('package'));
+            });
+            $(".act_lock").click(function(event) {
+                event.preventDefault();
+                action('lock', $(this).data('package'));
+            });
+            $(".act_remove").click(function(event) {
+                event.preventDefault();
+                action('remove', $(this).data('package'));
+            });
+            $(".act_install").click(function(event) {
+                event.preventDefault();
+                action('install', $(this).data('package'));
             });
         });
     }
@@ -196,45 +280,44 @@ POSSIBILITY OF SUCH DAMAGE.
         // link event handlers
         $('#checkupdate').click(updateStatus);
         $('#upgrade').click(upgrade_ui);
+        // show upgrade message if there
+        if ($('#message').html() != '') {
+            $('#message').attr('style', '');
+        }
+        // repopulate package information
+        packagesInfo();
+        // dashboard link: run check automatically
         if (window.location.hash == '#checkupdate') {
-            // dashboard link: run check automatically
             updateStatus();
         }
-        packagesInfo();
     });
-
 
 </script>
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-12">
-            <strong>{{ lang._('Current Firmware Status :')}}</strong>
-            <br/>
-            <span class="text-info" id="updatestatus">{{ lang._('Current status is unknown')}} </span>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-12">
-            <button class='btn btn-primary' id="checkupdate"><i id="checkupdate_progress" class=""></i> {{ lang._('Click to check now')}}</button>
-            <button class='btn btn-primary' id="upgrade" style="display:none"><i id="upgrade_progress" class=""></i> {{ lang._('Upgrade') }} </button>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-md-12">
-            <br/>
+        <div id="message" style="display:none" class="alert alert-warning" role="alert"><?= @file_get_contents('/usr/local/opnsense/firmware-message') ?></div>
+        <div class="alert alert-info" role="alert" style="min-height: 65px;">
+            <button class='btn btn-primary pull-right' id="upgrade" style="display:none"><i id="upgrade_progress" class=""></i> {{ lang._('Upgrade now') }}</button>
+            <button class='btn btn-default pull-right' id="checkupdate" style="margin-right: 8px;"><i id="checkupdate_progress" class=""></i> {{ lang._('Fetch updates')}}</button>
+            <div style="margin-top: 8px;" id="updatestatus">{{ lang._('Click to check for updates.')}}</div>
         </div>
     </div>
     <div class="row">
         <div class="col-md-12" id="content">
-            <ul class="nav nav-tabs" data-tabs="tabs" id="maintabs">
-                <li class="active"><a data-toggle="tab" href="#packages">{{ lang._('Packages') }}</a></li>
-                <li><a data-toggle="tab" href="#updates">{{ lang._('Updates') }}</a></li>
-                <li><a data-toggle="tab" href="#progress">{{ lang._('Progress') }}</a></li>
+            <ul class="nav nav-tabs" data-tabs="tabs">
+                <li id="packagestab" class="active"><a data-toggle="tab" href="#packages">{{ lang._('Packages') }}</a></li>
+                <li id="plugintab"><a data-toggle="tab" href="#plugins">{{ lang._('Plugins') }}</a></li>
+                <li id="updatetab"><a data-toggle="tab" href="#updates">{{ lang._('Updates') }}</a></li>
+                <li id="progresstab"><a data-toggle="tab" href="#progress">{{ lang._('Progress') }}</a></li>
             </ul>
             <div class="tab-content content-box tab-content">
                 <div id="packages" class="tab-pane fade in active">
                     <table class="table table-striped table-condensed table-responsive" id="packageslist">
+                    </table>
+                </div>
+                <div id="plugins" class="tab-pane fade in">
+                    <table class="table table-striped table-condensed table-responsive" id="pluginlist">
                     </table>
                 </div>
                 <div id="updates" class="tab-pane fade in">
@@ -242,7 +325,7 @@ POSSIBILITY OF SUCH DAMAGE.
                     </table>
                 </div>
                 <div id="progress" class="tab-pane fade in">
-                    <textarea name="output" id="update_status" class="form-control" rows="10" wrap="hard" readonly style="max-width:100%; font-family: monospace;"></textarea>
+                    <textarea name="output" id="update_status" class="form-control" rows="20" wrap="hard" readonly style="max-width:100%; font-family: monospace;"></textarea>
                 </div>
             </div>
         </div>

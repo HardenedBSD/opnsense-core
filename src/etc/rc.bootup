@@ -29,6 +29,23 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
+function is_install_media()
+{
+	/*
+	 * Despite unionfs underneath, / is still not writeable,
+	 * making the following the perfect test for install media.
+	 */
+
+	$file = '/.probe.for.install.media';
+	$fd = @fopen($file, 'w');
+	if ($fd) {
+		fclose($fd);
+		unlink($file);
+		return false;
+	}
+
+	return true;
+}
 
 function is_interface_mismatch()
 {
@@ -103,17 +120,12 @@ echo " done.\n";
 
 echo "Initializing...";
 echo ".";
-require_once("globals.inc");
-echo ".";
 require_once("led.inc");
 led_normalize();
 echo ".";
 if (led_count() >= 3) {
 	led_kitt();
 }
-
-/* let the other functions know we're booting */
-$pkg_interface = 'console';
 
 /* parse the configuration and include all functions used below */
 require_once("config.inc");
@@ -122,21 +134,27 @@ require_once("config.console.inc");
 echo ".";
 require_once("auth.inc");
 echo ".";
-require_once("functions.inc");
+require_once("util.inc");
+echo ".";
+require_once("interfaces.inc");
+echo ".";
+require_once("services.inc");
+echo ".";
+require_once("pfsense-utils.inc");
+echo ".";
+require_once("system.inc");
+echo ".";
+require_once("unbound.inc");
+echo ".";
+require_once("vslb.inc");
 echo ".";
 require_once("filter.inc");
-echo ".";
-require_once("ipsec.inc");
 echo ".";
 require_once("vpn.inc");
 echo ".";
 require_once("openvpn.inc");
 echo ".";
-require_once("captiveportal.inc");
-echo ".";
 require_once("rrd.inc");
-echo ".";
-require_once("pfsense-utils.inc");
 echo ".";
 echo " done.\n";
 
@@ -159,6 +177,7 @@ if (is_install_media()) {
 echo "Loading configuration...";
 global $config;
 $config = parse_config();
+convert_config();
 echo "done.\n";
 
 /*
@@ -170,14 +189,9 @@ if (is_interface_mismatch()) {
 	echo PHP_EOL . gettext('Default interfaces not found -- Running interface assignment option.') . PHP_EOL;
 
 	led_assigninterfaces();
-	while (!set_networking_interfaces_ports());
+	while (!set_networking_interfaces_ports(true));
 	led_kitt();
 }
-
-/* convert config and clean backups */
-echo "Updating configuration...";
-convert_config();
-echo "done.\n";
 
 /* read in /etc/sysctl.conf and set values if needed */
 echo "Setting up extended sysctls...";
@@ -192,6 +206,9 @@ load_thermal_hardware();
 
 /* set up our timezone */
 system_timezone_configure();
+
+/* set up firmware configuration */
+system_firmware_configure();
 
 /* set up our hostname */
 system_hostname_configure();
@@ -304,20 +321,11 @@ filter_configure_sync();
 /* setup pppoe and pptp */
 vpn_setup();
 
-/* start the captive portal */
-captiveportal_configure();
-
-/* start Voucher support */
-echo 'Enabling voucher support...' . (voucher_configure(true) ? 'done.' : 'failed.') . PHP_EOL;
-
 /* start IPsec tunnels */
 $ipsec_dynamic_hosts = vpn_ipsec_configure();
 
 /* start SNMP service */
 services_snmpd_configure();
-
-/* power down hard drive if needed/set */
-system_set_harddisk_standby();
 
 /* lock down console if necessary */
 reload_ttys();
@@ -361,5 +369,8 @@ if ($ipsec_dynamic_hosts) {
 	vpn_ipsec_configure();
 	filter_configure();
 }
+
+// generate configuration data for all installed templates
+configd_run('template reload *');
 
 led_normalize();

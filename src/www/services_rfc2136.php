@@ -28,9 +28,13 @@
 */
 
 require_once("guiconfig.inc");
+require_once("interfaces.inc");
+require_once("services.inc");
+require_once("pfsense-utils.inc");
 
-if (!is_array($config['dnsupdates']['dnsupdate']))
+if (!isset($config['dnsupdates']['dnsupdate'])) {
 	$config['dnsupdates']['dnsupdate'] = array();
+}
 
 $a_rfc2136 = &$config['dnsupdates']['dnsupdate'];
 
@@ -43,12 +47,12 @@ if ($_GET['act'] == "del") {
 	exit;
 }
 
-$pgtitle = array(gettext("Services"), gettext("RFC 2136 clients"));
 include("head.inc");
 
 $main_buttons = array(
-	array('label'=>'Add', 'href'=>'services_rfc2136_edit.php'),
+	array('label' => gettext('Add'), 'href' => 'services_rfc2136_edit.php'),
 );
+
 ?>
 
 <body>
@@ -62,15 +66,7 @@ $main_buttons = array(
 
 			    <section class="col-xs-12">
 
-				<?php
-						$tab_array = array();
-						$tab_array[] = array(gettext("DynDns"), false, "services_dyndns.php");
-						$tab_array[] = array(gettext("RFC 2136"), true, "services_rfc2136.php");
-						display_top_tabs($tab_array);
-					?>
-
 					<div class="tab-content content-box col-xs-12">
-
 
 					  <form action="services_rfc2136.php" method="post" name="iform" id="iform">
 
@@ -164,8 +160,12 @@ $main_buttons = array(
 										  ?>
 										  </td>
 										  <td valign="middle" class="list nowrap">
-											<a href="services_rfc2136_edit.php?id=<?=$i;?>"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_e.gif" width="17" height="17" border="0" alt="edit" /></a>
-											&nbsp;<a href="services_rfc2136.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this client?");?>')"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_x.gif" width="17" height="17" border="0" alt="delete" /></a>
+											<a href="services_rfc2136_edit.php?id=<?=$i;?>">
+											<button type="button" class="btn btn-xs btn-default"><span class="fa fa-pencil"></span></button>
+											</a>
+											<a href="services_rfc2136.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this client?");?>')">
+											<button type="button" class="btn btn-xs btn-default"><span class="fa fa-trash-o"></span></button>
+											</a>
 										  </td>
 										</tr>
 										<?php $i++; endforeach; ?>

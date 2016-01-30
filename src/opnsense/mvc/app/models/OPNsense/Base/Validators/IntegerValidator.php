@@ -33,6 +33,10 @@ use \Phalcon\Validation\Validator;
 use \Phalcon\Validation\ValidatorInterface;
 use \Phalcon\Validation\Message;
 
+/**
+ * Class IntegerValidator
+ * @package OPNsense\Base\Validators
+ */
 class IntegerValidator extends Validator implements ValidatorInterface
 {
 
@@ -47,8 +51,7 @@ class IntegerValidator extends Validator implements ValidatorInterface
     {
         $value = $validator->getValue($attribute);
         $msg = $this->getOption('message');
-
-        if (ctype_digit(strval(($value))) == false) {
+        if (ctype_digit(strval(($value))) == false or (string)((int)$value) !== (string)$value) {
             $validator->appendMessage(new Message($msg, $attribute, 'IntegerValidator'));
             return false;
         }

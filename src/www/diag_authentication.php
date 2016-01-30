@@ -1,6 +1,7 @@
 <?php
+
 /*
-    Copyright (C) 2014 Deciso B.V.
+	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) 2010 Ermal Luçi
 	All rights reserved.
 
@@ -28,20 +29,44 @@
 
 require_once("guiconfig.inc");
 require_once("PEAR.inc");
-require_once("radius.inc");
+require_once("interfaces.inc");
 
-if ($_POST) {
+function getUserGroups($username, $authcfg)
+{
+	global $config;
+
+	$member_groups = array();
+
+	$user = getUserEntry($username);
+	if ($user !== false) {
+		$allowed_groups = local_user_get_groups($user, true);
+		if (isset($config['system']['group'])) {
+			foreach ($config['system']['group'] as $group) {
+				if (in_array($group['name'], $allowed_groups)) {
+					$member_groups[] = $group['name'];
+				}
+			}
+		}
+	}
+	return $member_groups;
+}
+
+
+
+$input_errors = array();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	$pconfig = $_POST;
-	unset($input_errors);
 
 	$authcfg = auth_get_authserver($_POST['authmode']);
-	if (!$authcfg)
+	if (!$authcfg) {
 		$input_errors[] = $_POST['authmode'] . " " . gettext("is not a valid authentication server");
+	}
 
-	if (empty($_POST['username']) || empty($_POST['password']))
+	if (empty($_POST['username']) || empty($_POST['password'])) {
 		$input_errors[] = gettext("A username and password must be specified.");
+	}
 
-	if (!$input_errors) {
+	if (count($input_errors) == 0) {
 		if (authenticate_user($_POST['username'], $_POST['password'], $authcfg)) {
 			$savemsg = gettext("User") . ": " . $_POST['username'] . " " . gettext("authenticated successfully.");
 			$groups = getUserGroups($_POST['username'], $authcfg);
@@ -53,8 +78,6 @@ if ($_POST) {
 		}
 	}
 }
-$pgtitle = array(gettext("Diagnostics"),gettext("Authentication"));
-$shortcut_section = "authentication";
 
 include("head.inc");
 
@@ -77,7 +100,7 @@ include("head.inc");
                 <div class="content-box">
 
 					<header class="content-box-head container-fluid">
-				   <h3>Test a server</h3>
+				   <h3><?= gettext('Test a server') ?></h3>
 				</header>
 
 				    <div class="content-box-main">
@@ -89,12 +112,12 @@ include("head.inc");
 					          <td><select name="authmode" id="authmode" class="form-control" >
 									<?php
 										$auth_servers = auth_get_authserver_list();
-										foreach ($auth_servers as $auth_server):
+										foreach ($auth_servers as $auth_server_id => $auth_server):
 											$selected = "";
 											if ($auth_server['name'] == $pconfig['authmode'])
 												$selected = "selected=\"selected\"";
 									?>
-									<option value="<?=$auth_server['name'];?>" <?=$selected;?>><?=$auth_server['name'];?></option>
+									<option value="<?=$auth_server_id;?>" <?=$selected;?>><?=$auth_server['name'];?></option>
 									<?php   endforeach; ?>
 									</select>
 								</td>

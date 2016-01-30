@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    Copyright (C) 2015 Deciso B.V.
  *
@@ -26,9 +27,11 @@
  *    POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
 namespace OPNsense\Core;
 
 use \Phalcon\DI\FactoryDefault;
+use \Phalcon\Logger\Adapter\Syslog;
 
 /**
  * Class Config provides access to systems config xml
@@ -57,6 +60,7 @@ class Config extends Singleton
 
 
     /**
+     * return last known status of this configuration (valid or not)
      * @return bool return (last known) status of this configuration
      */
     public function isValid()
@@ -213,6 +217,7 @@ class Config extends Singleton
     }
 
     /**
+     * check if there's a valid config loaded, throws an error if config isn't valid.
      * @throws ConfigException
      */
     private function checkvalid()
@@ -253,7 +258,6 @@ class Config extends Singleton
         return $this->simplexml;
     }
 
-
     /**
      * init new config object, try to load current configuration
      * (executed via Singleton)
@@ -265,8 +269,19 @@ class Config extends Singleton
             $this->load();
         } catch (\Exception $e) {
             $this->simplexml = null ;
+            // there was an issue with loading the config, try to restore the last backup
+            $backups = $this->getBackups();
+            $logger = new Syslog("config", array('option' => LOG_PID, 'facility' => LOG_LOCAL4));
+            if (count($backups) > 0) {
+                // load last backup
+                $logger->error(gettext('No valid config.xml found, attempting last known config restore.'));
+                $this->restoreBackup($backups[0]);
+            } else {
+                // in case there are no backups, restore defaults.
+                $logger->error(gettext('No valid config.xml found, attempting to restore factory config.'));
+                $this->restoreBackup('/usr/local/etc/config.xml');
+            }
         }
-
     }
 
     /**
@@ -302,6 +317,7 @@ class Config extends Singleton
         $this->simplexml = simplexml_load_string($xml);
 
         if ($this->simplexml == null) {
+            restore_error_handler();
             throw new ConfigException("invalid config xml") ;
         }
 
@@ -344,27 +360,48 @@ class Config extends Singleton
      */
     private function updateRevision($revision, $node = null)
     {
-        // input must be an array
-        if (is_array($revision)) {
-            if ($node == null) {
-                if (isset($this->simplexml->revision)) {
-                    $node = $this->simplexml->revision;
-                } else {
-                    $node = $this->simplexml->addChild("revision");
-                }
+        // if revision info is not provided, create a default.
+        if (!is_array($revision)) {
+            $revision = array();
+            // try to fetch userinfo from session
+            if (!empty($_SESSION["Username"])) {
+                $revision['username'] = $_SESSION["Username"];
+            } else {
+                $revision['username'] = "(system)";
             }
-            foreach ($revision as $revKey => $revItem) {
-                if (isset($node->{$revKey})) {
-                    // key already in revision object
-                    $childNode = $node->{$revKey};
-                } else {
-                    $childNode = $node->addChild($revKey);
-                }
-                if (is_array($revItem)) {
-                    $this->updateRevision($revItem, $childNode);
-                } else {
-                    $childNode[0] = $revItem;
-                }
+            if (!empty($_SERVER['REMOTE_ADDR'])) {
+                $revision['username'] .= "@".$_SERVER['REMOTE_ADDR'];
+            }
+            if (!empty($_SERVER['REQUEST_URI'])) {
+                // when update revision is called from a controller, log the endpoint uri
+                $revision['description'] = sprintf(gettext('%s made changes'), $_SERVER['REQUEST_URI']);
+            } else {
+                // called from a script, log script name and path
+                $revision['description'] = sprintf(gettext('%s made changes'), $_SERVER['SCRIPT_NAME']);
+            }
+        }
+
+        // always set timestamp
+        $revision['time'] = microtime(true);
+
+        if ($node == null) {
+            if (isset($this->simplexml->revision)) {
+                $node = $this->simplexml->revision;
+            } else {
+                $node = $this->simplexml->addChild("revision");
+            }
+        }
+        foreach ($revision as $revKey => $revItem) {
+            if (isset($node->{$revKey})) {
+                // key already in revision object
+                $childNode = $node->{$revKey};
+            } else {
+                $childNode = $node->addChild($revKey);
+            }
+            if (is_array($revItem)) {
+                $this->updateRevision($revItem, $childNode);
+            } else {
+                $childNode[0] = $revItem;
             }
         }
     }
@@ -375,14 +412,17 @@ class Config extends Singleton
     public function backup()
     {
         $target_dir = dirname($this->config_file)."/backup/";
-        $target_filename = "config-".time().".xml";
+        $target_filename = "config-".microtime(true).".xml";
 
         if (!file_exists($target_dir)) {
             // create backup directory if it's missing
             mkdir($target_dir);
         }
-        copy($this->config_file, $target_dir.$target_filename);
-
+        // The new target backup filename shouldn't exists, because of the use of microtime.
+        // But if for some reason a script keeps calling this backup very often, it shouldn't crash.
+        if (!file_exists($target_dir . $target_filename)) {
+            copy($this->config_file, $target_dir . $target_filename);
+        }
     }
 
     /**
@@ -406,9 +446,9 @@ class Config extends Singleton
                     $xmlNode = simplexml_load_file($filename, "SimpleXMLElement", LIBXML_NOERROR |  LIBXML_ERR_NONE);
                     if (isset($xmlNode->revision)) {
                         $result[$filename] = $this->toArray(null, $xmlNode->revision);
+                        $result[$filename]['version'] = $xmlNode->version->__toString();
+                        $result[$filename]['filesize'] = filesize($filename);
                     }
-                    // append filesize to revision info object
-                    $result[$filename]['filesize'] = filesize($filename);
                 }
 
                 return $result;

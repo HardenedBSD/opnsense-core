@@ -95,31 +95,101 @@ POSSIBILITY OF SUCH DAMAGE.
         }
 
         /**
-         * Add fileid to alert filter
+         *  add filter criteria to log query
          */
         function addAlertQryFilters(request) {
-            var selected =$('#alert-logfile').find("option:selected").val();
-            if ( selected != "") {
-                request['fileid'] = selected;
+            var selected_logfile =$('#alert-logfile').find("option:selected").val();
+            var selected_max_entries =$('#alert-logfile-max').find("option:selected").val();
+            var search_phrase = $("#inputSearchAlerts").val();
+
+            // add loading overlay
+            $('#processing-dialog').modal('show');
+            $("#grid-alerts").bootgrid().on("loaded.rs.jquery.bootgrid", function (e){
+                $('#processing-dialog').modal('hide');
+            });
+
+
+            if ( selected_logfile != "") {
+                request['fileid'] = selected_logfile;
+                request['rowCount'] = selected_max_entries;
+                request['searchPhrase'] = search_phrase;
             }
             return request;
         }
 
         // load initial data
-        mapDataToFormUI(data_get_map).done(function(data){
-            // set schedule updates link to cron
-            $.each(data.frm_GeneralSettings.ids.general.UpdateCron, function(key, value) {
-                if (value.selected == 1) {
-                    $("#scheduled_updates").attr("href","/ui/cron/item/open/"+key);
-                    $("#scheduled_updates").show();
-                }
+        function loadGeneralSettings() {
+            mapDataToFormUI(data_get_map).done(function(data){
+                // set schedule updates link to cron
+                $.each(data.frm_GeneralSettings.ids.general.UpdateCron, function(key, value) {
+                    if (value.selected == 1) {
+                        $("#scheduled_updates").attr("href","/ui/cron/item/open/"+key);
+                        $("#scheduled_updates").show();
+                    }
+                });
+                formatTokenizersUI();
+                $('.selectpicker').selectpicker('refresh');
             });
-            //alert(JSON.stringify(data.frm_GeneralSettings.ids.general.UpdateCron));
-            formatTokenizersUI();
-            $('.selectpicker').selectpicker('refresh');
-        });
+        }
 
-        updateStatus();
+        /**
+         * save (general) settings and reconfigure
+         * @param  callback_funct: callback function, receives result status true/false
+         */
+        function actionReconfigure(callback_funct) {
+            var result_status = false;
+            saveFormToEndpoint(url="/api/ids/settings/set",formid='frm_GeneralSettings',callback_ok=function(){
+                ajaxCall(url="/api/ids/service/reconfigure", sendData={}, callback=function(data,status) {
+                    if (status == "success" || data['status'].toLowerCase().trim() == "ok") {
+                        result_status = true;
+                    }
+                    callback_funct(result_status);
+                });
+            });
+        }
+
+        /**
+         * toggle selected items
+         * @param gridId: grid id to to use
+         * @param url: ajax action to call
+         * @param state: 0/1/undefined
+         * @param combine: number of keys to combine (seperate with ,)
+         *                 try to avoid too much items per call (results in too long url's)
+         */
+        function actionToggleSelected(gridId, url, state, combine) {
+            var rows =$("#"+gridId).bootgrid('getSelectedRows');
+            if (rows != undefined){
+                var deferreds = [];
+                if (state != undefined) {
+                    var url_suffix = state;
+                } else {
+                    var url_suffix = "";
+                }
+
+                var keyset = [];
+                $.each(rows, function(key,uuid){
+                    keyset.push(uuid);
+                    if ( combine == undefined || keyset.length > combine) {
+                        deferreds.push(ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null));
+                        keyset = [];
+                    }
+                });
+
+                // flush remaining items
+                if (keyset.length > 0) {
+                    deferreds.push(ajaxCall(url + keyset.join(',') +'/'+url_suffix, sendData={},null));
+                }
+
+                // refresh when all toggles are executed
+                $.when.apply(null, deferreds).done(function(){
+                    $("#"+gridId).bootgrid("reload");
+                });
+            }
+        }
+
+        /*************************************************************************************************************
+         * UI load grids (on tab change)
+         *************************************************************************************************************/
 
         /**
          * load content on tab changes
@@ -140,10 +210,10 @@ POSSIBILITY OF SUCH DAMAGE.
                 $("#grid-installedrules").UIBootgrid(
                         {   search:'/api/ids/settings/searchinstalledrules',
                             get:'/api/ids/settings/getRuleInfo/',
+                            set:'/api/ids/settings/setRule/',
                             options:{
-                                multiSelect:false,
-                                selection:false,
                                 requestHandler:addRuleFilters,
+                                rowCount:[10, 25, 50,100,500,1000] ,
                                 formatters:{
                                     rowtoggle: function (column, row) {
                                         var toggle = " <button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.sid + "\"><span class=\"fa fa-info-circle\"></span></button> ";
@@ -171,12 +241,15 @@ POSSIBILITY OF SUCH DAMAGE.
                             options:{
                                 multiSelect:false,
                                 selection:false,
+                                templates : {
+                                    header: ""
+                                },
                                 requestHandler:addAlertQryFilters,
                                 formatters:{
                                     info: function (column, row) {
-                                        return "<button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.filepos + "\"><span class=\"fa fa-info-circle\"></span></button> ";
+                                        return "<button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.filepos + "/" + row.fileid + "\"><span class=\"fa fa-info-circle\"></span></button> ";
                                     }
-                                }
+                                },
                             }
                         });
             }
@@ -188,18 +261,19 @@ POSSIBILITY OF SUCH DAMAGE.
          * grid for installable rule files
          */
         $("#grid-rule-files").UIBootgrid(
-                {   search:'/api/ids/settings/listInstallableRulesets',
-                    toggle:'/api/ids/settings/toggleInstalledRuleset/',
+                {   search:'/api/ids/settings/listRulesets',
+                    get:'/api/ids/settings/getRuleset/',
+                    set:'/api/ids/settings/setRuleset/',
+                    toggle:'/api/ids/settings/toggleRuleset/',
                     options:{
-                        multiSelect:false,
-                        selection:false,
                         navigation:0,
                         formatters:{
                             rowtoggle: function (column, row) {
+                                var toggle = " <button type=\"button\" class=\"btn btn-xs btn-default command-edit\" data-row-id=\"" + row.filename + "\"><span class=\"fa fa-info-circle\"></span></button> ";
                                 if (parseInt(row[column.id], 2) == 1) {
-                                    var toggle = "<span style=\"cursor: pointer;\" class=\"fa fa-check-square-o command-toggle\" data-value=\"1\" data-row-id=\"" + row.filename + "\"></span>";
+                                    toggle += "<span style=\"cursor: pointer;\" class=\"fa fa-check-square-o command-toggle\" data-value=\"1\" data-row-id=\"" + row.filename + "\"></span>";
                                 } else {
-                                    var toggle = "<span style=\"cursor: pointer;\" class=\"fa fa-square-o command-toggle\" data-value=\"0\" data-row-id=\"" + row.filename + "\"></span>";
+                                    toggle += "<span style=\"cursor: pointer;\" class=\"fa fa-square-o command-toggle\" data-value=\"0\" data-row-id=\"" + row.filename + "\"></span>";
                                 }
                                 return toggle;
                             }
@@ -208,29 +282,27 @@ POSSIBILITY OF SUCH DAMAGE.
                 });
 
         /*************************************************************************************************************
-         * Commands
+         * UI button Commands
          *************************************************************************************************************/
 
         /**
          * save settings and reconfigure ids
          */
         $("#reconfigureAct").click(function(){
-            saveFormToEndpoint(url="/api/ids/settings/set",formid='frm_GeneralSettings',callback_ok=function(){
-                $("#reconfigureAct_progress").addClass("fa fa-spinner fa-pulse");
-                ajaxCall(url="/api/ids/service/reconfigure", sendData={}, callback=function(data,status) {
-                    // when done, disable progress animation.
-                    $("#reconfigureAct_progress").removeClass("fa fa-spinner fa-pulse");
-                    updateStatus();
+            $("#reconfigureAct_progress").addClass("fa fa-spinner fa-pulse");
+            actionReconfigure(function(status){
+                // when done, disable progress animation.
+                $("#reconfigureAct_progress").removeClass("fa fa-spinner fa-pulse");
+                updateStatus();
 
-                    if (status != "success" || data['status'].toLowerCase().trim() != "ok") {
-                        BootstrapDialog.show({
-                            type: BootstrapDialog.TYPE_WARNING,
-                            title: "Error reconfiguring IDS",
-                            message: data['status'],
-                            draggable: true
-                        });
-                    }
-                });
+                if (!status) {
+                    BootstrapDialog.show({
+                        type: BootstrapDialog.TYPE_WARNING,
+                        title: "Error reconfiguring IDS",
+                        message: data['status'],
+                        draggable: true
+                    });
+                }
             });
         });
 
@@ -241,12 +313,68 @@ POSSIBILITY OF SUCH DAMAGE.
             $("#updateRulesAct_progress").addClass("fa fa-spinner fa-pulse");
             ajaxCall(url="/api/ids/service/updateRules", sendData={}, callback=function(data,status) {
                 // when done, disable progress animation and reload grid.
-                $("#updateRulesAct_progress").removeClass("fa fa-spinner fa-pulse");
                 $('#grid-rule-files').bootgrid('reload');
                 updateStatus();
+                if ($('#scheduled_updates').is(':hidden') ){
+                    // save and reconfigure on initial download (tries to create a cron job)
+                    actionReconfigure(function(status){
+                        loadGeneralSettings();
+                        $("#updateRulesAct_progress").removeClass("fa fa-spinner fa-pulse");
+                    });
+                } else {
+                    $("#updateRulesAct_progress").removeClass("fa fa-spinner fa-pulse");
+                }
             });
         });
 
+        /**
+         * disable selected rulesets
+         */
+        $("#disableSelectedRuleSets").click(function(){
+            var gridId = 'grid-rule-files';
+            var url = '/api/ids/settings/toggleRuleset/';
+            actionToggleSelected(gridId, url, 0, 20);
+        });
+
+        /**
+         * enable selected rulesets
+         */
+        $("#enableSelectedRuleSets").click(function(){
+            var gridId = 'grid-rule-files';
+            var url = '/api/ids/settings/toggleRuleset/';
+            actionToggleSelected(gridId, url, 1, 20);
+        });
+
+        /**
+         * disable selected rules
+         */
+        $("#disableSelectedRules").click(function(){
+            var gridId = 'grid-installedrules';
+            var url = '/api/ids/settings/toggleRule/';
+            actionToggleSelected(gridId, url, 0, 100);
+        });
+
+        /**
+         * enable selected rules
+         */
+        $("#enableSelectedRules").click(function(){
+            var gridId = 'grid-installedrules';
+            var url = '/api/ids/settings/toggleRule/';
+            actionToggleSelected(gridId, url, 1, 100);
+        });
+
+        /**
+         * link query alerts button.
+         */
+        $("#actQueryAlerts").click(function(){
+            $('#grid-alerts').bootgrid('reload');
+        });
+
+        /**
+         * Initialize
+         */
+        loadGeneralSettings();
+        updateStatus();
 
     });
 
@@ -272,20 +400,31 @@ POSSIBILITY OF SUCH DAMAGE.
             <tr>
                 <td><div class="control-label">
                     <i class="fa fa-info-circle text-muted"></i>
-                    <b>rulesets</b>
+                    <b>{{ lang._('rulesets') }}</b>
                     </div>
                 </td>
                 <td>
-                <table id="grid-rule-files" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRule">
+                <table id="grid-rule-files" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRuleset">
                     <thead>
                     <tr>
-                        <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false"  data-width="10em">enabled</th>
-                        <th data-column-id="description" data-type="string" data-sortable="false"  data-visible="true">description</th>
-                        <th data-column-id="modified_local" data-type="string" data-sortable="false"  data-visible="true">last updated</th>
+                        <th data-column-id="filename" data-type="string" data-visible="false" data-identifier="true">filename</th>
+                        <th data-column-id="description" data-type="string" data-sortable="false"  data-visible="true">{{ lang._('Description') }}</th>
+                        <th data-column-id="modified_local" data-type="string" data-sortable="false" data-visible="true">{{ lang._('Last updated') }}</th>
+                        <th data-column-id="filter_str" data-type="string" data-identifier="true">Filter</th>
+                        <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false"  data-width="10em">{{ lang._('Enabled') }}</th>
                     </tr>
                     </thead>
                     <tbody>
                     </tbody>
+                    <tfoot>
+                    <tr>
+                        <td></td>
+                        <td>
+                            <button title="{{ lang._('disable selected') }}" id="disableSelectedRuleSets" type="button" class="btn btn-xs btn-default"><span class="fa fa-square-o command-toggle"></span></button>
+                            <button title="{{ lang._('enable selected') }}" id="enableSelectedRuleSets" type="button" class="btn btn-xs btn-default"><span class="fa fa-check-square-o command-toggle"></span></button>
+                        </td>
+                    </tr>
+                    </tfoot>
                 </table>
                 </td>
             </tr>
@@ -306,15 +445,25 @@ POSSIBILITY OF SUCH DAMAGE.
         <table id="grid-installedrules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogRule">
             <thead>
             <tr>
-                <th data-column-id="sid" data-type="number" data-visible="true" data-identifier="true" data-width="6em">sid</th>
-                <th data-column-id="source" data-type="string">Source</th>
-                <th data-column-id="classtype" data-type="string">ClassType</th>
-                <th data-column-id="msg" data-type="string">Message</th>
-                <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false"  data-width="10em">info / enabled</th>
+                <th data-column-id="sid" data-type="numeric" data-visible="true" data-identifier="true" data-width="6em">{{ lang._('sid') }}</th>
+                <th data-column-id="action" data-type="string">{{ lang._('Action') }}</th>
+                <th data-column-id="source" data-type="string">{{ lang._('Source') }}</th>
+                <th data-column-id="classtype" data-type="string">{{ lang._('ClassType') }}</th>
+                <th data-column-id="msg" data-type="string">{{ lang._('Message') }}</th>
+                <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false"  data-width="10em">{{ lang._('Info / enabled') }}</th>
             </tr>
             </thead>
             <tbody>
             </tbody>
+            <tfoot>
+            <tr>
+                <td>
+                    <button title="{{ lang._('disable selected') }}" id="disableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-square-o command-toggle"></span></button>
+                    <button title="{{ lang._('enable selected') }}" id="enableSelectedRules" type="button" class="btn btn-xs btn-default"><span class="fa fa-check-square-o command-toggle"></span></button>
+                </td>
+                <td></td>
+            </tr>
+            </tfoot>
         </table>
     </div>
     <div id="alerts" class="tab-pane fade in">
@@ -322,6 +471,21 @@ POSSIBILITY OF SUCH DAMAGE.
             <div class="row">
                 <div class="col-sm-12 actionBar">
                     <select id="alert-logfile" class="selectpicker" data-width="200px"></select>
+                    <select id="alert-logfile-max" class="selectpicker" data-width="80px">
+                        <option value="7">7</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="250">250</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                        <option value="-1">All</option>
+                    </select>
+                    <div class="search form-group">
+                        <div class="input-group">
+                            <input class="search-field form-control" placeholder="{{ lang._('Search') }}" type="text" id="inputSearchAlerts">
+                            <span  id="actQueryAlerts" class="icon input-group-addon fa fa-refresh" title="{{ lang._('Query') }}" style="cursor: pointer;"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -329,11 +493,12 @@ POSSIBILITY OF SUCH DAMAGE.
         <table id="grid-alerts" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogAlert">
             <thead>
             <tr>
-                <th data-column-id="timestamp" data-type="string" data-sortable="false">timestamp</th>
-                <th data-column-id="src_ip" data-type="string" data-sortable="false"  data-width="10em">source</th>
-                <th data-column-id="dest_ip" data-type="string"  data-sortable="false"  data-width="10em">destination</th>
-                <th data-column-id="alert" data-type="string" data-sortable="false" >Alert</th>
-                <th data-column-id="info" data-formatter="info" data-sortable="false" data-width="4em">info</th>
+                <th data-column-id="timestamp" data-type="string" data-sortable="false">{{ lang._('Timestamp') }}</th>
+                <th data-column-id="alert_action" data-type="string" data-sortable="false">{{ lang._('Action') }}</th>
+                <th data-column-id="src_ip" data-type="string" data-sortable="false"  data-width="10em">{{ lang._('Source') }}</th>
+                <th data-column-id="dest_ip" data-type="string"  data-sortable="false"  data-width="10em">{{ lang._('Destination') }}</th>
+                <th data-column-id="alert" data-type="string" data-sortable="false" >{{ lang._('Alert') }}</th>
+                <th data-column-id="info" data-formatter="info" data-sortable="false" data-width="4em">{{ lang._('Info') }}</th>
             </tr>
             </thead>
             <tbody>
@@ -342,10 +507,27 @@ POSSIBILITY OF SUCH DAMAGE.
     </div>
     <div class="col-md-12">
         <hr/>
-        <button class="btn btn-primary"  id="reconfigureAct" type="button"><b>Apply</b><i id="reconfigureAct_progress" class=""></i></button>
-        <button class="btn btn-primary"  id="updateRulesAct" type="button"><b>Download & Update Rules</b><i id="updateRulesAct_progress" class=""></i></button>
+        <button class="btn btn-primary"  id="reconfigureAct" type="button"><b>{{ lang._('Apply') }}</b><i id="reconfigureAct_progress" class=""></i></button>
+        <button class="btn btn-primary"  id="updateRulesAct" type="button"><b>{{ lang._('Download & Update Rules') }}</b><i id="updateRulesAct_progress" class=""></i></button>
+        <br/>
+        <i>{{ lang._('Please use "Download & Update Rules" to fetch your initial ruleset, automatic updating can be scheduled after the first download') }} </i>
     </div>
 </div>
 
-{{ partial("layout_partials/base_dialog",['fields':formDialogRule,'id':'DialogRule','label':'Rule details','hasSaveBtn':'false','msgzone_width':1])}}
+<!-- Static Modal -->
+<div class="modal modal-static fade" id="processing-dialog" role="dialog" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+                    <h4>{{ lang._('Processing request...') }} </h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ partial("layout_partials/base_dialog",['fields':formDialogRule,'id':'DialogRule','label':'Rule details','hasSaveBtn':'true','msgzone_width':1])}}
 {{ partial("layout_partials/base_dialog",['fields':formDialogAlert,'id':'DialogAlert','label':'Alert details','hasSaveBtn':'false','msgzone_width':1])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogRuleset,'id':'DialogRuleset','label':'Ruleset details','hasSaveBtn':'true','msgzone_width':1])}}

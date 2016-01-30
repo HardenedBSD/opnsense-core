@@ -99,7 +99,7 @@ function mapDataToFormUI(data_get_map) {
         ajaxGet(url=data_url,sendData={}, callback=function(data, status) {
             if (status == "success") {
                 $("form").each(function( index ) {
-                    if ( $(this).attr('id').split('-')[0] == data_index) {
+                    if ( $(this).attr('id') && $(this).attr('id').split('-')[0] == data_index) {
                         // related form found, load data
                         setFormData($(this).attr('id'), data);
                         collected_data[$(this).attr('id')] = data;
@@ -140,6 +140,10 @@ function updateServiceStatusUI(status) {
  * reformat all tokenizers on this document
  */
 function formatTokenizersUI(){
+    // remove old tokenizers (if any)
+    $('div[class="tokenize Tokenize"]').each(function(){
+        $(this).remove();
+    });
     $('select[class="tokenize"]').each(function(){
         if ($(this).prop("size")==0) {
             maxDropdownHeight=String(36*5)+"px"; // default number of items
@@ -192,6 +196,13 @@ function addMultiSelectClearUI() {
                             $('select[id="' + id + '"]').find('option').prop('selected',false);
                         }
                     }
+                    // In case this modal was triggered from another modal, fix focus issues
+                    $('.modal').on("hidden.bs.modal", function (e) {
+                        if($('.modal:visible').length)
+                        {
+                            $('body').addClass('modal-open');
+                        }
+                    });
                 }
             });
         });
@@ -203,12 +214,13 @@ function addMultiSelectClearUI() {
  */
 function initFormHelpUI() {
     // handle help messages show/hide
-    $("a[class='showhelp']").click(function () {
+    $("a[class='showhelp']").click(function (event) {
         $("*[for='" + $(this).attr('id') + "']").toggleClass("hidden show");
+        event.preventDefault();
     });
 
     // handle all help messages show/hide
-    $('[id*="show_all_help"]').click(function() {
+    $('[id*="show_all_help"]').click(function(event) {
         $('[id*="show_all_help"]').toggleClass("fa-toggle-on fa-toggle-off");
         $('[id*="show_all_help"]').toggleClass("text-success text-danger");
         if ($('[id*="show_all_help"]').hasClass("fa-toggle-on")) {
@@ -218,6 +230,7 @@ function initFormHelpUI() {
             $('[for*="help_for"]').addClass("hidden");
             $('[for*="help_for"]').removeClass("show");
         }
+        event.preventDefault();
     });
 }
 

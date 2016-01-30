@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2013 Dagorlad
@@ -28,6 +29,8 @@
 */
 
 require_once("guiconfig.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
 
 if(!isset($config['ntpd']['noquery'])) {
 
@@ -142,11 +145,11 @@ if (isset($config['ntpd']['gps']['type']) && ($config['ntpd']['gps']['type'] == 
 	}
 }
 
-$pgtitle = array(gettext("Status"),gettext("NTP"));
-$shortcut_section = "ntp";
-include("head.inc");
-?>
+$service_hook = 'ntpd';
 
+include("head.inc");
+
+?>
 
 <body>
 <?php include("fbegin.inc"); ?>
@@ -187,11 +190,11 @@ include("head.inc");
 								<tbody>
 								<?php if (isset($config['ntpd']['noquery'])): ?>
 								<tr><td class="listlr" colspan="11" align="center">
-									Statistics unavailable because ntpq and ntpdc queries are disabled in the <a href="services_ntpd.php">NTP service settings</a>.
+									<?= sprintf(gettext('Statistics unavailable because ntpq and ntpdc queries are disabled in the %sNTP service settings%s.'), '<a href="services_ntpd.php">','</a>') ?>
 								</td></tr>
 								<?php elseif (count($ntpq_servers) == 0): ?>
 								<tr><td class="listlr" colspan="11" align="center">
-									No peers found, <a href="status_services.php">is the ntp service running?</a>.
+									<?= sprintf(gettext('No peers found, %sis the ntp service running%s?'), '<a href="status_services.php">','</a>') ?>
 								</td></tr>
 								<?php else: ?>
 								<?php $i = 0; foreach ($ntpq_servers as $server): ?>

@@ -29,6 +29,11 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
+require_once("services.inc");
+require_once("system.inc");
+require_once("unbound.inc");
+require_once("pfsense-utils.inc");
+require_once("interfaces.inc");
 
 /* This function will remove entries from dhcpd.leases that would otherwise
  * overlap with static DHCP reservations. If we don't clean these out,
@@ -234,25 +239,6 @@ if (isset($_POST['submit'])) {
 		if ($_POST['deftime'] && (!is_numeric($_POST['deftime']) || ($_POST['deftime'] < 60)))
 				$input_errors[] = gettext("The default lease time must be at least 60 seconds.");
 
-		if (isset($config['captiveportal']) && is_array($config['captiveportal'])) {
-			$deftime = 7200; // Default value if it's empty
-			if (is_numeric($_POST['deftime']))
-				$deftime = $_POST['deftime'];
-
-			foreach ($config['captiveportal'] as $cpZone => $cpdata) {
-				if (!isset($cpdata['enable']))
-					continue;
-				if (!isset($cpdata['timeout']) || !is_numeric($cpdata['timeout']))
-					continue;
-				$cp_ifs = explode(',', $cpdata['interface']);
-				if (!in_array($if, $cp_ifs))
-					continue;
-				if ($cpdata['timeout'] > $deftime)
-					$input_errors[] = sprintf(gettext(
-						"The Captive Portal zone '%s' has Hard Timeout parameter set to a value bigger than Default lease time (%s)."), $cpZone, $deftime);
-			}
-		}
-
 		if ($_POST['maxtime'] && (!is_numeric($_POST['maxtime']) || ($_POST['maxtime'] < 60) || ($_POST['maxtime'] <= $_POST['deftime'])))
 			$input_errors[] = gettext("The maximum lease time must be at least 60 seconds and higher than the default lease time.");
 		if (($_POST['ddnsdomain'] && !is_domain($_POST['ddnsdomain'])))
@@ -307,7 +293,7 @@ if (isset($_POST['submit'])) {
 				if (empty($map['ipaddr']))
 					$noip = true;
 		if ($_POST['staticarp'] && $noip)
-			$input_errors[] = "Cannot enable static ARP when you have static map entries without IP addresses. Ensure all static maps have IP addresses and try again.";
+			$input_errors[] = gettext("Cannot enable static ARP when you have static map entries without IP addresses. Ensure all static maps have IP addresses and try again.");
 
 		if(is_array($pconfig['numberoptions']['item'])) {
 			foreach ($pconfig['numberoptions']['item'] as $numberoption) {
@@ -500,6 +486,7 @@ if (isset($_POST['submit']) || isset($_POST['apply'])) {
 	/* Stop DHCP so we can cleanup leases */
 	killbyname("dhcpd");
 	dhcp_clean_leases();
+	system_hosts_generate();
 	/* dnsmasq_configure calls dhcpd_configure */
 	/* no need to restart dhcpd twice */
 	if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcpstatic']))	{
@@ -522,7 +509,7 @@ if (isset($_POST['submit']) || isset($_POST['apply'])) {
 
 	if($retvaldhcp == 1 || $retvaldns == 1 || $retvalfc == 1)
 		$retval = 1;
-	$savemsg = get_std_save_message($retval);
+	$savemsg = get_std_save_message();
 }
 
 if ($act == "delpool") {
@@ -548,9 +535,7 @@ if ($act == "del") {
 	}
 }
 
-$closehead = false;
-$pgtitle = array(gettext("Services"),gettext("DHCP server"));
-$shortcut_section = "dhcp";
+$service_hook = 'dhcpd';
 
 include("head.inc");
 
@@ -682,7 +667,7 @@ include("head.inc");
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('staticmaps')): ?><br/>
-				<?php print_info_box_np(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
@@ -814,12 +799,7 @@ include("head.inc");
 												<td width="35%" class="listhdrr"><?=gettext("Pool End");?></td>
 												<td width="20%" class="listhdrr"><?=gettext("Description");?></td>
 												<td width="10%" class="list">
-												<table border="0" cellspacing="0" cellpadding="1" summary="pool">
-												<tr>
-												<td valign="middle" width="17"></td>
-												<td valign="middle"><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=newpool" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a></td>
-												</tr>
-												</table>
+												<a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=newpool" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a>
 												</td>
 											</tr>
 												<?php if(is_array($a_pools)): ?>
@@ -835,13 +815,9 @@ include("head.inc");
 											<td class="listr" ondblclick="document.location='services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;pool=<?=$i;?>';">
 												<?=htmlspecialchars($poolent['descr']);?>&nbsp;
 											</td>
-											<td valign="middle" class="list nowrap">
-												<table border="0" cellspacing="0" cellpadding="1" summary="icons">
-												<tr>
-												<td valign="middle"><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;pool=<?=$i;?>"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_e.gif" width="17" height="17" border="0" alt="edit" /></a></td>
-												<td valign="middle"><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=delpool&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this pool?");?>')"><img src="./themes/<?= $g['theme']; ?>/images/icons/icon_x.gif" width="17" height="17" border="0" alt="delete" /></a></td>
-												</tr>
-												</table>
+											<td>
+												<a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;pool=<?=$i;?>"><button type="button" class="btn btn-xs btn-default"><span class="fa fa-pencil"></span></button></a>
+												<a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=delpool&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this pool?");?>')"><button type="button" class="btn btn-xs btn-default"><span class="fa fa-trash text-muted"></span></button></a>
 											</td>
 											</tr>
 											<?php endif; ?>
@@ -913,54 +889,31 @@ include("head.inc");
 										<td width="22%" valign="top" class="vncell"><?=gettext("Failover peer IP:");?></td>
 										<td width="78%" class="vtable">
 											<input name="failover_peerip" type="text" class="form-control host" id="failover_peerip" size="20" value="<?=htmlspecialchars($pconfig['failover_peerip']);?>" /><br />
-											<?=gettext("Leave blank to disable.  Enter the interface IP address of the other machine.  Machines must be using CARP. Interface's advskew determines whether the DHCPd process is Primary or Secondary. Ensure one machine's advskew<20 (and the other is >20).");?>
+											<?=gettext("Leave blank to disable.  Enter the interface IP address of the other machine. Machines must be using CARP. Interface's advskew determines whether the DHCPd process is Primary or Secondary. Ensure one machine's advskew<20 (and the other is >20).");?>
 										</td>
 										</tr>
 										<?php endif; ?>
 										<?php if (!is_numeric($pool) && !($act == "newpool")): ?>
 										<tr>
-										<td width="22%" valign="top" class="vncell"><?=gettext("Static ARP");?></td>
-										<td width="78%" class="vtable">
-											<table summary="static arp">
-												<tr>
-												<td>
-													<input style="vertical-align:middle" type="checkbox" value="yes" name="staticarp" id="staticarp" <?php if($pconfig['staticarp']) echo " checked=\"checked\""; ?> />&nbsp;
-												</td>
-												<td><b><?=gettext("Enable Static ARP entries");?></b></td>
-												</tr>
-												<tr>
-												<td>&nbsp;</td>
-												<td>
-													<span class="red"><strong><?=gettext("Note:");?></strong></span> <?=gettext("This option persists even if DHCP server is disabled. Only the machines listed below will be able to communicate with the firewall on this NIC.");?>
-												</td>
-												</tr>
-											</table>
-										</td>
+											<td width="22%" valign="top" class="vncell"><?=gettext("Static ARP");?></td>
+											<td width="78%" class="vtable">
+												<input type="checkbox" value="yes" name="staticarp" id="staticarp" <?php if($pconfig['staticarp']) echo " checked=\"checked\""; ?> />&nbsp;
+												<strong><?=gettext("Enable Static ARP entries");?></strong>
+												<br />
+												<?=gettext("Warning: This option persists even if DHCP server is disabled. Only the machines listed below will be able to communicate with the firewall on this NIC.");?>
+											</td>
 										</tr>
 										<?php endif; ?>
 										<?php if (!is_numeric($pool) && !($act == "newpool")): ?>
 										<tr>
 											<td width="22%" valign="top" class="vncell"><?=gettext("Time format change"); ?></td>
 											<td width="78%" class="vtable">
-											<table summary="time format">
-												<tr>
-												<td>
-													<input name="dhcpleaseinlocaltime" type="checkbox" id="dhcpleaseinlocaltime" value="yes" <?php if ($pconfig['dhcpleaseinlocaltime']) echo "checked=\"checked\""; ?> />
-												</td>
-												<td>
-													<strong>
-														<?=gettext("Change DHCP display lease time from UTC to local time."); ?>
-													</strong>
-												</td>
-												</tr>
-												<tr>
-												<td>&nbsp;</td>
-												<td>
-													<span class="red"><strong><?=gettext("Note:");?></strong></span> <?=gettext("By default DHCP leases are displayed in UTC time.  By checking this
-													box DHCP lease time will be displayed in local time and set to time zone selected.  This will be used for all DHCP interfaces lease time."); ?>
-												</td>
-												</tr>
-											</table>
+												<input name="dhcpleaseinlocaltime" type="checkbox" id="dhcpleaseinlocaltime" value="yes" <?php if ($pconfig['dhcpleaseinlocaltime']) echo "checked=\"checked\""; ?> />
+												<strong><?=gettext("Change DHCP display lease time from UTC to local time."); ?></strong>
+												<br />
+												<?=gettext("Warning: By default DHCP leases are displayed in UTC time. By checking this " .
+												"box DHCP lease time will be displayed in local time and set to time zone selected. This " .
+												"will be used for all DHCP interfaces lease time."); ?>
 											</td>
 										</tr>
 										<?php endif; ?>
@@ -971,8 +924,8 @@ include("head.inc");
 												<input type="button" onclick="show_ddns_config()" class="btn btn-default btn-xs" value="<?=gettext("Advanced");?>" /> - <?=gettext("Show Dynamic DNS");?>
 											</div>
 											<div id="showddns" style="display:none">
-												<input style="vertical-align:middle" type="checkbox" value="yes" name="ddnsupdate" id="ddnsupdate" <?php if($pconfig['ddnsupdate']) echo " checked=\"checked\""; ?> />&nbsp;
-												<b><?=gettext("Enable registration of DHCP client names in DNS.");?></b><br />
+												<input type="checkbox" value="yes" name="ddnsupdate" id="ddnsupdate" <?php if($pconfig['ddnsupdate']) echo " checked=\"checked\""; ?> />
+												<strong><?=gettext("Enable registration of DHCP client names in DNS.");?></strong><br />
 												<br/>
 												<input name="ddnsdomain" type="text" class="form-control unknown" id="ddnsdomain" size="20" value="<?=htmlspecialchars($pconfig['ddnsdomain']);?>" /><br />
 												<?=gettext("Note: Leave blank to disable dynamic DNS registration.");?><br />
@@ -1043,8 +996,8 @@ include("head.inc");
 												<input type="button" onclick="show_netboot_config()" class="btn btn-default btn-xs" value="<?=gettext("Advanced");?>" /> - <?=gettext("Show Network booting");?>
 											</div>
 											<div id="shownetboot" style="display:none">
-												<input style="vertical-align:middle" type="checkbox" value="yes" name="netboot" id="netboot" <?php if($pconfig['netboot']) echo " checked=\"checked\""; ?> />&nbsp;
-												<b><?=gettext("Enables network booting.");?></b>
+												<input type="checkbox" value="yes" name="netboot" id="netboot" <?php if($pconfig['netboot']) echo " checked=\"checked\""; ?> />
+												<strong><?=gettext("Enables network booting.");?></strong>
 												<br/>
 												<?=gettext("Enter the IP of the"); ?> <b><?=gettext("next-server"); ?></b>
 												<input name="nextserver" type="text" class="form-control unknown" id="nextserver" size="20" value="<?=htmlspecialchars($pconfig['nextserver']);?>" /><br />
@@ -1113,7 +1066,7 @@ include("head.inc");
 												<input autocomplete="off" name="value<?php echo $counter; ?>" type="text" class="form-control unknown" id="value<?php echo $counter; ?>" size="40" value="<?=htmlspecialchars($value);?>" />
 											</td>
 											<td>
-												<a onclick="removeRow(this); return false;" href="#" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a></a>
+												<a onclick="removeRow(this); return false;" href="#" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a></a>
 											</td>
 											</tr>
 											<?php $counter++; ?>
@@ -1149,15 +1102,12 @@ include("head.inc");
 										</tr>
 										<tr>
 										<td width="22%" valign="top">&nbsp;</td>
-										<td width="78%"> <p><span class="vexpl"><span class="red"><strong><?=gettext("Note:");?><br />
-											</strong></span><?=gettext("The DNS servers entered in"); ?> <a href="system_general.php"><?=gettext("System: " .
-											"General setup"); ?></a> <?=gettext("(or the"); ?> <a href="services_dnsmasq.php"><?=gettext("DNS " .
-											"forwarder"); ?></a>, <?=gettext("if enabled)"); ?> </span><span class="vexpl"><?=gettext("will " .
-											"be assigned to clients by the DHCP server."); ?><br />
+										<td width="78%"> <p><?=gettext("Note:");?><br />
+											<?=sprintf(gettext("The DNS servers entered in %sSystem: " .
+											"General setup%s (or the %sDNS forwarder%s, if enabled), will be assigned to clients by the DHCP server."),'<a href="system_general.php">','</a>','<a href="services_dnsmasq.php">','</a>'); ?><br />
 											<br />
-											<?=gettext("The DHCP lease table can be viewed on the"); ?> <a href="status_dhcp_leases.php"><?=gettext("Status: " .
-											"DHCP leases"); ?></a> <?=gettext("page."); ?><br />
-											</span></p>
+											<?=sprintf(gettext("The DHCP lease table can be viewed on the %sStatus: DHCP leases%s page."),'<a href="status_dhcp_leases.php">','</a>') ?><br />
+											</p>
 										</td>
 										</tr>
 									</table>
@@ -1210,7 +1160,7 @@ include("head.inc");
 										<table border="0" cellspacing="0" cellpadding="1" summary="icons">
 										<tr>
 										<td valign="middle"><a href="services_dhcp_edit.php?if=<?=htmlspecialchars($if);?>&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a></td>
-										<td valign="middle"><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this mapping?");?>')" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a></td>
+										<td valign="middle"><a href="services_dhcp.php?if=<?=htmlspecialchars($if);?>&amp;act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this mapping?");?>')" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a></td>
 										</tr>
 										</table>
 									</td>
@@ -1222,7 +1172,7 @@ include("head.inc");
 									</table>
 									<?php endif; ?>
 								</div>
-								<? endif; ?>
+								<?php endif; ?>
 		                        </form>
 
 						</div>

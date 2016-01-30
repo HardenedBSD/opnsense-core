@@ -28,9 +28,10 @@
 */
 
 require_once('guiconfig.inc');
-require_once('functions.inc');
+require_once('interfaces.inc');
 require_once('filter.inc');
 require_once('vpn.inc');
+require_once("pfsense-utils.inc");
 
 if (!is_array($config['pptpd']['radius'])) {
     $config['pptpd']['radius'] = array();
@@ -189,14 +190,12 @@ if ($_POST) {
 
         $retval = 0;
         $retval = vpn_pptpd_configure();
-        $savemsg = get_std_save_message($retval);
+        $savemsg = get_std_save_message();
 
         filter_configure();
     }
 }
 
-$pgtitle = array(gettext("VPN"),gettext("VPN PPTP"));
-$shortcut_section = "pptps";
 include("head.inc");
 
 ?>
@@ -308,16 +307,18 @@ function enable_change(enable_over) {
 				<?php if (isset($savemsg)) {
                     print_info_box($savemsg);
 } ?>
-				<?php print_info_box(gettext("PPTP is no longer considered a secure VPN technology because it relies upon MS-CHAPv2 which has been compromised. If you continue to use PPTP be aware that intercepted traffic can be decrypted by a third party, so it should be considered unencrypted. We advise migrating to another VPN type such as OpenVPN or IPsec.<br /><br /><a href=\"https://isc.sans.edu/diary/End+of+Days+for+MS-CHAPv2/13807\">Read More</a>")); ?>
+				<?php print_alert_box(
+					gettext(
+						'PPTP is not considered a secure VPN technology, because it relies upon ' .
+						'the compromised MS-CHAPv2 protocol. If you choose to use PPTP, be aware ' .
+						'that your traffic can be decrypted by virtually any third party. ' .
+						'It should be considered an unencrypted tunneling protocol.'
+					) .  ' <a href="https://isc.sans.edu/diary/End+of+Days+for+MS-CHAPv2/13807">' .
+					gettext('Read more') . '</a>.',
+					'danger'
+				); ?>
 
 			    <section class="col-xs-12">
-
-				<?php
-                        $tab_array = array();
-                        $tab_array[0] = array(gettext("Configuration"), true, "vpn_pptp.php");
-                        $tab_array[1] = array(gettext("Users"), false, "vpn_pptp_users.php");
-                        display_top_tabs($tab_array);
-                    ?>
 
 					<div class="tab-content content-box col-xs-12">
 
@@ -514,10 +515,7 @@ function enable_change(enable_over) {
 						                </tr>
 						                <tr>
 						                  <td width="22%" valign="top">&nbsp;</td>
-						                  <td width="78%"><span class="vexpl"><span class="red"><strong><?=gettext("Note");?>:<br />
-						                    </strong></span><?=gettext("don't forget to ");
-?><a href="firewall_rules.php?if=pptp"><?=gettext("add a firewall rule"); ?></a> <?=gettext("to permit ".
-                                            "traffic from PPTP clients");?>!</span></td>
+						                  <td width="78%"><?=sprintf(gettext("Note: don't forget to %sadd a firewall rule%s to permit traffic from PPTP clients!"),'<a href="firewall_rules.php?if=pptp">','</a>') ?></td>
 						                 </tr>
 						              </table>
 								</div>

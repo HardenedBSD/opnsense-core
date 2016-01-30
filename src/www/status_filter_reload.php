@@ -26,21 +26,17 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-require_once("globals.inc");
 require_once("guiconfig.inc");
-require_once("functions.inc");
-
-$pgtitle = array(gettext("Status"),gettext("Filter Reload Status"));
-$shortcut_section = "firewall";
-
-if (file_exists('/var/run/filter_reload_status')) {
-	$status = file_get_contents('/var/run/filter_reload_status');
-}
 
 if($_GET['getstatus']) {
-	echo "|{$status}|";
+	$status = '';
+	if (file_exists('/var/run/filter_reload_status')) {
+		$status = file_get_contents('/var/run/filter_reload_status');
+	}
+	echo $status;
 	exit;
 }
+
 if($_POST['reloadfilter']) {
 	configd_run("filter reload");
 	if ( isset($config['hasync']['synchronizetoip']) && trim($config['hasync']['synchronizetoip']) != "") {
@@ -66,31 +62,20 @@ include("head.inc");
 	<section class="page-content-main">
 		<div class="container-fluid">
 			<div class="row">
-
+				<?php print_service_banner('firewall'); ?>
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
 
 				    <div class="content-box ">
 					 <div class="col-xs-12">
-						 <br />
-							<form action="status_filter_reload.php" method="post" name="filter">
-							<input type="submit" value="Reload Filter" class="btn btn-primary" name="reloadfilter" id="reloadfilter" />
-							<?php if ($config['hasync'] && $config['hasync']["synchronizetoip"] != ""): ?>
-							<input type="submit" value="Force Config Sync" class="btn btn-primary" name="syncfilter" id="syncfilter" />
+							<p><form action="status_filter_reload.php" method="post" name="filter">
+							<input type="submit" value="<?= gettext('Reload Filter') ?>" class="btn btn-primary" name="reloadfilter" id="reloadfilter" />
+							<?php if (!empty($config['hasync']['synchronizetoip'])): ?>
+							<input type="submit" value="<?= gettext('Force Config Sync') ?>" class="btn btn-primary" name="syncfilter" id="syncfilter" />
 							<?php endif; ?>
-							</form>
-							<br /><br /><br />
-
-							<div id="status" class="well">
-								<?php echo $status; ?>
-							</div>
-
-							</div>
-
-							<br/>
-
-							<div id="reloadinfo"><?=gettext("This page will automatically refresh every 3 seconds until the filter is done reloading"); ?>.</div>
+							</form></p>
+							<pre id="status"></pre>
 					    </div>
 				    </div>
 			    </section>
@@ -107,22 +92,8 @@ function update_status_thread() {
 }
 function update_data(obj) {
 	var result_text = obj.content;
-	var result_text_split = result_text.split("|");
-	result_text = result_text_split[1];
-	result_text = result_text.replace("\n","");
-	result_text = result_text.replace("\r","");
-	if (result_text) {
-		jQuery('#status').html('<span class="glyphicon glyphicon-refresh"></span> ' + result_text + '...');
-	} else {
-		jQuery('#status').html('<span class="glyphicon glyphicon-refresh"></span> Obtaining filter status...');
-	}
-	if(result_text == "Initializing") {
-		jQuery('#status').html('<span class="glyphicon glyphicon-refresh"></span> Initializing...');
-	} else if(result_text == "Done") {
-		jQuery('#status').html('Done. The filter rules have been reloaded.');
-		jQuery('#reloadinfo').css("visibility","hidden");
-	}
-	window.setTimeout('update_status_thread()', 2500);
+	jQuery('#status').html(result_text);
+	window.setTimeout('update_status_thread()', 200);
 }
 //]]>
 </script>
@@ -172,7 +143,7 @@ if (typeof getURL == 'undefined') {
     http_request.send(null);
   }
 }
-window.setTimeout('update_status_thread()', 2500);
+update_status_thread();
 //]]>
 </script>
 

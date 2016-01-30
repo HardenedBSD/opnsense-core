@@ -43,7 +43,7 @@ class OptionField extends BaseField
     protected $internalIsContainer = false;
 
     /**
-     * @var array
+     * @var array valid options for this list
      */
     private $internalOptionList = array();
 
@@ -76,6 +76,10 @@ class OptionField extends BaseField
     public function getNodeData()
     {
         $result = array ();
+        // if relation is not required, add empty option
+        if (!$this->internalIsRequired) {
+            $result[""] = array("value"=>"none", "selected" => 0);
+        }
         foreach ($this->internalOptionList as $optKey => $optValue) {
             if ($optKey == $this->internalValue) {
                 $selected = 1;
@@ -89,6 +93,7 @@ class OptionField extends BaseField
     }
 
     /**
+     * retrieve field validators for this field type
      * @return array returns InclusionIn validator
      */
     public function getValidators()

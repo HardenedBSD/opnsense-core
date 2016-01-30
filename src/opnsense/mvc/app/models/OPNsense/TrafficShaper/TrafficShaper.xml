@@ -54,11 +54,11 @@
                 <origin type="TextField">
                     <Required>N</Required>
                     <mask>/^([a-z,A-Z,1-9]){0,30}$/</mask>
-                    <ValidationMessage>origin should be regular text of max 30 characters</ValidationMessage>
+                    <ValidationMessage>Origin should be regular text of max 30 characters</ValidationMessage>
                 </origin>
                 <description type="TextField">
                     <Required>Y</Required>
-                    <mask>/^(.){1,255}$/</mask>
+                    <mask>/^([\t\n\v\f\r 0-9a-zA-Z.\-,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
                     <ValidationMessage>Description should be a string between 1 and 255 characters</ValidationMessage>
                 </description>
             </pipe>
@@ -104,7 +104,7 @@
                 </mask>
                 <description type="TextField">
                     <Required>Y</Required>
-                    <mask>/^(.){1,255}$/</mask>
+                    <mask>/^([\t\n\v\f\r 0-9a-zA-Z.\-,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
                     <ValidationMessage>Description should be a string between 1 and 255 characters</ValidationMessage>
                 </description>
                 <origin type="TextField">
@@ -146,6 +146,8 @@
                         <ip6>ipv6</ip6>
                         <udp>udp</udp>
                         <tcp>tcp</tcp>
+                        <tcp_ack>tcp (ACK packets only)</tcp_ack>
+                        <tcp_ack_not>tcp (non-ACK packets)</tcp_ack_not>
                         <icmp>icmp</icmp>
                         <igmp>igmp</igmp>
                         <esp>esp</esp>
@@ -202,6 +204,7 @@
                 </target>
                 <description type="TextField">
                     <Required>N</Required>
+                    <mask>/^([\t\n\v\f\r 0-9a-zA-Z.\-,_\x{00A0}-\x{FFFF}]){0,255}$/u</mask>
                 </description>
                 <origin type="TextField">
                     <Required>N</Required>

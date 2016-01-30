@@ -16,13 +16,27 @@
 		<title>{{title|default("OPNsense") }}</title>
 
         <!-- include (theme) style -->
-		<link href="/ui/themes/opnsense/build/css/main.css" media="screen, projection" rel="stylesheet">
+		<link href="/ui/themes/{{ui_theme|default('opnsense')}}/build/css/main.css" media="screen, projection" rel="stylesheet">
+
+		<!-- TODO: move to theme style -->
+		<style>
+			.menu-level-3-item {
+				font-size: 90%;
+				padding-left: 54px !important;
+			}
+			.typeahead {
+				overflow: hidden;
+			}
+		</style>
 
 		<!-- Favicon -->
-		<link href="/ui/themes/opnsense/build/images/favicon.png" rel="shortcut icon">
+		<link href="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/favicon.png" rel="shortcut icon">
 
         <!-- Stylesheet for fancy select/dropdown -->
-        <link rel="stylesheet" type="text/css" href="/ui/themes/opnsense/build/css/bootstrap-select.css">
+        <link rel="stylesheet" type="text/css" href="/ui/themes/{{ui_theme|default('opnsense')}}/build/css/bootstrap-select.css">
+
+		<!-- bootstrap dialog -->
+		<link href="/ui/themes/{{ui_theme|default('opnsense')}}/build/css/bootstrap-dialog.css" rel="stylesheet" type="text/css" />
 
         <!-- Font awesome -->
         <link rel="stylesheet" href="/ui/css/font-awesome.min.css">
@@ -41,9 +55,28 @@
                 });
 
                 // hide empty menu items
-                $('#mainmenu > div > .collapse').each(function(){
+                $('#mainmenu > div > .collapse').each(function () {
+                    // cleanup empty second level menu containers
+                    $(this).find("div.collapse").each(function () {
+                        if ($(this).children().length == 0) {
+                            $("#mainmenu").find('[href="#' + $(this).attr('id') + '"]').remove();
+                            $(this).remove();
+                        }
+                    });
+
+                    // cleanup empty first level menu items
                     if ($(this).children().length == 0) {
-                        $("#mainmenu").find('[href="#'+$(this).attr('id')+'"]').remove();
+                        $("#mainmenu").find('[href="#' + $(this).attr('id') + '"]').remove();
+                    }
+                });
+                // hide submenu items
+                $('#mainmenu .list-group-item').click(function(){
+                    if($(this).attr('href').substring(0,1) == '#') {
+                        $('#mainmenu .list-group-item').each(function(){
+                            if ($(this).attr('aria-expanded') == 'true'  && $(this).data('parent') != '#mainmenu') {
+                                $("#"+$(this).attr('href').substring(1,999)).collapse('hide');
+                            }
+                        });
                     }
                 });
 
@@ -51,12 +84,53 @@
                 initFormAdvancedUI();
                 addMultiSelectClearUI();
 
+                // hook in live menu search
+                $.ajax("/api/core/menu/search/", {
+                    type: 'get',
+                    cache: false,
+                    dataType: "json",
+                    data: {},
+                    error : function (jqXHR, textStatus, errorThrown) {
+                        console.log('menu.search : ' +errorThrown);
+                    },
+                    success: function (data) {
+                        var menusearch_items = [];
+                        $.each(data,function(idx, menu_item){
+                            if (menu_item.Url != "") {
+                                menusearch_items.push({id:menu_item.Url, name:menu_item.breadcrumb});
+                            }
+                        });
+                        $("#menu_search_box").typeahead({
+                            source: menusearch_items,
+                            matcher: function (item) {
+                                var ar = this.query.trim()
+                                if (ar == "") {
+                                    return false;
+                                }
+                                ar = ar.toLowerCase().split(/\s+/);
+                                if (ar.length == 0) {
+                                    return false;
+                                }
+                                var it = this.displayText(item).toLowerCase();
+                                for (var i = 0; i < ar.length; i++) {
+                                    if (it.indexOf(ar[i]) == -1) {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                            },
+                            afterSelect: function(item){
+                                window.location.href = item.id;
+                            }
+                        });
+                    }
+                });
+
+
+
             });
         </script>
 
-
-        <!-- bootstrap dialog -->
-        <link href="/ui/themes/opnsense/build/css/bootstrap-dialog.css" rel="stylesheet" type="text/css" />
 
         <!-- JQuery Tokenize (http://zellerda.com/projects/tokenize) -->
         <script type="text/javascript" src="/ui/js/jquery.tokenize.js"></script>
@@ -64,7 +138,10 @@
 
         <!-- Bootgrind (grid system from http://www.jquery-bootgrid.com/ )  -->
         <link rel="stylesheet" type="text/css" href="/ui/css/jquery.bootgrid.css"/>
-        <script src="/ui/js/jquery.bootgrid.js"></script>
+        <script type="text/javascript" src="/ui/js/jquery.bootgrid.js"></script>
+
+        <!-- Bootstrap type ahead -->
+        <script type="text/javascript" src="/ui/js/bootstrap3-typeahead.min.js"></script>
 
         <!-- OPNsense standard toolkit -->
         <script type="text/javascript" src="/ui/js/opnsense.js"></script>
@@ -78,8 +155,8 @@
 			<div class="container-fluid">
 				<div class="navbar-header">
 					<a class="navbar-brand" href="/">
-						<img class="brand-logo" src="/ui/themes/opnsense/build/images/default-logo.png" height="30" width="150"/>
-						<img class="brand-icon" src="/ui/themes/opnsense/build/images/icon-logo.png" height="30" width="29"/>
+						<img class="brand-logo" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/default-logo.png" height="30"/>
+						<img class="brand-icon" src="/ui/themes/{{ui_theme|default('opnsense')}}/build/images/icon-logo.png" height="30"/>
 					</a>
 					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navigation">
 						<span class="sr-only">Toggle navigation</span>
@@ -88,18 +165,18 @@
 						<span class="icon-bar"></span>
 					</button>
 				</div>
-
 				<div class="collapse navbar-collapse">
 					<ul class="nav navbar-nav navbar-right">
-						<li id="menu_messages">
-							<a href="#">{{title|default("OPNsense") }}</a>					</li>
-						<li></li><li></li><li></li>
-
-
-						<li><a href="/help.php?page=firewall_virtual_ip.php" target="_blank" title="Help for items on this page">Help</a></li>
-						<li class="active"><a href="/index.php?logout">Logout</a></li>
+						<li id="menu_messages"><a href="#">{{session_username}}@{{system_hostname}}.{{system_domain}}</a></li>
+						<li>
+							<form class="navbar-form" role="search">
+								<div class="input-group">
+									<div class="input-group-addon"><i class="fa fa-search"></i></div>
+									<input type="text" style="width: 250px;" class="form-control" tabindex="1" data-provide="typeahead" id="menu_search_box">
+								</div>
+							</form>
+						</li>
 					</ul>
-
 				</div>
 			</div>
 		</nav>
@@ -140,8 +217,7 @@
         <!-- page footer -->
 		<footer class="page-foot col-sm-push-2">
 			<div class="container-fluid">
-				<a target="_blank" href="https://www.opnsense.org/?gui22" class="redlnk">OPNsense</a> is &copy;2014 - 2015 by <a href="http://www.deciso.com" class="tblnk">Deciso B.V.</a> All Rights Reserved.
-				[<a href="/license.php" class="tblnk">view license</a>]
+				<a target="_blank" href="https://opnsense.org/" class="redlnk">OPNsense</a> (c) 2014-2016 <a href="https://www.deciso.com" class="tblnk">Deciso B.V.</a>
 			</div>
 		</footer>
 
@@ -151,6 +227,6 @@
 	<script type="text/javascript" src="/ui/js/bootstrap.min.js"></script>
 	<script type="text/javascript" src="/ui/js/bootstrap-select.min.js"></script>
     <!-- bootstrap dialog -->
-    <script src="/ui/js/bootstrap-dialog.js"></script>
+    <script src="/ui/js/bootstrap-dialog.min.js"></script>
     </body>
 </html>

@@ -28,9 +28,10 @@
 */
 
 require_once("guiconfig.inc");
-require_once("functions.inc");
 require_once("filter.inc");
 require_once("vslb.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
 
 if (!is_array($config['load_balancer'])) {
 	$config['load_balancer'] = array();
@@ -52,8 +53,8 @@ if (!$nentries) {
 $now = time();
 $year = date("Y");
 
-$pgtitle = array(gettext("Status"),gettext("Load Balancer"),gettext("Pool"));
-$shortcut_section = "relayd";
+$service_hook = 'relayd';
+
 include("head.inc");
 
 $relay_hosts = get_lb_summary();
@@ -63,7 +64,7 @@ if ($_POST) {
 		$retval = 0;
 		$retval |= filter_configure();
 		$retval |= relayd_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 		clear_subsystem_dirty('loadbalancer');
 	} else {
 		/* Keep a list of servers we find in POST variables */
@@ -109,18 +110,10 @@ if ($_POST) {
 			<div class="row">
 
 				<?php if (is_subsystem_dirty('loadbalancer')): ?><br/>
-				<?php print_info_box_np(sprintf(gettext("The load balancer configuration has been changed%sYou must apply the changes in order for them to take effect."), "<br />"));?>
-				<? endif; ?>
+				<?php print_info_box_apply(sprintf(gettext("The load balancer configuration has been changed%sYou must apply the changes in order for them to take effect."), "<br />"));?>
+				<?php endif; ?>
 
 			    <section class="col-xs-12">
-
-				<?php
-						/* active tabs */
-						$tab_array = array();
-						$tab_array[] = array(gettext("Pools"), true, "status_lb_pool.php");
-						$tab_array[] = array(gettext("Virtual Servers"), false, "status_lb_vs.php");
-						display_top_tabs($tab_array);
-					?>
 
 					<div class="tab-content content-box col-xs-12">
 
@@ -221,15 +214,14 @@ if ($_POST) {
 								</td>
 								</tr>
 								<?php endforeach; ?>
-								</tbody>
-									</table>
-								   <div class="container-fluid">
+								<tr><td colspan="5">
 									<input name="Submit" type="submit" class="btn btn-primary" value="<?= gettext("Save"); ?>" />
 									<input name="Reset"  type="reset"  class="btn btn-default" value="<?= gettext("Reset"); ?>" />
-
-							</div>
+								</td></tr>
+								</tbody>
+								</table>
 							</form>
-				    </div>
+					    </div>
 					</div>
 			    </section>
 			</div>

@@ -30,6 +30,7 @@
 require_once("guiconfig.inc");
 require_once("filter.inc");
 require_once("vpn.inc");
+require_once("interfaces.inc");
 
 if (!is_array($config['pppoes'])) {
     $config['pppoes'] = array();
@@ -42,7 +43,7 @@ if (!is_array($config['pppoes']['pppoe'])) {
 $a_pppoes = &$config['pppoes']['pppoe'];
 
 if ($_POST) {
-        $pconfig = $_POST;
+    $pconfig = $_POST;
 
     if ($_POST['apply']) {
         if (file_exists('/tmp/.vpn_pppoe.apply')) {
@@ -51,7 +52,7 @@ if ($_POST) {
                 if (!is_numeric($pppoeid)) {
                     continue;
                 }
-                if (is_array($config['pppoes']['pppoe'])) {
+                if (isset($config['pppoes']['pppoe'])) {
                     foreach ($config['pppoes']['pppoe'] as $pppoe) {
                         if ($pppoe['pppoeid'] == $pppoeid) {
                             vpn_pppoe_configure($pppoe);
@@ -60,12 +61,12 @@ if ($_POST) {
                     }
                 }
             }
-                @unlink('/tmp/.vpn_pppoe.apply');
+            @unlink('/tmp/.vpn_pppoe.apply');
         }
-            $retval = 0;
-            $retval |= filter_configure();
-            $savemsg = get_std_save_message($retval);
-            clear_subsystem_dirty('vpnpppoe');
+
+        filter_configure();
+        $savemsg = get_std_save_message();
+        clear_subsystem_dirty('vpnpppoe');
     }
 }
 
@@ -80,8 +81,6 @@ if ($_GET['act'] == "del") {
     }
 }
 
-$pgtitle = array(gettext("VPN"),gettext("PPPoE"));
-$shortcut_section = "pppoes";
 include("head.inc");
 
 $main_buttons = array(
@@ -96,15 +95,10 @@ $main_buttons = array(
 		<div class="container-fluid">
 			<div class="row">
 
-				<?php if (isset($savemsg)) {
-                    print_info_box($savemsg);
-} ?>
-				<?php if (is_subsystem_dirty('vpnpppoe')) :
-?><br/>
-				<?php print_info_box_np(gettext("The PPPoE entry list has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?>
-				<?php
-endif; ?>
-
+				<?php if (isset($savemsg)) { print_info_box($savemsg); } ?>
+				<?php if (is_subsystem_dirty('vpnpppoe')) : ?><br/>
+				<?php print_info_box_apply(gettext("The PPPoE entry list has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?>
+				<?php endif; ?>
 
 
 			    <section class="col-xs-12">
@@ -146,7 +140,7 @@ endif; ?>
 
 											<a href="vpn_pppoe.php?act=del&amp;id=<?=$i;
 ?>" onclick="return confirm('<?=gettext("Do you really want to delete this entry? All elements that still use it will become invalid (e.g. filter rules)!");
-?>')" title="<?=gettext("delete pppoe instance");?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a>
+?>')" title="<?=gettext("delete pppoe instance");?>" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a>
 										  </td>
 										</tr>
                                                 <?php $i++;

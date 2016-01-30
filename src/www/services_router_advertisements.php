@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
@@ -28,11 +29,8 @@
 */
 
 require_once("guiconfig.inc");
-
-/*  Fix failover DHCP problem
- *  http://article.gmane.org/gmane.comp.security.firewalls.pfsense.support/18749
- */
-ini_set("memory_limit","64M");
+require_once("services.inc");
+require_once("interfaces.inc");
 
 $if = $_GET['if'];
 if ($_POST['if'])
@@ -150,11 +148,9 @@ if ($_POST) {
 
 		write_config();
 		$retval = services_radvd_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 	}
 }
-
-$pgtitle = array(gettext("Services"),gettext("Router advertisements"));
 
 include("head.inc");
 
@@ -306,7 +302,7 @@ include("head.inc");
 													</select>
 												</td>
 												<td>
-													<a onclick="removeRow(this); return false;" href="#" alt="" title="<?=gettext("remove this entry"); ?>"><span class="glyphicon glyphicon-remove"></span></a>
+													<a onclick="removeRow(this); return false;" href="#" alt="" title="<?=gettext("remove this entry"); ?>"><span class="fa fa-trash text-muted"></span></a>
 												</td>
 											</tr>
 						<?php

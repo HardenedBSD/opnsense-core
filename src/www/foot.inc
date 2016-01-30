@@ -1,9 +1,8 @@
 
                 <footer class="page-foot col-sm-push-2">
 				<div class="container-fluid">
-					<a target="_blank" href="<?=$g['product_website']?>" class="redlnk"><?=$g['product_name']?></a> is &copy;
-	 <?=$g['product_copyright_years']?> by <a href="<?=$g['product_copyright_url']?>" class="tblnk"><?=$g['product_copyright_owner']?></a> All Rights Reserved.
-	[<a href="/license.php" class="tblnk">view license</a>]
+					<a target="_blank" href="<?=$g['product_website']?>" class="redlnk"><?=$g['product_name']?></a> (c)
+	 <?=$g['product_copyright_years']?> <a href="<?=$g['product_copyright_url']?>" class="tblnk"><?=$g['product_copyright_owner']?></a>
 				</div>
 			</footer>
 
@@ -62,8 +61,10 @@
 		<?php endif; ?>
 
 	<!-- bootstrap script -->
-	<script type="text/javascript" src="/javascript/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/ui/js/bootstrap.min.js"></script>
 	<!-- Fancy select with search options -->
-	<script type="text/javascript" src="/javascript/bootstrap-select.min.js"></script>
+	<script type="text/javascript" src="/ui/js/bootstrap-select.min.js"></script>
+	<!-- bootstrap dialog -->
+	<script src="/ui/js/bootstrap-dialog.min.js"></script>
 	</body>
 </html>

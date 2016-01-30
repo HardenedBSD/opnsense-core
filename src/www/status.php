@@ -29,7 +29,6 @@
 
 /* include all configuration functions */
 require_once("guiconfig.inc");
-require_once("functions.inc");
 
 function doCmdT($title, $command) {
 	$rubbish = array('|', '-', '/', '.', ' ');  /* fixes the <a> tag to be W3C compliant */
@@ -120,8 +119,10 @@ defCmdT("top | head -n5", "/usr/bin/top | /usr/bin/head -n5");
 
 defCmdT("sysctl hw.physmem","/sbin/sysctl hw.physmem");
 
-if (isset($config['captiveportal'])) {
-	defCmdT("ipfw show", "/sbin/ipfw show");
+if (is_module_loaded('ipfw')) {
+	defCmdT('ipfw queue show', '/sbin/ipfw queue show');
+	defCmdT('ipfw pipe show', '/sbin/ipfw pipe show');
+	defCmdT('ipfw show', '/sbin/ipfw show');
 }
 
 defCmdT("pfctl -sn", "/sbin/pfctl -sn");
@@ -134,7 +135,6 @@ defCmdT("pfctl -s queue -v","/sbin/pfctl -s queue -v");
 defCmdT("pfctl -s nat -v","/sbin/pfctl -s nat -v");
 
 defCmdT("PF OSFP","/sbin/pfctl -s osfp");
-
 
 defCmdT("netstat -s -ppfsync","netstat -s -ppfsync");
 
@@ -184,7 +184,11 @@ defCmdT("vmstat -z","vmstat -z");
 exec("/bin/date", $dateOutput, $dateStatus);
 $currentDate = $dateOutput[0];
 
-$pgtitle = array("{$g['product_name']}","status");
+$menuBreadcrumbs = array(
+	array('name' => gettext('Lobby')),
+	array('name' => gettext('Status')),
+);
+
 include("head.inc");
 
 ?>

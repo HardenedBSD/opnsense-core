@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) 2004-2009 Scott Ullrich <sullrich@gmail.com>
@@ -29,9 +30,11 @@
 
 require_once("guiconfig.inc");
 require_once("config.inc");
+require_once("services.inc");
+require_once("pfsense-utils.inc");
+require_once("interfaces.inc");
 
-$pgtitle = array(gettext("Status"),gettext("DHCP leases"));
-$shortcut_section = "dhcp";
+$service_hook = 'dhcpd';
 
 $leasesfile = "{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases";
 
@@ -270,8 +273,7 @@ if(count($pools) > 0) {
 }
 
 foreach($config['interfaces'] as $ifname => $ifarr) {
-	if (is_array($config['dhcpd'][$ifname]) &&
-		is_array($config['dhcpd'][$ifname]['staticmap'])) {
+	if (isset($config['dhcpd'][$ifname]['staticmap'])) {
 		foreach($config['dhcpd'][$ifname]['staticmap'] as $static) {
 			$slease = array();
 			$slease['ip'] = $static['ipaddr'];
@@ -280,6 +282,7 @@ foreach($config['interfaces'] as $ifname => $ifarr) {
 			$slease['start'] = "";
 			$slease['end'] = "";
 			$slease['hostname'] = htmlentities($static['hostname']);
+			$slease['descr'] = htmlentities($static['descr']);
 			$slease['act'] = "static";
 			$slease['online'] = in_array(strtolower($slease['mac']), $arpdata_mac) ? 'online' : 'offline';
 			$leases[] = $slease;
@@ -336,10 +339,12 @@ if(count($pools) > 0) {
 							    <td class="listhdrr"><?=gettext("IP address"); ?></td>
 							    <td class="listhdrr"><?=gettext("MAC address"); ?></td>
 							    <td class="listhdrr"><?=gettext("Hostname"); ?></td>
+							    <td class="listhdrr"><?=gettext("Description"); ?></td>
 							    <td class="listhdrr"><?=gettext("Start"); ?></td>
 							    <td class="listhdrr"><?=gettext("End"); ?></td>
-							    <td class="listhdrr"><?=gettext("Online"); ?></td>
-							    <td class="listhdrr"><?=gettext("Lease Type"); ?></td>
+							    <td class="listhdrr"><?=gettext("Status"); ?></td>
+							    <td class="listhdrr"><?=gettext("Lease type"); ?></td>
+							    <td class="listhdrr">&nbsp;</td>
 							</tr>
 							<?php
 							// Load MAC-Manufacturer table
@@ -386,29 +391,34 @@ if(count($pools) > 0) {
 							                }
 									echo "<tr>\n";
 							                echo "<td class=\"listlr\">{$fspans}{$data['ip']}{$fspane}</td>\n";
-									$mac=$data['mac'];
+									$mac = $data['mac'];
 									$mac_hi = strtoupper($mac[0] . $mac[1] . $mac[3] . $mac[4] . $mac[6] . $mac[7]);
 							                if ($data['online'] != "online") {
-										if(isset($mac_man[$mac_hi])){ // Manufacturer for this MAC is defined
+										if (isset($mac_man[$mac_hi])) { // Manufacturer for this MAC is defined
 								                        echo "<td class=\"listr\">{$fspans}<a href=\"services_wol.php?if={$data['if']}&amp;mac=$mac\" title=\"" . gettext("$mac - send Wake on LAN packet to this MAC address") ."\">{$mac}</a><br /><font size=\"-2\"><i>{$mac_man[$mac_hi]}</i></font>{$fspane}</td>\n";
-										}else{
+										} else {
 											echo "<td class=\"listr\">{$fspans}<a href=\"services_wol.php?if={$data['if']}&amp;mac={$data['mac']}\" title=\"" . gettext("send Wake on LAN packet to this MAC address") ."\">{$data['mac']}</a>{$fspane}</td>\n";
 										}
-							                }else{
-										if(isset($mac_man[$mac_hi])){ // Manufacturer for this MAC is defined
+							                } else {
+										if (isset($mac_man[$mac_hi])) { // Manufacturer for this MAC is defined
 											echo "<td class=\"listr\">{$fspans}{$mac}<br /><font size=\"-2\"><i>{$mac_man[$mac_hi]}</i></font>{$fspane}</td>\n";
-								                }else{
+								                } else {
 											echo "<td class=\"listr\">{$fspans}{$data['mac']}{$fspane}</td>\n";
 										}
 							                }
 							                echo "<td class=\"listr\">{$fspans}"  . htmlentities($data['hostname']) . "{$fspane}</td>\n";
-											if ($data['type'] != "static") {
-												echo "<td class=\"listr\">{$fspans}" . adjust_gmt($data['start']) . "{$fspane}</td>\n";
-												echo "<td class=\"listr\">{$fspans}" . adjust_gmt($data['end']) . "{$fspane}</td>\n";
-											} else {
-												echo "<td class=\"listr\">{$fspans} n/a {$fspane}</td>\n";
-												echo "<td class=\"listr\">{$fspans} n/a {$fspane}</td>\n";
-											}
+									if (isset($data['descr'])) {
+										echo "<td class=\"listr\">{$fspans}"  . htmlentities($data['descr']) . "{$fspane}</td>\n";
+									} else {
+										echo "<td class=\"listr\">{$fspans} n/a {$fspane}</td>\n";
+									}
+									if ($data['type'] != "static") {
+										echo "<td class=\"listr\">{$fspans}" . adjust_gmt($data['start']) . "{$fspane}</td>\n";
+										echo "<td class=\"listr\">{$fspans}" . adjust_gmt($data['end']) . "{$fspane}</td>\n";
+									} else {
+										echo "<td class=\"listr\">{$fspans} n/a {$fspane}</td>\n";
+										echo "<td class=\"listr\">{$fspans} n/a {$fspane}</td>\n";
+									}
 							                echo "<td class=\"listr\">{$fspans}{$data['online']}{$fspane}</td>\n";
 							                echo "<td class=\"listr\">{$fspans}{$data['act']}{$fspane}</td>\n";
 							                echo "<td valign=\"middle\">&nbsp;";

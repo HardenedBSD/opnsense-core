@@ -27,6 +27,8 @@
 	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 	POSSIBILITY OF SUCH DAMAGE.
 */
+require_once("guiconfig.inc");
+require_once("interfaces.inc");
 
 function staticmapcmp($a, $b) {
         return ipcmp($a['ipaddrv6'], $b['ipaddrv6']);
@@ -38,8 +40,6 @@ function staticmaps_sort($ifgui) {
         usort($config['dhcpdv6'][$ifgui]['staticmap'], "staticmapcmp");
 }
 
-require_once('globals.inc');
-require_once("guiconfig.inc");
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/services_dhcpv6.php');
 
@@ -162,8 +162,7 @@ if ($_POST) {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("DHCPv6"),gettext("Edit static mapping"));
-$shortcut_section = "dhcp6";
+$service_hook = 'dhcpd';
 
 include("head.inc");
 
@@ -198,7 +197,7 @@ include("head.inc");
 					                    <input name="duid" type="text" class="formfld unknown" id="duid" size="40" value="<?=htmlspecialchars($pconfig['duid']);?>" />
 					                    <br />
 					                    <span class="vexpl"><?=gettext("Enter a DUID Identifier in the following format: ");?><br />
-					"DUID-LLT - ETH -- TIME --- ---- address ----" <br />
+          "<?= gettext('DUID-LLT - ETH -- TIME --- ---- ADDR ----') ?>" <br />
 					"xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx"</span></td>
 					                </tr>
 					                <tr>
@@ -219,16 +218,16 @@ include("head.inc");
 					                </tr>
 					                <?php if($netboot_enabled) { ?>
 							<tr>
-							  <td width="22%" valign="top" class="vncell">Netboot filename</td>
+                <td width="22%" valign="top" class="vncell"><?= gettext('Netboot filename') ?></td>
 							  <td width="78%" class="vtable">
 							    <input name="filename" type="text" class="formfld unknown" id="filename" size="28" value="<?=htmlspecialchars($pconfig['filename']);?>" />
-							    <br /> <span class="vexpl">Name of the file that should be loaded when this host boots off of the network, overrides setting on main page.</span></td>
+                  <br /> <span class="vexpl"><?= gettext('Name of the file that should be loaded when this host boots off of the network, overrides setting on main page.') ?></span></td>
 							</tr>
 							<tr>
-							  <td width="22%" valign="top" class="vncell">Root Path</td>
+                <td width="22%" valign="top" class="vncell"><?= gettext('Root Path') ?></td>
 							  <td width="78%" class="vtable">
 								<input name="rootpath" type="text" class="formfld unknown" id="rootpath" size="90" value="<?=htmlspecialchars($pconfig['rootpath']);?>" />
-							    <br /> <span class="vexpl"><?=gettext("Enter the"); ?> <b><?=gettext("root-path"); ?></b>-<?=gettext("string");?>, overrides setting on main page.</span></td>
+                  <br /> <span class="vexpl"><?= gettext('Enter the root-path-string, overrides setting on main page.') ?></span></td>
 							</tr>
 							<?php } ?>
 					                <tr>

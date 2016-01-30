@@ -27,6 +27,10 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
+require_once("guiconfig.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
+
 function staticmapcmp($a, $b) {
 	return ipcmp($a['ipaddr'], $b['ipaddr']);
 }
@@ -36,9 +40,6 @@ function staticmaps_sort($ifgui) {
 
 	usort($config['dhcpd'][$ifgui]['staticmap'], "staticmapcmp");
 }
-
-require_once('globals.inc');
-require_once("guiconfig.inc");
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/services_dhcp.php');
 
@@ -305,14 +306,13 @@ if ($_POST) {
 	}
 }
 
-$closehead = false;
-$pgtitle = array(gettext("Services"),gettext("DHCP"),gettext("Edit static mapping"));
-$shortcut_section = "dhcp";
+$service_hook = 'dhcpd';
 
 include("head.inc");
 
 ?>
 
+<body>
 <script type="text/javascript">
 //<![CDATA[
 	function show_ddns_config() {
@@ -334,9 +334,7 @@ include("head.inc");
 	}
 //]]>
 </script>
-</head>
 
-<body>
 <?php include("fbegin.inc"); ?>
 
 	<section class="page-content-main">
@@ -396,16 +394,16 @@ include("head.inc");
 							                </tr>
 							                <?php if($netboot_enabled) { ?>
 									<tr>
-									  <td width="22%" valign="top" class="vncell">Netboot Filename</td>
+                    <td width="22%" valign="top" class="vncell"><?= gettext('Netboot Filename') ?></td>
 									  <td width="78%" class="vtable">
 									    <input name="filename" type="text" class="formfld unknown" id="filename" size="20" value="<?=htmlspecialchars($pconfig['filename']);?>" />
-									    <br /> <span class="vexpl">Name of the file that should be loaded when this host boots off of the network, overrides setting on main page.</span></td>
+                      <br /> <span class="vexpl"><?= gettext('Name of the file that should be loaded when this host boots off of the network, overrides setting on main page.') ?></span></td>
 									</tr>
 									<tr>
-									  <td width="22%" valign="top" class="vncell">Root Path</td>
+                    <td width="22%" valign="top" class="vncell"><?= gettext('Root Path') ?></td>
 									  <td width="78%" class="vtable">
 										<input name="rootpath" type="text" class="formfld unknown" id="rootpath" size="90" value="<?=htmlspecialchars($pconfig['rootpath']);?>" />
-									    <br /> <span class="vexpl"><?=gettext("Enter the"); ?> <b><?=gettext("root-path"); ?></b>-<?=gettext("string");?>, overrides setting on main page.</span></td>
+                      <br /> <span class="vexpl"><?= gettext("Enter the root-path-string, overrides setting on main page.") ?></span></td>
 									</tr>
 									<?php } ?>
 							                <tr>

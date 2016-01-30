@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2010 Seth Mos <seth.mos@dds.nl>.
@@ -26,8 +27,8 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-
 require_once("guiconfig.inc");
+require_once("services.inc");
 require_once("vslb.inc");
 
 if (!is_array($config['load_balancer']['lbpool'])) {
@@ -40,7 +41,8 @@ $a_vs = &$config['load_balancer']['virtual_server'];
 $a_pool = &$config['load_balancer']['lbpool'];
 $rdr_a = get_lb_redirects();
 
-$pgtitle = array(gettext("Status"),gettext("Load Balancer"),gettext("Virtual Server"));
+$service_hook = 'relayd';
+
 include("head.inc");
 
 ?>
@@ -54,18 +56,10 @@ include("head.inc");
 			<div class="row">
 
 				<?php if (is_subsystem_dirty('loadbalancer')): ?><br/>
-				<?php print_info_box_np(sprintf(gettext("The load balancer configuration has been changed%sYou must apply the changes in order for them to take effect."), "<br />"));?>
-				<? endif; ?>
+				<?php print_info_box_apply(sprintf(gettext("The load balancer configuration has been changed%sYou must apply the changes in order for them to take effect."), "<br />"));?>
+				<?php endif; ?>
 
 			    <section class="col-xs-12">
-
-				<?php
-						/* active tabs */
-						$tab_array = array();
-						$tab_array[] = array(gettext("Pools"), false, "status_lb_pool.php");
-						$tab_array[] = array(gettext("Virtual Servers"), true, "status_lb_vs.php");
-						display_top_tabs($tab_array);
-					?>
 
 					<div class="tab-content content-box col-xs-12">
 				    <div class="container-fluid">

@@ -28,8 +28,12 @@
 */
 
 require_once("guiconfig.inc");
-require_once("functions.inc");
+require_once("interfaces.inc");
 require_once("filter.inc");
+require_once("services.inc");
+require_once("system.inc");
+require_once("pfsense-utils.inc");
+require_once("unbound.inc");
 
 $pconfig['enable'] = isset($config['dnsmasq']['enable']);
 $pconfig['regdhcp'] = isset($config['dnsmasq']['regdhcp']);
@@ -98,7 +102,7 @@ if ($_POST && isset($_POST['submit'])) {
 		write_config();
 
 		$retval = services_dnsmasq_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 	}
 } elseif ($_POST && isset($_POST['apply']) ) {
 
@@ -108,7 +112,7 @@ if ($_POST && isset($_POST['submit'])) {
 		system_resolvconf_generate();
 		system_hosts_generate();
 		$retval = services_dnsmasq_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 		if ($retval == 0)
 			clear_subsystem_dirty('hosts');
 
@@ -135,9 +139,8 @@ if ($_GET['act'] == "del") {
 	}
 }
 
-$closehead = false;
-$pgtitle = array(gettext("Services"),gettext("DNS forwarder"));
-$shortcut_section = "forwarder";
+$service_hook = 'dnsmasq';
+
 include("head.inc");
 
 ?>
@@ -172,7 +175,7 @@ function show_advanced_dns() {
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('hosts')): ?><br/>
-				<?php print_info_box_np(gettext("The DNS forwarder configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The DNS forwarder configuration has been changed.") . "<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
@@ -188,9 +191,6 @@ function show_advanced_dns() {
 					    <div class="content-box-main">
 						  <div class="table-responsive">
 					<table class="table table-striped table-sort">
-									<tr>
-										<td colspan="2" valign="top" class="listtopic"><?=gettext("General DNS Forwarder Options");?></td>
-									</tr>
 									<tr>
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("Enable");?></td>
 										<td width="78%" class="vtable"><p>
@@ -395,11 +395,11 @@ function show_advanced_dns() {
 											<table border="0" cellspacing="0" cellpadding="1" summary="icons">
 												<tr>
 													<td valign="middle"><a href="services_dnsmasq_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a></td>
-													<td><a href="services_dnsmasq.php?type=host&amp;act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this host?");?>')" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a></td>
+													<td><a href="services_dnsmasq.php?type=host&amp;act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this host?");?>')" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a></td>
 												</tr>
 											</table>
 									</tr>
-									<?php if ($hostent['aliases']['item'] && is_array($hostent['aliases']['item'])): ?>
+									<?php if (isset($hostent['aliases']['item'])): ?>
 									<?php foreach ($hostent['aliases']['item'] as $alias): ?>
 									<tr>
 										<td class="listlr" ondblclick="document.location='services_dnsmasq_edit.php?id=<?=$i;?>';">
@@ -468,7 +468,7 @@ function show_advanced_dns() {
 											<?=htmlspecialchars($doment['descr']);?>&nbsp;
 										</td>
 										<td valign="middle" class="list nowrap"> <a href="services_dnsmasq_domainoverride_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-											&nbsp;<a href="services_dnsmasq.php?act=del&amp;type=doverride&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this domain override?");?>')" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a></td>
+											&nbsp;<a href="services_dnsmasq.php?act=del&amp;type=doverride&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this domain override?");?>')" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a></td>
 									</tr>
 									<?php $i++; endforeach; ?>
 									<tr style="display:none"><td></td></tr>

@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2011 Warren Baker <warren@decoy.co.za>
@@ -28,11 +29,15 @@
 
 require_once("guiconfig.inc");
 require_once("unbound.inc");
+require_once("system.inc");
+require_once("pfsense-utils.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
 
 function unbound_acl_id_used($id) {
     global $config;
 
-    if (is_array($config['unbound']['acls']))
+    if (isset($config['unbound']['acls']))
         foreach($config['unbound']['acls'] as & $acls)
             if ($id == $acls['aclid'])
                 return true;
@@ -51,7 +56,7 @@ function unbound_get_next_id() {
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/services_unbound_acls.php');
 
-if (!is_array($config['unbound']['acls']))
+if (empty($config['unbound']['acls']) || !is_array($config['unbound']['acls']))
 	$config['unbound']['acls'] = array();
 
 $a_acls = &$config['unbound']['acls'];
@@ -66,7 +71,7 @@ if (isset($_POST['act']))
 
 if ($act == "del") {
 	if (!$a_acls[$id]) {
-		redirectHeader("services_unbound_acls.php");
+		header("Location: services_unbound_acls.php");
 		exit;
 	}
 
@@ -79,23 +84,24 @@ if ($act == "new") {
 	$id = unbound_get_next_id();
 }
 
+$networkacl = array();
 if ($act == "edit") {
-	if (isset($id) && $a_acls[$id]) {
+	if (isset($id) && isset($a_acls[$id])) {
 		$pconfig = $a_acls[$id];
 		$networkacl = $a_acls[$id]['row'];
 	}
 }
 
 if ($_POST) {
-	unset($input_errors);
-	$pconfig = $_POST;
+	$input_errors = array();
 
 	if ($_POST['apply']) {
 		$retval = services_unbound_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 		if ($retval == 0)
 			clear_subsystem_dirty('unbound');
 	} else {
+		$pconfig = $_POST;
 
 		// input validation - only allow 50 entries in a single ACL
 		for($x=0; $x<50; $x++) {
@@ -121,7 +127,7 @@ if ($_POST) {
 				unset($networkacl[$x]);
 		}
 
-		if (!$input_errors) {
+		if (!isset($input_errors) || count($input_errors) == 0) {
 			if ($pconfig['Submit'] == gettext("Save")) {
 				$acl_entry = array();
 				$acl_entry['aclid'] = $pconfig['aclid'];
@@ -142,7 +148,7 @@ if ($_POST) {
 				mark_subsystem_dirty("unbound");
 				write_config();
 
-				redirectHeader("/services_unbound_acls.php");
+				header("Location: /services_unbound_acls.php");
 				exit;
 			}
 
@@ -150,8 +156,8 @@ if ($_POST) {
 	}
 }
 
-$closehead = false;
-$pgtitle = "Services: DNS Resolver: Access Lists";
+$service_hook = 'unbound';
+
 include("head.inc");
 
 ?>
@@ -183,9 +189,6 @@ include("head.inc");
 			<div class="row">
 
 				<?php
-					if (!$savemsg)
-						$savemsg = "";
-
 					if (isset($input_errors) && count($input_errors) > 0)
 						print_input_errors($input_errors);
 
@@ -193,20 +196,12 @@ include("head.inc");
 						print_info_box($savemsg);
 
 					if (is_subsystem_dirty("unbound"))
-							print_info_box_np(gettext("The settings for the DNS Resolver have changed. You must apply the configuration to take affect."));
+							print_info_box_apply(gettext("The settings for the DNS Resolver have changed. You must apply the configuration to take affect."));
 					?>
 
 
 
 			    <section class="col-xs-12">
-
-				<?php
-						$tab_array = array();
-						$tab_array[] = array(gettext("General Settings"), false, "/services_unbound.php");
-						$tab_array[] = array(gettext("Advanced settings"), false, "services_unbound_advanced.php");
-						$tab_array[] = array(gettext("Access Lists"), true, "/services_unbound_acls.php");
-						display_top_tabs($tab_array, true);
-					?>
 
 					<div class="tab-content content-box col-xs-12">
 					    <form action="services_unbound_acls.php" method="post" name="iform" id="iform">
@@ -238,10 +233,10 @@ include("head.inc");
 											<br />
 											<span class="text-default">
 													<?=gettext("Choose what to do with DNS requests that match the criteria specified below.");?> <br />
-													<?=gettext("<b>Deny:</b> This action stops queries from hosts within the netblock defined below.");?> <br />
-													<?=gettext("<b>Refuse:</b> This action also stops queries from hosts within the netblock defined below, but sends a DNS rcode REFUSED error message back to the client.");?> <br />
-													<?=gettext("<b>Allow:</b> This action allows queries from hosts within the netblock defined below.");?> <br />
-													<?=gettext("<b>Allow Snoop:</b> This action allows recursive and nonrecursive access from hosts within the netblock defined below. Used for cache snooping and ideally should only be configured for your administrative host.");?> <br />
+													<?=gettext("Deny: This action stops queries from hosts within the netblock defined below.")?> <br />
+													<?=gettext("Refuse: This action also stops queries from hosts within the netblock defined below, but sends a DNS rcode REFUSED error message back to the client.")?> <br />
+													<?=gettext("Allow: This action allows queries from hosts within the netblock defined below.")?> <br />
+													<?=gettext("Allow Snoop: This action allows recursive and nonrecursive access from hosts within the netblock defined below. Used for cache snooping and ideally should only be configured for your administrative host.")?> <br />
 											</span>
 										</td>
 									</tr>
@@ -281,7 +276,7 @@ include("head.inc");
 																<input name="description<?=$counter;?>" type="text" class="formfld unknown" id="description<?=$counter;?>" size="40" value="<?=htmlspecialchars($description);?>" />
 															</td>
 															<td>
-																<a onclick="removeRow(this); return false;" href="#" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a>
+																<a onclick="removeRow(this); return false;" href="#" class="btn btn-default btn-xs"><span class="fa fa-trash"></span></a>
 															</td>
 														</tr>
 													<?php $counter++; ?>
@@ -363,7 +358,7 @@ include("head.inc");
 												</td>
 												<td>
 													<a href="services_unbound_acls.php?act=edit&amp;id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-													<a href="services_unbound_acls.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this access list?"); ?>')" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a>
+													<a href="services_unbound_acls.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this access list?"); ?>')" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a>
 												</td>
 											</tr>
 										<?php

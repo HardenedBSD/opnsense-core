@@ -1,6 +1,7 @@
 <?php
 
 /*
+	Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
 	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) 2004 Scott Ullrich
 	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
@@ -28,17 +29,61 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-/* Include authentication routines */
-/* THIS MUST BE ABOVE ALL OTHER CODE */
-if(isset($nocsrf) && !$nocsrf) {
+require_once("util.inc");
+require_once("config.inc");
 
-function csrf_startup() {
+/* THIS MUST BE ABOVE ALL OTHER CODE */
+if (empty($nocsrf)) {
+	function csrf_startup()
+	{
 		csrf_conf('rewrite-js', '/csrf/csrf-magic.js');
 		$timeout_minutes = isset($config['system']['webgui']['session_timeout']) ?  $config['system']['webgui']['session_timeout'] : 240;
 		csrf_conf('expires', $timeout_minutes * 60);
 	}
-	require_once("csrf/csrf-magic.php");
+	require_once('csrf/csrf-magic.php');
 
+        // make sure the session is closed after executing csrf-magic
+        if (session_status() != PHP_SESSION_NONE) {
+            session_write_close();
+        }
+}
+
+function set_language()
+{
+	global $config;
+
+	$lang = 'en_US';
+	if (!empty($config['system']['language'])) {
+		$lang = $config['system']['language'];
+	}
+
+	$lang_encoding = $lang . '.UTF-8';
+	$textdomain = 'OPNsense';
+
+	putenv('LANG=' . $lang_encoding);
+	setlocale(LC_ALL, $lang_encoding);
+	textdomain($textdomain);
+	bindtextdomain($textdomain, '/usr/local/share/locale');
+	bind_textdomain_codeset($textdomain, $lang_encoding);
+}
+
+function get_current_theme()
+{
+	global $config;
+
+	$theme = 'opnsense';
+
+	if (isset($config['theme']) && is_dir('/usr/local/opnsense/www/themes/' . $config['theme'])) {
+		$theme = $config['theme'];
+	}
+
+	return $theme;
+}
+
+function html_safe($text)
+{
+	/* gettext() embedded in JavaScript can cause syntax errors */
+	return htmlspecialchars($text, ENT_QUOTES | ENT_HTML401);
 }
 
 /* make sure nothing is cached */
@@ -52,19 +97,7 @@ if (isset($omit_nocacheheaders) && $omit_nocacheheaders) {
 
 header("X-Frame-Options: SAMEORIGIN");
 
-/* parse the configuration and include all configuration functions */
-require_once("functions.inc");
-
-$g['theme'] = get_current_theme();
-
-/* Set the default interface language */
-if(isset($config['system']['language']) && $config['system']['language'] <> "") {
-	$g['language'] = $config['system']['language'];
-} elseif (!isset($g['language']) || $g['language'] == "") {
-	$g['language'] = 'en_US';
-}
-
-set_language($g['language']);
+set_language();
 
 require_once("authgui.inc");
 
@@ -73,7 +106,6 @@ $reserved_table_names = array(
         "bogons",
         "bogonsv6",
         "negate_networks",
-        "snort2c",
         "sshlockout",
         "tonatsubnets",
         "virusprot",
@@ -136,8 +168,11 @@ $wkports = array(
 	69 => "TFTP",
 	5900 => "VNC");
 
-$wlan_modes = array("bss" => "Infrastructure (BSS)", "adhoc" => "Ad-hoc (IBSS)",
-	"hostap" => "Access Point");
+$wlan_modes = array(
+	'bss' => 'Infrastructure (BSS)',
+	'adhoc' => 'Ad-hoc (IBSS)',
+	'hostap' => 'Access Point'
+);
 
 function do_input_validation($postdata, $reqdfields, $reqdfieldsn, &$input_errors)
 {
@@ -149,14 +184,18 @@ function do_input_validation($postdata, $reqdfields, $reqdfieldsn, &$input_error
 	}
 
 	for ($i = 0; $i < count($reqdfields); $i++) {
-		if ($_POST[$reqdfields[$i]] == "" && $_REQUEST[$reqdfields[$i]] == "") {
+		// why.. do you want to do this? we send data to validate and then validate something else....
+		// can't now for sure if any page uses this wrong behaviour, but it should die eventually.
+		// TODO: kill
+		if (empty($_POST[$reqdfields[$i]]) && empty($_REQUEST[$reqdfields[$i]])) {
 			$input_errors[] = sprintf(gettext("The field %s is required."), $reqdfieldsn[$i]);
 		}
 	}
 }
 
-function print_input_errors($input_errors) {
-	echo '<div class="col-xs-12"><div class="alert alert-danger alert-dismissible" role="alert">
+function print_input_errors($input_errors)
+{
+	echo '<div class="col-xs-12"><div class="alert alert-danger" role="alert">
             <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
 	';
 
@@ -167,67 +206,74 @@ function print_input_errors($input_errors) {
 	echo "</ul></div></div>";
 }
 
-function print_info_box_np($msg, $name="apply",$value="", $showapply=false) {
-	if(empty($value)) {
-		$value = gettext("Apply changes");
-	}
-
-	if(stristr($msg, gettext("apply")) != false || stristr($msg, gettext("save")) != false || stristr($msg, gettext("create")) != false || $showapply) {
-		$savebutton = "<form action=\"".$_SERVER['REQUEST_URI']."\" method=\"post\">";
-		$savebutton .= "<input name=\"{$name}\" type=\"submit\" class=\"btn btn-default\" id=\"${name}\" value=\"{$value}\" />";
-		if($_POST['if'])
-			$savebutton .= "<input type=\"hidden\" name=\"if\" value=\"" . htmlspecialchars($_POST['if']) . "\" />";
-		$savebutton.="</form>";
-	} else {
-		$savebutton = '<button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>';
-	}
-
+function print_alert_box($msg, $alert = 'warning', $button = '')
+{
 	echo <<<EOFnp
-	    <div class="col-xs-12">
-		<div class="alert alert-info alert-dismissible" role="alert">
-			{$savebutton}
-            <p>{$msg}</p>
-		</div>
-		</div>
+<div class="col-xs-12">
+	<div class="alert alert-{$alert}" role="alert">
+		{$button}
+		<p>{$msg}</p>
+	</div>
+</div>
 EOFnp;
-
 }
 
-function print_info_box_np_undo($msg, $name="apply",$value="Apply changes", $undo) {
-	if(stristr($msg, "apply") != false || stristr($msg, "save") != false || stristr($msg, "create") != false) {
+function print_info_box_apply($msg)
+{
+	$iface = !empty($_POST['if']) ? $_POST['if'] : (!empty($_GET['if']) ? $_GET['if'] : '');
+	$label = gettext('Apply changes');
+	$value = 'Apply changes';
+	$name= 'apply';
 
-		$savebutton .= "<input class=\"btn btn-default\"  type=\"button\" value=\"". gettext("Undo") . "\" onclick=\"document.location='{$undo}'\" />";
-		$savebutton .= "<input class=\"btn btn-default\"  name=\"{$name}\" type=\"submit\" class=\"formbtn\" id=\"${name}\" value=\"{$value}\" />";
-
-		if(isset($_POST['if']))
-			$savebutton .= "<input type=\"hidden\" name=\"if\" value=\"" . htmlspecialchars($_POST['if']) . "\" />";
-	} else {
-		$savebutton = "<input class=\"btn btn-default\" value=\"" . gettext("Close") . "\" type=\"button\" onclick=\"$('#redboxtable').hide();\" />";
+	$savebutton = sprintf('<form action="' . $_SERVER['REQUEST_URI'] . '" method="post">', $_SERVER['REQUEST_URI']);
+	$savebutton .= sprintf(
+		'<button type="submit" name="%s" id="%s" class="btn btn-primary pull-right" value="%s">%s</button>',
+		$name,
+		$name,
+		$value,
+		$label
+	);
+	if (!empty($iface)) {
+		$savebutton .= sprintf(
+			'<input type="hidden" name="if" value="%s"/>',
+			htmlspecialchars($iface)
+		);
 	}
+	$savebutton .= '</form>';
 
-
-	$url = $_SERVER['REQUEST_URI'];
-
-	echo <<<EOFnp
-
-	<div class="col-xs-12" id="redboxtable"><form action="{$url}" method="post">
-		<div class="alert alert-warning"  summary="red box table">
-			<p>{$msg}<br /><br /></p>
-			<div class="btn-group">
-				{$savebutton}
-				{$undobutton}
-			</div>
-		</div>
-	</form></div>
-EOFnp;
-
+	print_alert_box($msg, 'info', $savebutton);
 }
 
-function print_info_box($msg) {
-	print_info_box_np($msg);
+function print_info_box($msg)
+{
+	print_alert_box($msg, 'info');
 }
 
-function get_std_save_message($ok) {
+function print_service_banner($service)
+{
+	global $config;
+
+	switch ($service) {
+		case 'firewall':
+			if (!isset($config['system']['disablefilter'])) {
+				break;
+			}
+			print_alert_box(sprintf(
+				gettext(
+					'The firewall has globally been disabled and configured rules are ' .
+					'currently not enforced. It can be enabled in the %sFirewall/NAT%s ' .
+					'settings.'
+				),
+				'<a href="/system_advanced_firewall.php">',
+				'</a>'
+			));
+			break;
+		default:
+			break;
+	}
+}
+
+function get_std_save_message() {
 	global $d_sysrebootreqd_path;
 	$filter_related = false;
 	$filter_pages = array("nat", "filter");
@@ -257,7 +303,7 @@ function pprint_address($adr) {
 	} else if (isset($adr['network'])) {
 		$padr = $specialnets[$adr['network']];
 	} else {
-		$padr = $adr['address'];
+		$padr = isset($adr['address']) ? $adr['address'] : null;
 	}
 
 	if (isset($adr['not']))
@@ -275,9 +321,9 @@ function pprint_port($port) {
 		return "*";
 	else {
 		$srcport = explode("-", $port);
-		if ((!$srcport[1]) || ($srcport[0] == $srcport[1])) {
+		if ((empty($srcport[1])) || ($srcport[0] == $srcport[1])) {
 			$pport = $srcport[0];
-			if ($wkports[$srcport[0]]) {
+			if (!empty($wkports[$srcport[0]])) {
 				$pport .= " (" . $wkports[$srcport[0]] . ")";
 			}
 		} else
@@ -287,179 +333,157 @@ function pprint_port($port) {
 	return $pport;
 }
 
-function firewall_check_for_advanced_options(&$item) {
-	$item_set = "";
-	if($item['os'])
-		$item_set .= "os {$item['os']} ";
-	if($item['dscp'])
-		$item_set .= "dscp {$item['dscp']} ";
-	if($item['max'])
-		$item_set .= "max {$item['max']} ";
-	if($item['max-src-nodes'])
-		$item_set .= "max-src-nodes {$item['max-src-nodes']} ";
-	if($item['max-src-conn'])
-		$item_set .= "max-src-conn {$item['max-src-conn']} ";
-	if($item['max-src-states'])
-		$item_set .= "max-src-states {$item['max-src-states']} ";
-	if(isset($item['nopfsync']))
-		$item_set .= "nopfsync ";
-	if($item['statetype'] != "keep state" && $item['statetype'] != "")
-		$item_set .= "statetype {$item['statetype']} ";
-	if($item['statetimeout'])
-		$item_set .= "statetimeout {$item['statetimeout']} ";
-	if(isset($item['nosync']))
-		$item_set .= "no XMLRPC Sync ";
-	if($item['max-src-conn-rate'])
-		$item_set .= "max-src-conn-rate {$item['max-src-conn-rate']} ";
-	if($item['max-src-conn-rates'])
-		$item_set .= "max-src-conn-rates {$item['max-src-conn-rates']} ";
-	if($item['gateway'])
-		$item_set .= "gateway {$item['gateway']} ";
-	if($item['tag'])
-		$item_set .= "tag {$item['tag']} ";
-	if($item['tagged'])
-		$item_set .= "tagged {$item['tagged']} ";
-	if(isset($item['allowopts']))
-		$item_set .= "allowopts ";
-	if(isset($item['disablereplyto']))
-		$item_set .= "disable reply-to ";
-	if($item['tcpflags_any'] || $item['tcpflags1'] || $item['tcpflags2'])
-		$item_set .= "tcpflags set";
-
-	return $item_set;
-}
-
-function gentitle($title) {
-	$navlevelsep = ": ";	/* navigation level separator string */
-	if(!is_array($title))
-		return $title;
-	else
-		return join($navlevelsep, $title);
-}
-
-/* update the changedesc and changecount(er) variables */
-function update_changedesc($update) {
-	global $changedesc;
-	global $changecount;
-
-	$changedesc .= " {$update}";
-	$changecount++;
-}
-
-function clear_log_file($logfile = '/var/log/system.log', $restart_syslogd = true)
+function gentitle($breadcrumbs, $navlevelsep = ': ')
 {
-	global $config, $g;
-	if ($restart_syslogd)
-		exec("/usr/bin/killall syslogd");
-	if(isset($config['system']['disablesyslogclog'])) {
-		unlink($logfile);
-		touch($logfile);
-	} else {
-		$log_size = isset($config['syslog']['logfilesize']) ? $config['syslog']['logfilesize'] : "511488";
-		exec("/usr/local/sbin/clog -i -s {$log_size} " . escapeshellarg($logfile));
+	$output = $breadcrumbs;
+
+	if (isset($breadcrumbs[0]['name'])) {
+		$output = array();
+		foreach ($breadcrumbs as $crumb) {
+			$output[] = gettext($crumb['name']);
+		}
 	}
+
+	return join($navlevelsep, $output);
+}
+
+function clear_log($logfile, $restart_syslogd = true)
+{
+	if ($restart_syslogd) {
+		killbyname('syslogd');
+	}
+
+	foreach (glob($logfile . '.*') as $rotated) {
+		@unlink($rotated);
+	}
+
+	/* preserve file ownership and permissions */
+	if (file_exists($logfile)) {
+		$handle = fopen($logfile, 'r+');
+		if ($handle) {
+			ftruncate($handle, 0);
+			fclose($handle);
+		}
+	}
+
 	if ($restart_syslogd) {
 		system_syslogd_start();
 	}
 }
 
-function clear_all_log_files()
+function clear_clog($logfile, $restart_syslogd = true)
 {
-	killbyname('syslogd');
+	global $config;
 
-	$log_files = array(
-		"system", "filter", "dhcpd", "vpn", "pptps", "poes", "l2tps", "openvpn", "portalauth",
-		"ipsec", "ppp", "relayd", "wireless", "lighttpd", "ntpd", "gateways", "resolver", "routing"
-	);
-
-	foreach ($log_files as $lfile) {
-		clear_log_file("/var/log/{$lfile}.log", false);
+	if ($restart_syslogd) {
+		killbyname('syslogd');
 	}
 
-	system_syslogd_start();
-	killbyname("dhcpd");
-	services_dhcpd_configure();
+	$log_size = isset($config['syslog']['logfilesize']) ? $config['syslog']['logfilesize'] : '511488';
+	mwexecf('/usr/local/sbin/clog -i -s %s %s', array($log_size, $logfile));
+
+	if ($restart_syslogd) {
+		system_syslogd_start();
+	}
 }
 
-function dump_clog($logfile, $tail, $withorig = true, $grepfor = "", $grepinvert = "") {
-	global $g, $config;
-	$sor = isset($config['syslog']['reverse']) ? "-r" : "";
-	$logarr = "";
-	$grepline = "  ";
-	if(is_array($grepfor))
-		$grepline .= " | /usr/bin/egrep " . escapeshellarg(implode("|", $grepfor));
-	if(is_array($grepinvert))
-		$grepline .= " | /usr/bin/egrep -v " . escapeshellarg(implode("|", $grepinvert));
-	if (is_dir($logfile)) {
-		$logarr = array("File $logfile is a directory.");
-	} elseif (file_exists($logfile) && filesize($logfile) == 0) {
-		$logarr = array("Log file started.");
-	} else {
-		if($config['system']['disablesyslogclog']) {
-			exec("cat " . escapeshellarg($logfile) . "{$grepline} | /usr/bin/tail {$sor} -n " . escapeshellarg($tail), $logarr);
-		} else {
-			exec("/usr/local/sbin/clog " . escapeshellarg($logfile) . "{$grepline}| grep -v \"CLOG\" | grep -v \"\033\" | /usr/bin/tail {$sor} -n " . escapeshellarg($tail), $logarr);
-		}
+function print_dump($logarr)
+{
+	global $config;
+
+	if (!is_array($logarr)) {
+		echo "<tr valign=\"top\">\n";
+		echo "<td class=\"listlr\" colspan=\"2\">" . htmlspecialchars($logarr) . "</td>\n";
+		echo "</tr>\n";
+		return;
 	}
+
 	foreach ($logarr as $logent) {
-			$logent = preg_split("/\s+/", $logent, 6);
-			echo "<tr valign=\"top\">\n";
-			if ($withorig) {
-					$entry_date_time = htmlspecialchars(join(" ", array_slice($logent, 0, 3)));
-					$entry_text = ($logent[3] ==  $config['system']['hostname']) ? "" : $logent[3] . " ";
-					$entry_text .= htmlspecialchars($logent[4] . " " . $logent[5]);
-					echo "<td class=\"listlr nowrap\">{$entry_date_time}</td>\n";
-					echo "<td class=\"listr\">{$entry_text}</td>\n";
-			} else {
-					echo "<td class=\"listlr\" colspan=\"2\">" . htmlspecialchars($logent[5]) . "</td>\n";
-			}
-			echo "</tr>\n";
+		$logent = preg_split("/\s+/", $logent, 6);
+		echo "<tr valign=\"top\">\n";
+		$entry_date_time = htmlspecialchars(join(" ", array_slice($logent, 0, 3)));
+		$entry_text = ($logent[3] ==  $config['system']['hostname']) ? "" : $logent[3] . " ";
+		$entry_text .= htmlspecialchars($logent[4] . " " . $logent[5]);
+		echo "<td class=\"listlr nowrap\">{$entry_date_time}</td>\n";
+		echo "<td class=\"listr\">{$entry_text}</td>\n";
+		echo "</tr>\n";
 	}
 }
 
+function dump_clog($logfile, $tail, $grepfor = '')
+{
+	global $config;
 
-/* Check if variable has changed, update and log if it has
- * returns true if var changed
- * varname = variable name in plain text
- * orig = original value
- * new = new value
- */
-function update_if_changed($varname, & $orig, $new) {
-	if (is_array($orig) && is_array($new)) {
-		$a_diff = array_diff($orig, $new);
-		foreach ($a_diff as $diff) {
-			update_changedesc("removed {$varname}: \"{$diff}\"");
-		}
-		$a_diff = array_diff($new, $orig);
-		foreach ($a_diff as $diff) {
-			update_changedesc("added {$varname}: \"{$diff}\"");
-		}
-		$orig = $new;
-		return true;
+	$sor = isset($config['syslog']['reverse']) ? '-r' : '';
+	$logarr = array();
+	$grepline = '';
 
-	} else {
-		if ($orig != $new) {
-			update_changedesc("{$varname}: \"{$orig}\" -> \"{$new}\"");
-			$orig = $new;
-			return true;
-		}
+	$grepfor = preg_split('/\s+/', trim($grepfor));
+
+	foreach ($grepfor as $pattern) {
+		$grepline .= ' | /usr/bin/egrep -i ' . escapeshellarg($pattern);
 	}
-	return false;
+
+	if (is_dir($logfile)) {
+		$logarr = sprintf(gettext('File %s is a directory.'), $logfile);
+	} elseif (!file_exists($logfile)) {
+		$logarr = sprintf(gettext('File %s doesn\'t exist.'), $logfile);
+	} else {
+		exec("/usr/local/sbin/clog " . escapeshellarg($logfile) . " {$grepline}| grep -v \"CLOG\" | grep -v \"\033\" | /usr/bin/tail {$sor} -n " . escapeshellarg($tail), $logarr);
+	}
+
+	if (is_array($logarr) && !count($logarr)) {
+		$logarr = sprintf(gettext('File %s yielded no results.'), $logfile);
+	}
+
+	print_dump($logarr);
+}
+
+function dump_log($logfile, $tail, $grepfor = '')
+{
+	global $config;
+
+	$sor = isset($config['syslog']['reverse']) ? '-r' : '';
+	$logarr = array();
+	$grepline = '';
+
+	$grepfor = preg_split('/\s+/', trim($grepfor));
+
+	foreach ($grepfor as $pattern) {
+		$grepline .= ' | /usr/bin/egrep -i ' . escapeshellarg($pattern);
+	}
+
+	if (is_dir($logfile)) {
+		$logarr = sprintf(gettext('File %s is a directory.'), $logfile);
+	} elseif (!file_exists($logfile)) {
+		$logarr = sprintf(gettext('File %s doesn\'t exist.'), $logfile);
+	} else {
+		exec("cat " . escapeshellarg($logfile) . " {$grepline} | /usr/bin/tail {$sor} -n " . escapeshellarg($tail), $logarr);
+	}
+
+	if (is_array($logarr) && !count($logarr)) {
+		$logarr = sprintf(gettext('File %s yielded no results.'), $logfile);
+	}
+
+	print_dump($logarr);
 }
 
 function address_to_pconfig($adr, &$padr, &$pmask, &$pnot, &$pbeginport, &$pendport) {
 	if (isset($adr['any']))
 		$padr = "any";
-	else if ($adr['network'])
+	else if (isset($adr['network']))
 		$padr = $adr['network'];
-	else if ($adr['address']) {
-		list($padr, $pmask) = explode("/", $adr['address']);
-		if (!$pmask) {
+	else if (isset($adr['address'])) {
+		if (strpos($adr['address'], '/') !== false) {
+			list($padr, $pmask) = explode("/", $adr['address']);
+		} else {
+			$padr = $adr['address'];
 			if (is_ipaddrv6($padr))
 				$pmask = 128;
 			else
 				$pmask = 32;
 		}
+
 	}
 
 	if (isset($adr['not']))
@@ -467,10 +491,13 @@ function address_to_pconfig($adr, &$padr, &$pmask, &$pnot, &$pbeginport, &$pendp
 	else
 		$pnot = 0;
 
-	if ($adr['port']) {
-		list($pbeginport, $pendport) = explode("-", $adr['port']);
-		if (!$pendport)
+	if (isset($adr['port'])) {
+		if (strpos($adr['port'], '-') !== false) {
+			list($pbeginport, $pendport) = explode("-", $adr['port']);
+		} else {
+			$pbeginport = $adr['port'];
 			$pendport = $pbeginport;
+		}
 	} else if (!is_alias($pbeginport) && !is_alias($pendport)) {
 		$pbeginport = "any";
 		$pendport = "any";
@@ -478,38 +505,39 @@ function address_to_pconfig($adr, &$padr, &$pmask, &$pnot, &$pbeginport, &$pendp
 }
 
 function pconfig_to_address(&$adr, $padr, $pmask, $pnot=false, $pbeginport=0, $pendport=0) {
-	$adr = array();
-
-	if ($padr == "any")
-		$adr['any'] = true;
-	else if (is_specialnet($padr))
-		$adr['network'] = $padr;
-	else {
-		$adr['address'] = $padr;
-		if (is_ipaddrv6($padr)) {
-			if ($pmask != 128)
-				$adr['address'] .= "/" . $pmask;
+		$adr = array();
+		if ($padr == "any") {
+				$adr['any'] = true;
+		} elseif (is_specialnet($padr)) {
+				$adr['network'] = $padr;
+		} elseif (is_alias($padr)) {
+				$adr['address'] = $padr;
 		} else {
-			if ($pmask != 32)
-				$adr['address'] .= "/" . $pmask;
+			$adr['address'] = $padr;
+			if (is_ipaddrv6($padr)) {
+				if ($pmask != 128)
+					$adr['address'] .= "/" . $pmask;
+			} else {
+				if ($pmask != 32)
+					$adr['address'] .= "/" . $pmask;
+			}
 		}
-	}
 
-	if ($pnot)
-		$adr['not'] = true;
-	else
-		unset($adr['not']);
+		if ($pnot) {
+				$adr['not'] = true;
+		} elseif (isset($adr['not'])) {
+				unset($adr['not']);
+		}
 
-	if (($pbeginport != 0) && ($pbeginport != "any")) {
-		if ($pbeginport != $pendport)
-			$adr['port'] = $pbeginport . "-" . $pendport;
-		else
-			$adr['port'] = $pbeginport;
-	}
-
-	if(is_alias($pbeginport)) {
-		$adr['port'] = $pbeginport;
-	}
+		if(is_alias($pbeginport)) {
+				$adr['port'] = $pbeginport;
+		} elseif (($pbeginport != 0) && ($pbeginport != "any")) {
+				if ($pbeginport != $pendport) {
+						$adr['port'] = $pbeginport . "-" . $pendport;
+				} else {
+						$adr['port'] = $pbeginport;
+				}
+		}
 }
 
 function is_specialnet($net) {
@@ -533,9 +561,10 @@ function is_specialnet($net) {
  * RESULT
  *   null
  ******/
-function display_top_tabs(& $tab_array, $no_drop_down = false) {
+function display_top_tabs(& $tab_array, $no_drop_down = false)
+{
 	global $config;
-	global $g;
+
 	$tab_array_char_limit = 92;
 
 	/*  does the user have access to this tab?
@@ -593,9 +622,6 @@ function display_top_tabs(& $tab_array, $no_drop_down = false) {
 	}
 }
 
-
-
-
 $timezone = $config['system']['timezone'];
 if (!$timezone) {
 	$timezone = 'Etc/UTC';
@@ -605,19 +631,31 @@ date_default_timezone_set($timezone);
 
 function get_crash_report($pedantic = false)
 {
-	global $g;
-
-	$savemsg = "{$g['product_name']} has detected a crash report or programming bug. Click <a href='crash_reporter.php'>here</a> for more information.";
-	$skip_files = array('.', '..', 'minfree', '');
+	$savemsg = sprintf(
+		gettext('A problem was detected. Click %shere%s for more information.'),
+		'<a href="/crash_reporter.php">',
+		'</a>'
+	);
+	$skip_files = array('.', '..', 'minfree', 'bounds', '');
+	$PHP_errors_log = '/tmp/PHP_errors.log';
+	$excludes = array();
 	$count = 0;
 
-	if (file_exists('/tmp/PHP_errors.log')) {
-		if ($pedantic) {
-			$total = `/usr/bin/wc -l /tmp/PHP_errors.log | /usr/bin/awk '{ print $1 }'`;
-		} else {
-			/* only notify about crash report when there's an error */
-			$total = `/usr/bin/grep -v 'PHP Warning:' /tmp/PHP_errors.log | /usr/bin/wc -l | /usr/bin/awk '{ print $1 }'`;
+	if (!$pedantic) {
+		$excludes[] = 'PHP Notice:';
+		$excludes[] = 'PHP Startup: Unable to load dynamic library \'/usr/local/lib/php/20131226/suhosin.so\' - /usr/local/lib/php/20131226/suhosin.so: Undefined symbol "ps_globals" in Unknown on line 0';
+	}
+
+	if (file_exists($PHP_errors_log)) {
+		$extra = '';
+		foreach ($excludes as $exclude) {
+			$extra .= sprintf('/usr/bin/grep -v %s | ', escapeshellarg($exclude));
 		}
+		$total = shell_exec(sprintf(
+			'/bin/cat %s | %s /usr/bin/wc -l | /usr/bin/awk \'{ print $1 }\'',
+			$PHP_errors_log,
+			$extra
+		));
 		if ($total > 0) {
 			$count++;
 		}
@@ -635,4 +673,59 @@ function get_crash_report($pedantic = false)
 	}
 
 	return $savemsg;
+}
+
+function get_menu_messages()
+{
+	global $config;
+
+	$menu_messages = '';
+	if (are_notices_pending()) {
+		$notices = get_notices();
+		$requests = array();
+
+		## Get Query Arguments from URL ###
+		foreach ($_REQUEST as $key => $value) {
+			if ($key != "PHPSESSID") {
+				$requests[] = $key.'='.$value;
+			}
+		}
+
+		if (is_array($requests)) {
+			$request_string = implode("&", $requests);
+		}
+
+		if (is_array($notices)) {
+			$notice_msgs = "<ul class=\"dropdown-menu\" role=\"menu\">";
+
+			$notice_msgs .= "<li><a href=\"#\" onclick=\"notice_action('acknowledge','all');\" >".gettext("Acknowledge All Notices")."</a></li><li class=\"divider\"></li>";
+
+			foreach ($notices as $key => $value) {
+				$date = date("m-d-y H:i:s", $key);
+				$noticemsg = ($value['notice'] != "" ? $value['notice'] : $value['id']);
+				$noticemsg = preg_replace("/(\"|\'|\n|<.?\w+>)/i","",$noticemsg);
+				$alert_action ="onclick=\"notice_action('acknowledge','{$key}'); jQuery(this).parent().parent().remove();\"";
+				$notice_msgs .= "<li><a href=\"#\"  {$alert_action}>{$date} [ ".htmlspecialchars($noticemsg)."]</a></li>";
+			}
+
+			$notice_msgs .="</ul>";
+
+			if (count($notices) == 1) {
+				$msg= sprintf("%1$02d",count($notices))." ".gettext("unread notice");
+			} else {
+				$msg= sprintf("%1$02d",count($notices))." ".gettext("unread notices");
+			}
+
+			$menu_messages.="<a href=\"/\" class=\"dropdown-toggle \" data-toggle=\"dropdown\" role=\"button\" aria-expanded=\"false\"><span class=\"text-primary\">{$msg}&nbsp;</span><span class=\"caret text-primary\"></span></a>{$notice_msgs}\n";
+		}
+	} else {
+		$menu_messages .= sprintf(
+			'<a href="#">%s@%s.%s</a>',
+			$_SESSION['Username'],
+			$config['system']['hostname'],
+			$config['system']['domain']
+		);
+	}
+
+	return ($menu_messages);
 }

@@ -37,7 +37,6 @@ ob_start(null, "1000");
 
 ## Load Essential Includes
 require_once('guiconfig.inc');
-require_once('notices.inc');
 
 if (isset($_REQUEST['closenotice'])) {
     close_notice($_REQUEST['closenotice']);
@@ -135,6 +134,9 @@ if ($config['widgets'] && $config['widgets']['sequence'] != "") {
     foreach ($widgetlist as $widget) {
         $dashpos = strpos($widget, "-");
         $widgetname = substr($widget, 0, $dashpos);
+        if (!in_array($widgetname, $widgetnames)) {
+            continue;
+        }
         $colposition = strpos($widget, ":");
         $displayposition = strrpos($widget, ":");
         $colpos[] = substr($widget, $colposition+1, $displayposition - $colposition-1);
@@ -341,9 +343,6 @@ function changeTabDIV(selectedDiv){
 </script>
 EOD;
 
-
-## Set Page Title and Include Header
-$pgtitle = array(gettext('Lobby'), gettext('Dashboard'));
 include("head.inc");
 
 ?>
@@ -384,7 +383,7 @@ if (isset($config['trigger_initial_wizard'])) :
 				<div class="content-box" style="padding: 20px;">
 							<div class="table-responsive">
 								<?php
-                                echo "<img src=\"/themes/{$g['theme']}/assets/images/default-logo.png\" border=\"0\" alt=\"logo\" /><p>\n";
+                                echo "<img src=\"/ui/themes/{$themename}/build/images/default-logo.png\" border=\"0\" alt=\"logo\" /><p>\n";
                                 ?>
 								<br />
 								<div class="content-box-main">
@@ -401,7 +400,7 @@ if (isset($config['trigger_initial_wizard'])) :
 			</div>
 		</div>
 	</section>
-	<meta http-equiv="refresh" content="3;url=wizard.php?xml=setup_wizard.xml">
+	<meta http-equiv="refresh" content="3;url=wizard.php">
 	<?php exit; ?>
 <?php
 endif; ?>
@@ -484,7 +483,7 @@ endif; ?>
                             $firstprint = true;
                         } else {
                             switch ($widget) {
-                                case "interfaces.widget.php":
+                                case "interface_list.widget.php":
                                 case "traffic_graphs.widget.php":
                                     $divdisplay = "block";
                                     $display = "block";
@@ -577,11 +576,12 @@ endif; ?>
 } ?>
 
 									<?php
-                                    if ($divdisplay == "block") {
-                                        include($directory . $widget);
-                                    }
-                                    ?>
-									<?php $widgetcounter++; ?>
+                                    if (file_exists($directory . $widget)) {
+                                        if ($divdisplay == 'block') {
+                                            include($directory . $widget);
+                                        }
+                                    } ?>
+					<?php $widgetcounter++; ?>
 							</div>
 				            </div>
 				        </section>

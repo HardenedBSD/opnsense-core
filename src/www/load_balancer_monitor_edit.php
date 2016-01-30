@@ -1,6 +1,7 @@
 <?php
+
 /*
-		Copyright (C) 2014-2015 Deciso B.V.
+	Copyright (C) 2014-2015 Deciso B.V.
         Copyright (C) 2008 Bill Marquette <bill.marquette@gmail.com>.
         All rights reserved.
 
@@ -27,6 +28,8 @@
 */
 
 require_once("guiconfig.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
 
 $rfc2616 = array(
 	100 => "100 Continue",
@@ -124,12 +127,7 @@ if (isset($id) && $a_monitor[$id]) {
 	$pconfig['options']['code'] = 200;
 }
 
-$changedesc = gettext("Load Balancer: Monitor:") . " ";
-$changecount = 0;
-
 if ($_POST) {
-	$changecount++;
-
 	unset($input_errors);
 	$pconfig = $_POST;
 
@@ -200,19 +198,16 @@ if ($_POST) {
 
 	if (!$input_errors) {
 		$monent = array();
-		if(isset($id) && $a_monitor[$id])
-			$monent = $a_monitor[$id];
-		if($monent['name'] != "")
-			$changedesc .= " " . sprintf(gettext("modified '%s' monitor:"), $monent['name']);
 
-		update_if_changed("name", $monent['name'], $pconfig['name']);
-		update_if_changed("type", $monent['type'], $pconfig['type']);
-		update_if_changed("description", $monent['descr'], $pconfig['descr']);
+		if (isset($id) && $a_monitor[$id]) {
+			$monent = $a_monitor[$id];
+		}
+
+		$monent['name'] = $pconfig['name'];
+		$monent['type'] = $pconfig['type'];
+		$monent['descr'] = $pconfig['descr'];
 		if($pconfig['type'] == "http" || $pconfig['type'] == "https" ) {
 			/* log updates, then clear array and reassign - dumb, but easiest way to have a clear array */
-			update_if_changed("path", $monent['options']['path'], $pconfig['options']['path']);
-			update_if_changed("host", $monent['options']['host'], $pconfig['options']['host']);
-			update_if_changed("code", $monent['options']['code'], $pconfig['options']['code']);
 			$monent['options'] = array();
 			$monent['options']['path'] = $pconfig['options']['path'];
 			$monent['options']['host'] = $pconfig['options']['host'];
@@ -220,8 +215,6 @@ if ($_POST) {
 		}
 		if($pconfig['type'] == "send" ) {
 			/* log updates, then clear array and reassign - dumb, but easiest way to have a clear array */
-			update_if_changed("send", $monent['options']['send'], $pconfig['options']['send']);
-			update_if_changed("expect", $monent['options']['expect'], $pconfig['options']['expect']);
 			$monent['options'] = array();
 			$monent['options']['send'] = $pconfig['options']['send'];
 			$monent['options']['expect'] = $pconfig['options']['expect'];
@@ -237,24 +230,21 @@ if ($_POST) {
 					$config['load_balancer']['lbpool'][$i]['monitor'] = $monent['name'];
 			}
 			$a_monitor[$id] = $monent;
-		} else
+		} else {
 			$a_monitor[] = $monent;
-
-		if ($changecount > 0) {
-			/* Mark config dirty */
-			mark_subsystem_dirty('loadbalancer');
-			write_config($changedesc);
 		}
 
+		mark_subsystem_dirty('loadbalancer');
+		write_config();
 		header("Location: load_balancer_monitor.php");
 		exit;
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("Load Balancer"),gettext("Monitor"),gettext("Edit"));
-$shortcut_section = "relayd";
+$service_hook = 'relayd';
 
 include("head.inc");
+
 $types = array("icmp" => gettext("ICMP"), "tcp" => gettext("TCP"), "http" => gettext("HTTP"), "https" => gettext("HTTPS"), "send" => gettext("Send/Expect"));
 
 ?>
@@ -308,13 +298,13 @@ $types = array("icmp" => gettext("ICMP"), "tcp" => gettext("TCP"), "http" => get
 									<tr align="left">
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("Name"); ?></td>
 										<td width="78%" class="vtable" colspan="2">
-											<input name="name" type="text" <?if(isset($pconfig['name'])) echo "value=\"" . htmlspecialchars($pconfig['name']) . "\"";?> size="16" maxlength="16" />
+											<input name="name" type="text" <?php if(isset($pconfig['name'])) echo "value=\"" . htmlspecialchars($pconfig['name']) . "\"";?> size="16" maxlength="16" />
 										</td>
 									</tr>
 									<tr align="left">
 										<td width="22%" valign="top" class="vncellreq"><?=gettext("Description"); ?></td>
 										<td width="78%" class="vtable" colspan="2">
-											<input name="descr" type="text" <?if(isset($pconfig['descr'])) echo "value=\"" . htmlspecialchars($pconfig['descr']) . "\"";?> size="64" />
+											<input name="descr" type="text" <?php if(isset($pconfig['descr'])) echo "value=\"" . htmlspecialchars($pconfig['descr']) . "\"";?> size="64" />
 										</td>
 									</tr>
 									<tr align="left">
@@ -345,26 +335,26 @@ $types = array("icmp" => gettext("ICMP"), "tcp" => gettext("TCP"), "http" => get
 												<tr align="left">
 													<td valign="top" align="right" class="vtable"><?=gettext("Path"); ?></td>
 													<td class="vtable" colspan="2">
-														<input name="http_options_path" type="text" <?if(isset($pconfig['options']['path'])) echo "value=\"" . htmlspecialchars($pconfig['options']['path']) . "\"";?> size="64" />
+														<input name="http_options_path" type="text" <?php if(isset($pconfig['options']['path'])) echo "value=\"" . htmlspecialchars($pconfig['options']['path']) . "\"";?> size="64" />
 													</td>
 												</tr>
 												<tr align="left">
 													<td valign="top"  align="right" class="vtable"><?=gettext("Host"); ?></td>
 													<td class="vtable" colspan="2">
-														<input name="http_options_host" type="text" <?if(isset($pconfig['options']['host'])) echo "value=\"" . htmlspecialchars($pconfig['options']['host']) . "\"";?> size="64" /><br /><?=gettext("Hostname for Host: header if needed."); ?>
+														<input name="http_options_host" type="text" <?php if(isset($pconfig['options']['host'])) echo "value=\"" . htmlspecialchars($pconfig['options']['host']) . "\"";?> size="64" /><br /><?=gettext("Hostname for Host: header if needed."); ?>
 													</td>
 												</tr>
 												<tr align="left">
 													<td valign="top"  align="right" class="vtable"><?=gettext("HTTP Code"); ?></td>
 													<td class="vtable" colspan="2">
-														<?= print_rfc2616_select("http_options_code", $pconfig['options']['code']); ?>
+														<?= print_rfc2616_select("http_options_code", isset($pconfig['options']['code'])?$pconfig['options']['code']:""); ?>
 													</td>
 												</tr>
 							<!-- BILLM: XXX not supported digest checking just yet
 												<tr align="left">
 													<td width="22%" valign="top" class="vncell">MD5 Page Digest</td>
 													<td width="78%" class="vtable" colspan="2">
-														<input name="digest" type="text" <?if(isset($pconfig['digest'])) echo "value=\"" . htmlspecialchars($pconfig['digest']) . "\"";?>size="32"><br /><b>TODO: add fetch functionality here</b>
+														<input name="digest" type="text" <?php if(isset($pconfig['digest'])) echo "value=\"" . htmlspecialchars($pconfig['digest']) . "\"";?>size="32"><br /><b>TODO: add fetch functionality here</b>
 													</td>
 												</tr>
 							-->
@@ -378,19 +368,19 @@ $types = array("icmp" => gettext("ICMP"), "tcp" => gettext("TCP"), "http" => get
 												<tr align="left">
 													<td valign="top"  align="right" class="vtable"><?=gettext("Path"); ?></td>
 													<td class="vtable" colspan="2">
-														<input name="https_options_path" type="text" <?if(isset($pconfig['options']['path'])) echo "value=\"" . htmlspecialchars($pconfig['options']['path']) ."\"";?> size="64" />
+														<input name="https_options_path" type="text" <?php if(isset($pconfig['options']['path'])) echo "value=\"" . htmlspecialchars($pconfig['options']['path']) ."\"";?> size="64" />
 													</td>
 												</tr>
 												<tr align="left">
 													<td valign="top"  align="right" class="vtable"><?=gettext("Host"); ?></td>
 													<td class="vtable" colspan="2">
-														<input name="https_options_host" type="text" <?if(isset($pconfig['options']['host'])) echo "value=\"" . htmlspecialchars($pconfig['options']['host']) . "\"";?> size="64" /><br /><?=gettext("Hostname for Host: header if needed."); ?>
+														<input name="https_options_host" type="text" <?php if(isset($pconfig['options']['host'])) echo "value=\"" . htmlspecialchars($pconfig['options']['host']) . "\"";?> size="64" /><br /><?=gettext("Hostname for Host: header if needed."); ?>
 													</td>
 												</tr>
 												<tr align="left">
 													<td valign="top"  align="right" class="vtable"><?=gettext("HTTP Code"); ?></td>
 													<td class="vtable" colspan="2">
-														<?= print_rfc2616_select("https_options_code", $pconfig['options']['code']); ?>
+														<?= print_rfc2616_select("https_options_code", isset($pconfig['options']['code'])?$pconfig['options']['code']:""); ?>
 													</td>
 												</tr>
 							<!-- BILLM: XXX not supported digest checking just yet
@@ -398,7 +388,7 @@ $types = array("icmp" => gettext("ICMP"), "tcp" => gettext("TCP"), "http" => get
 												<tr align="left">
 													<td width="22%" valign="top" class="vncellreq">MD5 Page Digest</td>
 													<td width="78%" class="vtable" colspan="2">
-														<input name="digest" type="text" <?if(isset($pconfig['digest'])) echo "value=\"" . htmlspecialchars($pconfig['digest']) . "\"";?>size="32"><br /><b>TODO: add fetch functionality here</b>
+														<input name="digest" type="text" <?php if(isset($pconfig['digest'])) echo "value=\"" . htmlspecialchars($pconfig['digest']) . "\"";?>size="32"><br /><b>TODO: add fetch functionality here</b>
 													</td>
 												</tr>
 							-->
@@ -412,13 +402,13 @@ $types = array("icmp" => gettext("ICMP"), "tcp" => gettext("TCP"), "http" => get
 												<tr align="left">
 													<td valign="top"  align="right" class="vtable"><?=gettext("Send string"); ?></td>
 													<td class="vtable" colspan="2">
-														<input name="send_options_send" type="text" <?if(isset($pconfig['options']['send'])) echo "value=\"" . htmlspecialchars($pconfig['options']['send']) . "\"";?> size="64" />
+														<input name="send_options_send" type="text" <?php if(isset($pconfig['options']['send'])) echo "value=\"" . htmlspecialchars($pconfig['options']['send']) . "\"";?> size="64" />
 													</td>
 												</tr>
 												<tr align="left">
 													<td valign="top" align="right"  class="vtable"><?=gettext("Expect string"); ?></td>
 													<td class="vtable" colspan="2">
-														<input name="send_options_expect" type="text" <?if(isset($pconfig['options']['expect'])) echo "value=\"" . htmlspecialchars($pconfig['options']['expect']) . "\"";?> size="64" />
+														<input name="send_options_expect" type="text" <?php if(isset($pconfig['options']['expect'])) echo "value=\"" . htmlspecialchars($pconfig['options']['expect']) . "\"";?> size="64" />
 													</td>
 												</tr>
 											</table>

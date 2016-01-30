@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    Copyright (C) 2015 Deciso B.V.
  *
@@ -26,6 +27,7 @@
  *    POSSIBILITY OF SUCH DAMAGE.
  *
  */
+
 namespace OPNsense\Core\Api;
 
 use \OPNsense\Base\ApiControllerBase;
@@ -45,31 +47,54 @@ class FirmwareController extends ApiControllerBase
     {
         $this->sessionClose(); // long running action, close session
         $backend = new Backend();
-        $response = json_decode(trim($backend->configdRun("firmware pkgstatus")), true);
+        $response = json_decode(trim($backend->configdRun('firmware check')), true);
 
         if ($response != null) {
-            if (array_key_exists("connection", $response) && $response["connection"]=="error") {
-                $response["status"] = "error";
-                $response["status_msg"] = "Connection Error";
-            } elseif (array_key_exists("repository", $response) && $response["repository"]=="error") {
-                $response["status"] = "error";
-                $response["status_msg"] = "Repository Problem";
-            } elseif (array_key_exists("updates", $response) && $response['updates'] == 0) {
-                $response["status"] = "none";
-                $response["status_msg"] = "no updates found";
-            } elseif (array_key_exists(0, $response["upgrade_packages"]) &&
-                $response["upgrade_packages"][0]["name"] == "pkg") {
-                $response["status"] = "ok";
-                $response["status_upgrade_action"] = "pkg";
-                $response["status_msg"] = "There is a mandatory update for the package manager. ".
-                    "Please install and check for updates again.";
-            } elseif (array_key_exists("updates", $response)) {
-                $response["status"] = "ok";
-                $response["status_upgrade_action"] = "all";
-                $response["status_msg"] = sprintf("A total of %s update(s) are available.", $response["updates"]);
+            if (array_key_exists('connection', $response) && $response['connection'] == 'error') {
+                $response['status_msg'] = gettext('Connection error.');
+                $response['status'] = 'error';
+            } elseif (array_key_exists('repository', $response) && $response['repository'] == 'error') {
+                $response['status_msg'] = gettext('Repository problem.');
+                $response['status'] = 'error';
+            } elseif (array_key_exists('updates', $response) && $response['updates'] == 0) {
+                $response['status_msg'] = gettext('There are no updates available.');
+                $response['status'] = 'none';
+            } elseif (array_key_exists(0, $response['upgrade_packages']) &&
+                $response['upgrade_packages'][0]['name'] == 'pkg') {
+                $response['status_upgrade_action'] = 'pkg';
+                $response['status'] = 'ok';
+                $response['status_msg'] =
+                    gettext(
+                        'There is a mandatory update for the package manager available. ' .
+                        'Please install and fetch updates again.'
+                    );
+            } elseif (array_key_exists('updates', $response)) {
+                $response['status_upgrade_action'] = 'all';
+                $response['status'] = 'ok';
+                if ($response['updates'] == 1) {
+                    /* keep this dynamic for template translation even though %s is always '1' */
+                    $response['status_msg'] = sprintf(
+                        gettext('There is %s update available, total download size is %s.'),
+                        $response['updates'],
+                        $response['download_size']
+                    );
+                } else {
+                    $response['status_msg'] = sprintf(
+                        gettext('There are %s updates available, total download size is %s.'),
+                        $response['updates'],
+                        $response['download_size']
+                    );
+                }
+                if ($response['upgrade_needs_reboot'] == 1) {
+                    $response['status_msg'] = sprintf(
+                        '%s %s',
+                        $response['status_msg'],
+                        gettext('This update requires a reboot.')
+                    );
+                }
             }
         } else {
-            $response = array("status" => "unknown","status_msg" => "Current status is unknown");
+            $response = array('status' => 'unknown', 'status_msg' => gettext('Current status is unknown.'));
         }
 
         return $response;
@@ -83,7 +108,7 @@ class FirmwareController extends ApiControllerBase
     public function upgradeAction()
     {
         $backend = new Backend();
-        $response =array();
+        $response = array();
         if ($this->request->hasPost("upgrade")) {
             $response['status'] = 'ok';
             if ($this->request->getPost("upgrade") == "pkg") {
@@ -100,24 +125,163 @@ class FirmwareController extends ApiControllerBase
     }
 
     /**
+     * reinstall package
+     * @param string $pkg_name package name to reinstall
+     * @return array status
+     * @throws \Exception
+     */
+    public function reinstallAction($pkg_name)
+    {
+        $backend = new Backend();
+        $response = array();
+
+        if ($this->request->isPost()) {
+            $response['status'] = 'ok';
+            // sanitize package name
+            $filter = new \Phalcon\Filter();
+            $filter->add('pkgname', function ($value) {
+                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+            });
+            $pkg_name = $filter->sanitize($pkg_name, "pkgname");
+            // execute action
+            $response['msg_uuid'] = trim($backend->configdpRun("firmware reinstall", array($pkg_name), true));
+        } else {
+            $response['status'] = 'failure';
+        }
+
+        return $response;
+    }
+
+    /**
+     * install package
+     * @param string $pkg_name package name to install
+     * @return array status
+     * @throws \Exception
+     */
+    public function installAction($pkg_name)
+    {
+        $backend = new Backend();
+        $response = array();
+
+        if ($this->request->isPost()) {
+            $response['status'] = 'ok';
+            // sanitize package name
+            $filter = new \Phalcon\Filter();
+            $filter->add('pkgname', function ($value) {
+                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+            });
+            $pkg_name = $filter->sanitize($pkg_name, "pkgname");
+            // execute action
+            $response['msg_uuid'] = trim($backend->configdpRun("firmware install", array($pkg_name), true));
+        } else {
+            $response['status'] = 'failure';
+        }
+
+        return $response;
+    }
+
+    /**
+     * remove package
+     * @param string $pkg_name package name to remove
+     * @return array status
+     * @throws \Exception
+     */
+    public function removeAction($pkg_name)
+    {
+        $backend = new Backend();
+        $response = array();
+
+        if ($this->request->isPost()) {
+            $response['status'] = 'ok';
+            // sanitize package name
+            $filter = new \Phalcon\Filter();
+            $filter->add('pkgname', function ($value) {
+                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+            });
+            $pkg_name = $filter->sanitize($pkg_name, "pkgname");
+            // execute action
+            $response['msg_uuid'] = trim($backend->configdpRun("firmware remove", array($pkg_name), true));
+        } else {
+            $response['status'] = 'failure';
+        }
+
+        return $response;
+    }
+
+    /**
+     * lock package
+     * @param string $pkg_name package name to lock
+     * @return array status
+     * @throws \Exception
+     */
+    public function lockAction($pkg_name)
+    {
+        $backend = new Backend();
+        $response = array();
+
+        if ($this->request->isPost()) {
+            $response['status'] = 'ok';
+            // sanitize package name
+            $filter = new \Phalcon\Filter();
+            $filter->add('pkgname', function ($value) {
+                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+            });
+            $pkg_name = $filter->sanitize($pkg_name, "pkgname");
+            // execute action
+            $response['msg_uuid'] = trim($backend->configdpRun("firmware lock", array($pkg_name), true));
+        } else {
+            $response['status'] = 'failure';
+        }
+
+        return $response;
+    }
+
+    /**
+     * unlock package
+     * @param string $pkg_name package name to unlock
+     * @return array status
+     * @throws \Exception
+     */
+    public function unlockAction($pkg_name)
+    {
+        $backend = new Backend();
+        $response = array();
+
+        if ($this->request->isPost()) {
+            $response['status'] = 'ok';
+            // sanitize package name
+            $filter = new \Phalcon\Filter();
+            $filter->add('pkgname', function ($value) {
+                return preg_replace('/[^0-9a-zA-Z-_]/', '', $value);
+            });
+            $pkg_name = $filter->sanitize($pkg_name, "pkgname");
+            // execute action
+            $response['msg_uuid'] = trim($backend->configdpRun("firmware unlock", array($pkg_name), true));
+        } else {
+            $response['status'] = 'failure';
+        }
+
+        return $response;
+    }
+
+    /**
      * retrieve upgrade status (and log file of current process)
      */
     public function upgradestatusAction()
     {
         $backend = new Backend();
-        $result = array("status"=>"running");
-        $cmd_result = trim($backend->configdRun("firmware upgrade_status"));
+        $result = array('status' => 'running');
+        $cmd_result = trim($backend->configdRun('firmware status'));
 
         $result['log'] = $cmd_result;
 
-        if (trim($cmd_result) == "Execute error") {
-            $result["status"] = "error";
+        if (trim($cmd_result) == 'Execute error') {
+            $result['status'] = 'error';
         } elseif (strpos($cmd_result, '***DONE***') !== false) {
-            $result["status"] = "done";
+            $result['status'] = 'done';
         } elseif (strpos($cmd_result, '***REBOOT***') !== false) {
-            $result["status"] = "reboot";
+            $result['status'] = 'reboot';
         }
-
 
         return $result;
     }
@@ -130,36 +294,27 @@ class FirmwareController extends ApiControllerBase
     {
         $this->sessionClose(); // long running action, close session
 
-        $response = array('local' => array(), 'remote' => array());
-
+        $keys = array('name', 'version', 'comment', 'flatsize', 'locked');
         $backend = new Backend();
-        $remote = $backend->configdRun('firmware remote');
-        $local = $backend->configdRun('firmware local');
+        $response = array();
 
-        /*
-         * pkg(8) returns malformed json by simply outputting each
-         * indivudual package json block... fix it up for now.
-         */
-        $local = str_replace("\n}\n", "\n},\n", trim($local));
-        $local = json_decode('[' . $local . ']', true);
-        if ($local != null) {
-            $keep = array('name', 'version', 'comment', 'www', 'flatsize', 'licenses', 'desc', 'categories');
-            foreach ($local as $infos) {
-                $stripped = array();
-                foreach ($infos as $key => $info) {
-                    if (in_array($key, $keep)) {
-                        $stripped[$key] = $info;
-                    }
+        /* package infos are flat lists with 3 pipes as delimiter */
+        foreach (array('local', 'remote') as $type) {
+            $current = $backend->configdRun("firmware ${type}");
+            $current = explode("\n", trim($current));
+            $response[$type] = array();
+            foreach ($current as $line) {
+                $expanded = explode('|||', $line);
+                $translated = array();
+                $index = 0;
+                if (count($expanded) != count($keys)) {
+                    continue;
                 }
-                $response['local'][] = $stripped;
+                foreach ($keys as $key) {
+                    $translated[$key] = $expanded[$index++];
+                }
+                $response[$type][] = $translated;
             }
-        }
-
-        /* Remote packages are only a flat list */
-        $remote = explode("\n", trim($remote));
-        foreach ($remote as $name) {
-            /* keep layout compatible with the above */
-            $response['remote'][] = array('name' => $name);
         }
 
         return $response;

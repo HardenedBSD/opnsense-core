@@ -171,7 +171,6 @@ rm -rf /tmp/*
 chmod 1777 /tmp
 
 echo -n "."
-DISABLESYSLOGCLOG=`/usr/bin/grep -c disablesyslogclog /conf/config.xml`
 LOG_FILES="system filter dhcpd vpn pptps poes l2tps openvpn portalauth ipsec ppps relayd wireless lighttpd ntpd gateways resolver routing"
 
 DEFAULT_LOG_FILE_SIZE=`/usr/local/bin/xmllint --xpath 'string(//opnsense/syslog/logfilesize)' /conf/config.xml`
@@ -180,12 +179,8 @@ if [ ! ${DEFAULT_LOG_FILE_SIZE} ]; then
 fi
 
 for logfile in $LOG_FILES; do
-	if [ "$DISABLESYSLOGCLOG" -gt "0" ]; then
-		touch /var/log/$logfile.log
-	else
-		if [ ! -f /var/log/$logfile.log ]; then
-			clog -i -s ${DEFAULT_LOG_FILE_SIZE} /var/log/$logfile.log
-		fi
+	if [ ! -f /var/log/$logfile.log ]; then
+		clog -i -s ${DEFAULT_LOG_FILE_SIZE} /var/log/$logfile.log
 	fi
 	chmod 0600 /var/log/$logfile.log
 done
@@ -218,6 +213,9 @@ echo "done."
 # startup configd
 /usr/local/etc/rc.d/configd start
 
+# Execute the early syshook / plugin commands
+/usr/local/etc/rc.syshook early
+
 # let the PHP-based configuration subsystem set up the system now
 echo -n "Launching the init system..."
 rm -f /root/lighttpd*
@@ -232,6 +230,13 @@ if [ -f "/tmp/donotbootup" ]; then
 	echo "Dropping to recovery shell."
 	exit 0
 fi
+
+# Execute the normal syshook / plugin commands
+/usr/local/etc/rc.syshook start
+
+# 16.1 migration code for stale captive portal files to be removed in 16.7
+rm -rf /var/db/rrd/*-concurrent.rrd
+rm -rf /var/db/rrd/*-loggedin.rrd
 
 echo -n "Starting CRON... "
 cd /tmp && /usr/sbin/cron -s 2>/dev/null
@@ -248,15 +253,6 @@ minicron 3600 /var/run/expire_accounts.pid /usr/local/etc/rc.expireaccounts
 
 # Start alias url updater every 24 hours
 minicron 86400 /var/run/update_alias_url_data.pid /usr/local/etc/rc.update_alias_url_data
-
-# Check for GEOM mirrors
-GMIRROR_STATUS=`/sbin/gmirror status`
-if [ "${GMIRROR_STATUS}" != "" ]; then
-	# Using a flag file at bootup saves an expensive exec/check on each page load.
-	touch /var/run/gmirror_active
-	# Setup monitoring/notifications
-	minicron 60 /var/run/gmirror_status_check.pid /usr/local/sbin/gmirror_status_check.php
-fi
 
 /usr/local/sbin/beep.sh start
 

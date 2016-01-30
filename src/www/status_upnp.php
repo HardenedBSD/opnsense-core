@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2010 Seth Mos <seth.mos@dds.nl>.
@@ -27,6 +28,8 @@
 */
 
 require_once("guiconfig.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
 
 if ($_POST) {
 	if ($_POST['clear'] == "Clear") {
@@ -41,9 +44,10 @@ exec("/sbin/pfctl -aminiupnpd -sn", $rdr_entries, $pf_ret);
 $now = time();
 $year = date("Y");
 
-$pgtitle = array(gettext('Status'), gettext('Universal Plug and Play'));
-$shortcut_section = "upnp";
+$service_hook = 'miniupnpd';
+
 include("head.inc");
+
 ?>
 <body>
 <?php include("fbegin.inc"); ?>
@@ -65,7 +69,7 @@ include("head.inc");
 				        <h3><?php echo gettext("UPnP is currently disabled."); ?></h3>
 				    </header>
 
-	                <? else: ?>
+	                <?php else: ?>
 
                     <div class="table-responsive">
 
@@ -109,7 +113,7 @@ include("head.inc");
 					<form action="status_upnp.php" method="post">
 					  <input type="submit" name="clear" id="clear" class="btn btn-primary" value="<?=gettext("Clear");?>" /> <?=gettext("all currently connected sessions");?>.
 					</form>
-					<? endif; ?>
+					<?php endif; ?>
 
                 </div>
             </section>

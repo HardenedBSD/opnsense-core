@@ -1,4 +1,5 @@
 PKG!=		which pkg || echo true
+GIT!=		which git || echo true
 PAGER?=		less
 
 all:
@@ -9,26 +10,37 @@ force:
 mount: force
 	@${.CURDIR}/scripts/version.sh > \
 	    ${.CURDIR}/src/opnsense/version/opnsense
-	/sbin/mount_unionfs ${.CURDIR}/src /usr/local
+	mount_unionfs ${.CURDIR}/src /usr/local
+	@service configd restart
 
 umount: force
-	/sbin/umount -f "<above>:${.CURDIR}/src"
+	umount -f "<above>:${.CURDIR}/src"
+	@service configd restart
 
+remount: umount mount
+
+.if ${GIT} != true
 CORE_COMMIT!=	${.CURDIR}/scripts/version.sh
 CORE_VERSION=	${CORE_COMMIT:C/-.*$//1}
 CORE_HASH=	${CORE_COMMIT:C/^.*-//1}
-
-.if "${FLAVOUR}" == LibreSSL
-CORE_REPOSITORY=libressl
-.else
-CORE_REPOSITORY=latest
 .endif
+
+.if "${FLAVOUR}" == OpenSSL || "${FLAVOUR}" == ""
+CORE_REPOSITORY?=	latest
+.elif "${FLAVOUR}" == LibreSSL
+CORE_REPOSITORY?=	libressl
+.else
+CORE_REPOSITORY?=	${FLAVOUR}
+.endif
+
+CORE_PACKAGESITE?=	http://pkg.opnsense.org
 
 CORE_NAME?=		opnsense-devel
 CORE_ORIGIN?=		opnsense/${CORE_NAME}
 CORE_COMMENT?=		OPNsense development package
 CORE_MAINTAINER?=	franco@opnsense.org
 CORE_WWW?=		https://opnsense.org/
+CORE_MESSAGE?=		ACME delivery for the crafty coyote!
 CORE_DEPENDS?=		apinger \
 			ataidle \
 			beep \
@@ -58,16 +70,14 @@ CORE_DEPENDS?=		apinger \
 			ntp \
 			openssh-portable \
 			openvpn \
-			os-update \
+			opnsense-update \
 			pecl-radius \
 			pftop \
 			phalcon \
 			php-pfSense \
 			php-suhosin \
-			php-xdebug \
 			php56 \
 			php56-bcmath \
-			php56-bz2 \
 			php56-ctype \
 			php56-curl \
 			php56-dom \
@@ -76,9 +86,7 @@ CORE_DEPENDS?=		apinger \
 			php56-hash \
 			php56-json \
 			php56-ldap \
-			php56-mbstring \
 			php56-mcrypt \
-			php56-mysql \
 			php56-openssl \
 			php56-pdo \
 			php56-pdo_sqlite \
@@ -86,10 +94,10 @@ CORE_DEPENDS?=		apinger \
 			php56-simplexml \
 			php56-sockets \
 			php56-sqlite3 \
-			php56-tokenizer \
 			php56-xml \
 			php56-zlib \
 			py27-Jinja2 \
+			py27-netaddr \
 			py27-requests \
 			py27-sqlite3 \
 			py27-ujson \
@@ -105,7 +113,7 @@ CORE_DEPENDS?=		apinger \
 			sudo \
 			suricata \
 			syslogd \
-			voucher \
+			unbound \
 			wol \
 			zip
 
@@ -117,7 +125,11 @@ manifest: force
 	@echo "desc: \"${CORE_HASH}\""
 	@echo "maintainer: \"${CORE_MAINTAINER}\""
 	@echo "www: \"${CORE_WWW}\""
-	@echo "prefix: /"
+	@echo "message: \"${CORE_MESSAGE}\""
+	@echo "categories: [ \"sysutils\", \"www\" ]"
+	@echo "licenselogic: \"single\""
+	@echo "licenses: [ \"BSD2CLAUSE\" ]"
+	@echo "prefix: /usr/local"
 	@echo "deps: {"
 	@for CORE_DEPEND in ${CORE_DEPENDS}; do \
 		${PKG} query '  %n: { version: "%v", origin: "%o" }' \
@@ -138,26 +150,21 @@ scripts: force
 	    ${DESTDIR}/+POST_INSTALL
 
 install: force
-	@${MAKE} -C ${.CURDIR}/pkg install DESTDIR=${DESTDIR}
-	# XXX don't want to pass down, but also don't want clutter
-	sed -i '' -e "s/%%CORE_REPOSITORY%%/${CORE_REPOSITORY}/g" \
-	    ${DESTDIR}/usr/local/etc/pkg/repos/origin.conf
-	@${MAKE} -C ${.CURDIR}/lang install DESTDIR=${DESTDIR}
 	@${MAKE} -C ${.CURDIR}/contrib install DESTDIR=${DESTDIR}
-	@mkdir -p ${DESTDIR}/usr/local
-	@cp -vr ${.CURDIR}/src/* ${DESTDIR}/usr/local
+	@${MAKE} -C ${.CURDIR}/lang install DESTDIR=${DESTDIR}
+	@${MAKE} -C ${.CURDIR}/src install DESTDIR=${DESTDIR} \
+	    CORE_PACKAGESITE=${CORE_PACKAGESITE} \
+	    CORE_REPOSITORY=${CORE_REPOSITORY}
+
+bootstrap: force
+	@${MAKE} -C ${.CURDIR}/src install_bootstrap DESTDIR=${DESTDIR} \
+	    NO_SAMPLE=please CORE_PACKAGESITE=${CORE_PACKAGESITE} \
+	    CORE_REPOSITORY=${CORE_REPOSITORY}
 
 plist: force
-	@${MAKE} -C ${.CURDIR}/pkg plist
-	@${MAKE} -C ${.CURDIR}/lang plist
 	@${MAKE} -C ${.CURDIR}/contrib plist
-	@(cd ${.CURDIR}/src; find * -type f) | while read FILE; do \
-		if [ $${FILE%%.sample} != $${FILE} ]; then \
-			echo "@sample /usr/local/$${FILE}"; \
-		else \
-			echo "/usr/local/$${FILE}"; \
-		fi; \
-	done
+	@${MAKE} -C ${.CURDIR}/lang plist
+	@${MAKE} -C ${.CURDIR}/src plist
 
 lint: force
 	find ${.CURDIR}/src ${.CURDIR}/lang/dynamic/helpers \
@@ -165,13 +172,12 @@ lint: force
 	    ! -name "*.svg" ! -name "*.woff" ! -name "*.woff2" \
 	    ! -name "*.otf" ! -name "*.png" ! -name "*.js" \
 	    ! -name "*.scss" ! -name "*.py" ! -name "*.ttf" \
-	    ! -name "*.tgz" -type f -print0 | xargs -0 -n1 php -l
+	    ! -name "*.tgz" ! -name "*.xml.dist" \
+	    -type f -print0 | xargs -0 -n1 php -l
 
 sweep: force
 	find ${.CURDIR}/src ! -name "*.min.*" ! -name "*.svg" \
-	    ! -name "*.map" -type f -print0 | \
-	    xargs -0 -n1 scripts/cleanfile
-	find ${.CURDIR}/pkg -type f -print0 | \
+	    ! -name "*.map" ! -name "*.ser" -type f -print0 | \
 	    xargs -0 -n1 scripts/cleanfile
 	find ${.CURDIR}/lang -type f -print0 | \
 	    xargs -0 -n1 scripts/cleanfile
@@ -199,6 +205,6 @@ health: force
 	[ "`${.CURDIR}/src/etc/rc.php_test_run`" == "FCGI-PASSED PASSED" ]
 
 clean:
-	git reset --hard HEAD && git clean -xdqf .
+	${GIT} reset --hard HEAD && ${GIT} clean -xdqf .
 
 .PHONY: force

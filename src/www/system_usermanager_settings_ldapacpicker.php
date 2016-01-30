@@ -1,8 +1,8 @@
 <?php
 /*
-	Copyright (C) 2014-2015 Deciso B.V.
-	Copyright (C) 2007 Scott Ullrich <sullrich@gmail.com>
-	All rights reserved.
+    Copyright (C) 2014-2015 Deciso B.V.
+    Copyright (C) 2007 Scott Ullrich <sullrich@gmail.com>
+    All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions are met:
@@ -31,73 +31,83 @@ require_once("auth.inc");
 include('head.inc');
 
 $ous = array();
+if (isset($_GET['basedn']) && isset($_GET['host'])) {
+    if (isset($_GET['cert'])) {
+        $authcfg = array();
+        $authcfg['ldap_caref'] = $_GET['cert'];
+        ldap_setup_caenv($authcfg);
+    }
 
-if ($_GET) {
-    $authcfg = array();
-    $authcfg['ldap_port'] = $_GET['port'];
-    $authcfg['ldap_basedn'] = $_GET['basedn'];
-    $authcfg['host'] = $_GET['host'];
-    $authcfg['ldap_scope'] = $_GET['scope'];
-    $authcfg['ldap_binddn'] = $_GET['binddn'];
-    $authcfg['ldap_bindpw'] = $_GET['bindpw'];
-    $authcfg['ldap_urltype'] = $_GET['urltype'];
-    $authcfg['ldap_protver'] = $_GET['proto'];
-    $authcfg['ldap_authcn'] = explode(";", $_GET['authcn']);
-    $authcfg['ldap_caref'] = $_GET['cert'];
-    $ous = ldap_get_user_ous(true, $authcfg);
+    $ldap_authcn = isset($_GET['authcn']) ? explode(";", $_GET['authcn']) : array();
+    if (isset($_GET['urltype']) && strstr($_GET['urltype'], "Standard")) {
+        $ldap_full_url = "ldap://";
+    } else {
+        $ldap_full_url = "ldaps://";
+    }
+    $ldap_full_url .= is_ipaddrv6($_GET['host']) ? "[{$_GET['host']}]" : $_GET['host'];
+    if (!empty($_GET['port'])) {
+        $ldap_full_url .= ":{$_GET['port']}";
+    }
+
+    $ldap_auth = new OPNsense\Auth\LDAP($_GET['basedn'], isset($_GET['proto']) ? $_GET['proto'] : 3);
+    $ldap_is_connected = $ldap_auth->connect($ldap_full_url
+                                            , !empty($_GET['binddn']) ? $_GET['binddn'] : null
+    , !empty($_GET['bindpw']) ? $_GET['bindpw'] : null
+    );
+    if ($ldap_is_connected) {
+        $ous = $ldap_auth->listOUs();
+    }
 }
-
 ?>
 
  <body>
-	<script type="text/javascript">
-function post_choices() {
-
-	var ous = <?php echo count($ous); ?>;
-	var i;
-	var values = jQuery("#ou:checked").map(function(){
-	return jQuery(this).val();
-    }).get().join(';');
-	window.opener.document.getElementById('ldapauthcontainers').value=values;
-	window.close();
-}
-</script>
+  <script type="text/javascript">
+      function post_choices() {
+        var ous = <?php echo count($ous); ?>;
+        var i;
+        var values = $("#ou:checked").map(function(){
+                        return $(this).val();
+                     }).get().join(';');
+        window.opener.document.getElementById('ldapauthcontainers').value=values;
+        window.close();
+      }
+  </script>
  <form method="post" action="system_usermanager_settings_ldapacpicker.php">
-<?php if (empty($ous)) :
-?>
-	<p><?=gettext("Could not connect to the LDAP server. Please check your LDAP configuration.");?></p>
-	<input type='button' class="btn btn-default" value='<?=gettext("Close"); ?>' onClick="window.close();">
 <?php
-else :
-?>
-	<table class="table table-striped">
-		<tbody>
-			<tr>
-			<th>
-				<?=gettext("Please select which containers to Authenticate against:");?>
-			</th>
-			</tr>
-			<?php
-            if (is_array($ous)) {
-                foreach ($ous as $ou) {
-                    if (in_array($ou, $authcfg['ldap_authcn'])) {
-                        $CHECKED=" CHECKED";
-                    } else {
-                        $CHECKED="";
-                    }
-                    echo "			<tr><td><input type='checkbox' value='{$ou}' id='ou' name='ou[]'{$CHECKED}> {$ou}</td></tr>\n";
-                }
-            }
-            ?>
-			<tr>
-				<td align="right">
-					<input type='button' class="btn btn-primary" value='<?=gettext("Save");?>' onClick="post_choices();">
-				</td>
-			</tr>
-		</tbody>
-	</table>
+  if (empty($ous)) :?>
+  <p><?=gettext("Could not connect to the LDAP server. Please check your LDAP configuration.");?></p>
+  <input type='button' class="btn btn-default" value='<?=gettext("Close"); ?>' onClick="window.close();">
 <?php
-endif; ?>
+  else :?>
+  <section class="page-content-main">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <tbody>
+              <tr>
+                <th><?=gettext("Please select which containers to Authenticate against:");?></th>
+              </tr>
+<?php
+              foreach ($ous as $ou):?>
+              <tr>
+                <td><input type='checkbox' value='<?=$ou;?>' id='ou' name='ou[]' <?=in_array($ou, $ldap_authcn) ? "CHECKED": "";?>> <?=$ou;?></td>
+              </tr>
+<?php
+              endforeach;?>
+              <tr>
+                <td align="right">
+                  <input type='button' class="btn btn-primary" value='<?=gettext("Save");?>' onClick="post_choices();">
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+<?php
+  endif; ?>
  </form>
- </body>
+</body>
 </html>

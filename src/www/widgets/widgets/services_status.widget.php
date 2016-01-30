@@ -2,9 +2,9 @@
 
 /*
     Copyright (C) 2014 Deciso B.V.
-    Copyright (C) 2004, 2005 Scott Ullrich
     Copyright (C) 2007 Sam Wenham
-    (from service-utils.inc) Copyright (C) 2005-2006 Colin Smith (ethethlay@gmail.com)
+    Copyright (C) 2005-2006 Colin Smith <ethethlay@gmail.com>
+    Copyright (C) 2004-2005 Scott Ullrich
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -32,11 +32,10 @@
 $nocsrf = true;
 
 require_once("guiconfig.inc");
-require_once("captiveportal.inc");
 require_once("services.inc");
-require_once("ipsec.inc");
 require_once("vpn.inc");
 require_once("widgets/include/services_status.inc");
+require_once("interfaces.inc");
 
 $services = get_services();
 
@@ -49,7 +48,7 @@ if (isset($_POST['servicestatusfilter'])) {
 <input type="hidden" id="services_status-config" name="services_status-config" value="" />
 <div id="services_status-settings" class="widgetconfigdiv" style="display:none;">
 	<form action="/widgets/widgets/services_status.widget.php" method="post" name="iformd">
-		Comma separated list of services to NOT display in the widget<br />
+    <?= gettext('Comma separated list of services to NOT display in the widget') ?><br />
 		<input type="text" size="30" name="servicestatusfilter" class="formfld unknown" id="servicestatusfilter" value="<?= $config['widgets']['servicestatusfilter'] ?>" />
 		<input id="submitd" name="submitd" type="submit" class="btn btn-primary" value="Save" />
     </form>
@@ -57,9 +56,9 @@ if (isset($_POST['servicestatusfilter'])) {
 
 <table class="table table-striped" width="100%" border="0" cellpadding="0" cellspacing="0" summary="services">
 	<tr>
-	  <td class="widgetsubheader" align="center"><b>Service</b></td>
-	  <td class="widgetsubheader" align="center"><b>Description</b></td>
-	  <td class="widgetsubheader" align="center"><b>Status</b></td>
+	  <td class="widgetsubheader" align="center"><b><?= gettext('Service') ?></b></td>
+    <td class="widgetsubheader" align="center"><b><?= gettext('Description') ?></b></td>
+    <td class="widgetsubheader" align="center"><b><?= gettext('Status') ?></b></td>
 	  <td class="widgetsubheader">&nbsp;</td>
 	</tr>
 <?php

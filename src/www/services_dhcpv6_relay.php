@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2003-2004 Justin Ellison <justin@techadvise.com>.
@@ -29,6 +30,8 @@
 */
 
 require_once("guiconfig.inc");
+require_once("interfaces.inc");
+require_once("services.inc");
 
 $pconfig['enable'] = isset($config['dhcrelay6']['enable']);
 if (empty($config['dhcrelay6']['interface']))
@@ -82,14 +85,13 @@ if ($_POST) {
 
 		$retval = 0;
 		$retval = services_dhcrelay6_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 
 	}
 }
 
-$closehead = false;
-$pgtitle = array(gettext("Services"),gettext("DHCPv6 Relay"));
-$shortcut_section = "dhcp6";
+$service_hook = 'dhcrelay6';
+
 include("head.inc");
 
 ?>
@@ -130,8 +132,8 @@ function enable_change(enable_over) {
                         <form action="services_dhcpv6_relay.php" method="post" name="iform" id="iform">
 
 				<?php if ($dhcpd_enabled): ?>
-								<p>DHCPv6 Server is currently enabled.  Cannot enable the DHCPv6 Relay service while the DHCPv6 Server is enabled on any interface.</p>
-							<? else: ?>
+                <p><?= gettext('DHCPv6 Server is currently enabled.  Cannot enable the DHCPv6 Relay service while the DHCPv6 Server is enabled on any interface.') ?></p>
+							<?php else: ?>
 
 							<header class="content-box-head container-fluid">
 					        <h3><?=gettext("DHCPv6 Relay configuration"); ?></h3>
@@ -142,14 +144,14 @@ function enable_change(enable_over) {
 					<table class="table table-striped table-sort">
 
 									<tr>
-							                        <td width="22%" valign="top" class="vncellreq">Enable</td>
+                                      <td width="22%" valign="top" class="vncellreq"><?= gettext('Enable') ?></td>
 							                        <td width="78%" class="vtable">
 										<input name="enable" type="checkbox" value="yes" <?php if ($pconfig['enable']) echo "checked=\"checked\""; ?> onclick="enable_change(false)" />
 							                          <strong><?php printf(gettext("Enable DHCPv6 relay on interface"));?></strong>
 										</td>
 									</tr>
 									<tr>
-							                        <td width="22%" valign="top" class="vncellreq">Interface(s)</td>
+                                      <td width="22%" valign="top" class="vncellreq"><?= gettext('Interface(s)') ?></td>
 							                        <td width="78%" class="vtable">
 											<select id="interface" name="interface[]" multiple="multiple" class="formselect" size="3">
 										<?php
@@ -157,7 +159,7 @@ function enable_change(enable_over) {
 												if (!is_ipaddrv6(get_interface_ipv6($ifent)))
 													continue;
 												echo "<option value=\"{$ifent}\"";
-												if (in_array($ifent, $pconfig['interface']))
+												if (!empty($pconfig['interface']) && in_array($ifent, $pconfig['interface']))
 													echo " selected=\"selected\"";
 												echo ">{$ifdesc}</option>\n";
 											}
@@ -190,7 +192,7 @@ function enable_change(enable_over) {
 								</table>
 								</div>
 					    </div>
-					    <? endif; ?>
+					    <?php endif; ?>
                         </form>
 				</div>
 			    </section>

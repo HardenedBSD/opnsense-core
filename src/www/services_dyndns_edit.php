@@ -26,8 +26,12 @@
 	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 	POSSIBILITY OF SUCH DAMAGE.
 */
+require_once("guiconfig.inc");
+require_once("pfsense-utils.inc");
+require_once("services.inc") ;
+require_once("interfaces.inc");
 
-/* returns true if $uname is a valid DynDNS username */
+/* returns true if $uname is a valid dynamic DNS username */
 function is_dyndns_username($uname) {
         if (!is_string($uname))
                 return false;
@@ -38,9 +42,7 @@ function is_dyndns_username($uname) {
                 return true;
 }
 
-require_once("guiconfig.inc");
-
-if (!is_array($config['dyndnses']['dyndns'])) {
+if (!isset($config['dyndnses']['dyndns'])) {
 	$config['dyndnses']['dyndns'] = array();
 }
 
@@ -169,7 +171,6 @@ if ($_POST) {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("Dynamic DNS client"));
 include("head.inc");
 
 ?>
@@ -188,7 +189,7 @@ include("head.inc");
 				document.getElementById("_urltr").style.display = '';
 				document.getElementById("_requestiftr").style.display = '';
 				document.getElementById("_curloptions").style.display = '';
-				document.getElementById("_hostnametr").style.display = 'none';
+				document.getElementById("_hostnametr").style.display = '';
 				document.getElementById("_mxtr").style.display = 'none';
 				document.getElementById("_wildcardtr").style.display = 'none';
 				document.getElementById("r53_zoneid").style.display='none';
@@ -333,7 +334,7 @@ include("head.inc");
 					                  <td width="78%" class="vtable">
 					                    <input name="mx" type="text" class="formfld unknown" id="mx" size="30" value="<?=htmlspecialchars($pconfig['mx']);?>" />
 					                    <br />
-										<?=gettext("Note: With DynDNS service you can only use a hostname, not an IP address.");?>
+										<?=gettext("Note: With a dynamic DNS service you can only use a hostname, not an IP address.");?>
 										<br />
 					                    <?=gettext("Set this option only if you need a special MX record. Not".
 					                   " all services support this.");?></td>
@@ -402,7 +403,7 @@ include("head.inc");
 					                    <textarea name="resultmatch" class="formpre" id="resultmatch" cols="65" rows="7"><?=htmlspecialchars($pconfig['resultmatch']);?></textarea>
 					                    <br /><?= gettext("This field is only used by Custom Dynamic DNS Entries.");?>
 								<br />
-								<?= gettext("This field should be identical to what your DDNS Provider will return if the update succeeds, leave it blank to disable checking of returned results.");?>
+								<?= gettext("This field should be identical to what your dynamic DNS Provider will return if the update succeeds, leave it blank to disable checking of returned results.");?>
 								<br />
 								<?= gettext("If you need the new IP to be included in the request, put %IP% in its place.");?>
 								<br />

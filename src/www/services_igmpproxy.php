@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2009 Ermal Luçi
@@ -29,8 +30,10 @@
 */
 
 require_once("guiconfig.inc");
+require_once("interfaces.inc");
+require_once("services.inc");
 
-if (!is_array($config['igmpproxy']['igmpentry']))
+if (!isset($config['igmpproxy']['igmpentry']))
 	$config['igmpproxy']['igmpentry'] = array();
 
 //igmpproxy_sort();
@@ -45,7 +48,7 @@ if ($_POST) {
 	$retval = services_igmpproxy_configure();
 
 	if(stristr($retval, "error") <> true)
-	    $savemsg = get_std_save_message($retval);
+	    $savemsg = get_std_save_message();
 	else
 	    $savemsg = $retval;
 
@@ -62,7 +65,6 @@ if ($_GET['act'] == "del") {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("IGMP Proxy"));
 include("head.inc");
 
 $main_buttons = array(
@@ -81,7 +83,7 @@ $main_buttons = array(
 			<div class="row">
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('igmpproxy')): ?><br/>
-				<?php print_info_box_np(gettext("The IGMP entry list has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?>
+				<?php print_info_box_apply(gettext("The IGMP entry list has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?>
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
@@ -124,7 +126,7 @@ $main_buttons = array(
 									  </td>
 									  <td valign="middle" class="list nowrap">
 									     <a href="services_igmpproxy_edit.php?id=<?=$i;?>" title="<?=gettext("edit igmpentry"); ?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a>
-									     <a href="services_igmpproxy.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this igmp entry? All elements that still use it will become invalid (e.g. filter rules)!");?>')" title="<?=gettext("delete igmpentry");?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a>
+									     <a href="services_igmpproxy.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this igmp entry? All elements that still use it will become invalid (e.g. filter rules)!");?>')" title="<?=gettext("delete igmpentry");?>" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a>
 									  </td>
 									</tr>
 										  <?php $i++; endforeach; ?>

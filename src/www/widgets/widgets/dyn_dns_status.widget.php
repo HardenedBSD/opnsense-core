@@ -32,10 +32,11 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("pfsense-utils.inc");
-require_once("functions.inc");
 require_once("widgets/include/dyn_dns_status.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
 
-if (!is_array($config['dyndnses']['dyndns'])) {
+if (!isset($config['dyndnses']['dyndns'])) {
     $config['dyndnses']['dyndns'] = array();
 }
 
@@ -64,7 +65,7 @@ if ($_REQUEST['getdyndnsstatus']) {
             echo htmlspecialchars($cached_ip);
             echo "</font>";
         } else {
-            echo "N/A " . date("H:i:s");
+            echo gettext("N/A ") . date("H:i:s");
         }
     }
     exit;

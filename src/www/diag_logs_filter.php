@@ -2,11 +2,10 @@
 
 /*
 	Copyright (C) 2014 Deciso B.V.
-	Copyright (C) Jim Pingle jim@pingle.org
+	Copyright (C) 2009-2010 Jim Pingle <jim@pingle.org>
 	Copyright (C) 2004-2009 Scott Ullrich
-	Copyright (C) 2003-2009 Manuel Kasper <mk@neon1.net>,
-	(origin easyrule.inc/php) Copyright (C) 2009-2010 Jim Pingle (jpingle@gmail.com)
-	(origin easyrule.inc/php) Originally Sponsored By Anathematic @ pfSense Forums
+	Copyright (C) 2003-2009 Manuel Kasper <mk@neon1.net>
+	Originally Sponsored By Anathematic @ pfSense Forums
 	All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without
@@ -32,13 +31,15 @@
 */
 
 require_once("guiconfig.inc");
+require_once("filter.inc");
 require_once("filter_log.inc");
+require_once("system.inc");
+require_once("pfsense-utils.inc");
+require_once("interfaces.inc");
 
 /********************************************************************************************************************
  * imported from easyrule.inc/php
  ********************************************************************************************************************/
-require_once("functions.inc");
-require_once("util.inc");
 
 function easyrule_find_rule_interface($int) {
 	global $config;
@@ -120,23 +121,29 @@ function easyrule_block_rule_create($int = 'wan', $ipproto = "inet") {
 	$filterent['source']['address'] = $blockaliasname . strtoupper($int);
 	$filterent['destination']['any'] = '';
 	$filterent['descr'] = gettext("Easy Rule: Blocked from Firewall Log View");
-	$filterent['created'] = make_config_revision_entry(null, gettext("Easy Rule"));
+	$filterent['created'] = make_config_revision_entry();
 
 	array_splice($a_filter, 0, 0, array($filterent));
 
 	return true;
 }
 
-function easyrule_block_alias_getid($int = 'wan') {
+function easyrule_block_alias_getid($int = 'wan')
+{
 	global $config;
+
 	$blockaliasname = 'EasyRuleBlockHosts';
-	if (!is_array($config['aliases']))
+
+	if (!isset($config['aliases']) || !is_array($config['aliases'])) {
 		return false;
+	}
 
 	/* Hunt down an alias with the name we want, return its id */
-	foreach ($config['aliases']['alias'] as $aliasid => $alias)
-		if ($alias['name'] == $blockaliasname . strtoupper($int))
+	foreach ($config['aliases']['alias'] as $aliasid => $alias) {
+		if ($alias['name'] == $blockaliasname . strtoupper($int)) {
 			return $aliasid;
+		}
+	}
 
 	return false;
 }
@@ -150,10 +157,10 @@ function easyrule_block_alias_add($host, $int = 'wan') {
 		return false;
 
 	/* If there are no aliases, start an array */
-	if (!is_array($config['aliases'])) {
+	if (!isset($config['aliases']) || !is_array($config['aliases'])) {
 		$config['aliases'] = array();
 	}
-	if (!is_array($config['aliases']['alias'])) {
+	if (!isset($config['aliases']['alias'])) {
 		$config['aliases']['alias'] = array();
 	}
 	$a_aliases = &$config['aliases']['alias'];
@@ -302,7 +309,7 @@ function easyrule_pass_rule_add($int, $proto, $srchost, $dsthost, $dstport, $ipp
 	pconfig_to_address($filterent['source'], $srchost, $srcmask);
 	pconfig_to_address($filterent['destination'], $dsthost, $dstmask, '', $dstport, $dstport);
 
-	$filterent['created'] = make_config_revision_entry(null, gettext("Easy Rule"));
+	$filterent['created'] = make_config_revision_entry();
 	$a_filter[] = $filterent;
 
 	write_config($filterent['descr']);
@@ -383,7 +390,7 @@ function get_port_with_service($port, $proto) {
 	$service = getservbyport($port, $proto);
 	$portstr = "";
 	if ($service) {
-		$portstr = sprintf('<span title="' . gettext('Service %1$s/%2$s: %3$s') . '">' . htmlspecialchars($port) . '</span>', $port, $proto, $service);
+		$portstr = sprintf('<span title="Service %s/%s: %s">' . htmlspecialchars($port) . '</span>', $port, $proto, $service);
 	} else {
 		$portstr = htmlspecialchars($port);
 	}
@@ -496,7 +503,6 @@ if (isset($_POST['resolve'])) {
 }
 
 if (isset($_POST['easyrule'])) {
-	require_once("filter.inc");
 
 	$response = array("status"=>"unknown") ;
 	switch ($_POST['easyrule']) {
@@ -554,12 +560,13 @@ if ($filtersubmit) {
 	$filterfieldsarray['dstport'] = getGETPOSTsettingvalue('filterlogentries_destinationport', null);
 	$filterfieldsarray['proto'] = getGETPOSTsettingvalue('filterlogentries_protocol', null);
 	$filterfieldsarray['tcpflags'] = getGETPOSTsettingvalue('filterlogentries_protocolflags', null);
+	$filterfieldsarray['version'] = getGETPOSTsettingvalue('filterlogentries_version', null);
 	$filterlogentries_qty = getGETPOSTsettingvalue('filterlogentries_qty', null);
 } else {
 	$interfacefilter = null;
 	$filterlogentries_qty = null ;
 	$filtertext = null;
-	foreach (array('act','time','interface','srcip','srcport','dstip','dstport','proto','tcpflags') as $tag) {
+	foreach (array('act','time','interface','srcip','srcport','dstip','dstport','proto','tcpflags', 'version') as $tag) {
 		$filterfieldsarray[$tag] = null;
 	}
 }
@@ -578,19 +585,15 @@ if (isset($filterlogentries_qty) && $filterlogentries_qty != null) {
 	$nentries = $filterlogentries_qty;
 }
 
-
 if (isset($_POST['clear'])) {
-	clear_log_file($filter_logfile);
+		clear_clog($filter_logfile);
 }
 
-$pgtitle = array(gettext("Status"),gettext("System logs"),gettext("Firewall"));
-$shortcut_section = "firewall";
 include("head.inc");
 
 ?>
 
 <script src="/javascript/filter_log.js" type="text/javascript"></script>
-
 
 <body>
 
@@ -600,33 +603,26 @@ include("head.inc");
 		<div class="container-fluid">
 			<div class="row">
 
+				<?php print_service_banner('firewall'); ?>
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
 			    <section class="col-xs-12">
-
-				<? $active_tab = "/diag_logs_filter.php"; include('diag_logs_tabs.inc'); ?>
-
 					<div class="tab-content content-box col-xs-12">
-				    <div class="container-fluid">
-
-
-							<? $tab_group = 'firewall'; include('diag_logs_pills.php'); ?>
-
 							<form id="filterlogentries" name="filterlogentries" action="diag_logs_filter.php" method="post">
 							<?php
 								$Include_Act = explode(",", str_replace(" ", ",", $filterfieldsarray['act']));
 								if ($filterfieldsarray['interface'] == "All") $interface = "";
 							?>
-							<div class="table-responsive widgetconfigdiv" id="filterlogentries_show"  style="<?=(!isset($config['syslog']['rawfilter']))?"":"display:none"?>">
+							<div class="table-responsive widgetconfigdiv" id="filterlogentries_show">
                                 <table class="table table-striped">
 					      <thead>
 					        <tr>
-					          <th>Action</th>
-					          <th>Time and interface</th>
-					          <th>Source and destination IP Address</th>
-					          <th>Source and destination port</th>
-					          <th>Protocol</th>
-					          <th>Protocol</th>
+					          <th><?= gettext('Action') ?></th>
+					          <th><?= gettext('Time and interface') ?></th>
+					          <th><?= gettext('Source and destination IP Address') ?></th>
+					          <th><?= gettext('Source and destination port') ?></th>
+					          <th><?= gettext('Protocol') ?></th>
+					          <th><?= gettext('Protocol') ?></th>
 					        </tr>
 					      </thead>
 					      <tbody>
@@ -636,11 +632,11 @@ include("head.inc");
                                             <input id="actpass"   name="actpass"   type="checkbox" value="Pass"   <?php if (in_arrayi('Pass',   $Include_Act)) echo "checked=\"checked\""; ?> />&nbsp;&nbsp;Pass
                                           </label>
                                       </td>
-					          <td><input type="text" class="form-control" placeholder="Time" id="filterlogentries_time" name="filterlogentries_time" value="<?= $filterfieldsarray['time'] ?>"></td>
-					          <td><input type="text" class="form-control" placeholder="Source IP Address" id="filterlogentries_sourceipaddress" name="filterlogentries_sourceipaddress" value="<?= $filterfieldsarray['srcip'] ?>"></td>
-					          <td><input type="text" class="form-control" placeholder="Source Port" id="filterlogentries_sourceport" name="filterlogentries_sourceport" value="<?= $filterfieldsarray['srcport'] ?>"></td>
-					          <td><input type="text" class="form-control" placeholder="Protocol" id="filterlogentries_protocol" name="filterlogentries_protocol" value="<?= $filterfieldsarray['proto'] ?>"></td>
-					          <td><input type="text" class="form-control" placeholder="Quantity" id="filterlogentries_qty" name="filterlogentries_qty" value="<?= $filterlogentries_qty ?>"></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Time') ?>" id="filterlogentries_time" name="filterlogentries_time" value="<?= $filterfieldsarray['time'] ?>"></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Source IP Address') ?>" id="filterlogentries_sourceipaddress" name="filterlogentries_sourceipaddress" value="<?= $filterfieldsarray['srcip'] ?>"></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Source Port') ?>" id="filterlogentries_sourceport" name="filterlogentries_sourceport" value="<?= $filterfieldsarray['srcport'] ?>"></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Protocol') ?>" id="filterlogentries_protocol" name="filterlogentries_protocol" value="<?= $filterfieldsarray['proto'] ?>"></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Quantity') ?>" id="filterlogentries_qty" name="filterlogentries_qty" value="<?= $filterlogentries_qty ?>"></td>
 					        </tr>
 					        <tr>
 					          <td>
@@ -648,30 +644,51 @@ include("head.inc");
                                             <input id="actblock"  name="actblock"  type="checkbox" value="Block"  <?php if (in_arrayi('Block',  $Include_Act)) echo "checked=\"checked\""; ?> /> &nbsp;&nbsp;Block
                                           </label>
                                       </td>
-					          <td><input type="text" class="form-control" placeholder="Interface" id="filterlogentries_interfaces" name="filterlogentries_interfaces" value="<?= $filterfieldsarray['interface'] ?>"></td>
-					          <td><input type="text" class="form-control" placeholder="Destination IP Address" id="filterlogentries_destinationipaddress" name="filterlogentries_destinationipaddress" value="<?= $filterfieldsarray['dstip'] ?>"></td>
-					          <td><input type="text" class="form-control" placeholder="Destination Port" id="filterlogentries_destinationport" name="filterlogentries_destinationport" value="<?= $filterfieldsarray['dstport'] ?>"></td>
-					          <td><input type="text" class="form-control" placeholder="Protocol Flags" id="filterlogentries_protocolflags" name="filterlogentries_protocolflags" value="<?= $filterfieldsarray['tcpflags'] ?>"></td>
-					          <td><input id="filtersubmit" name="filtersubmit" type="submit" class="btn btn-primary" style="vertical-align:top;" value="<?=gettext("Filter");?>" /></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Interface') ?>" id="filterlogentries_interfaces" name="filterlogentries_interfaces" value="<?= $filterfieldsarray['interface'] ?>"></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Destination IP Address') ?>" id="filterlogentries_destinationipaddress" name="filterlogentries_destinationipaddress" value="<?= $filterfieldsarray['dstip'] ?>"></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Destination Port') ?>" id="filterlogentries_destinationport" name="filterlogentries_destinationport" value="<?= $filterfieldsarray['dstport'] ?>"></td>
+					          <td><input type="text" class="form-control" placeholder="<?= gettext('Protocol Flags') ?>" id="filterlogentries_protocolflags" name="filterlogentries_protocolflags" value="<?= $filterfieldsarray['tcpflags'] ?>"></td>
+                    <td>
+                      <select class="form-control" id="filterlogentries_version" name="filterlogentries_version">
+                        <?php
+                          $versionlist = array("All" => gettext("Any"), "4" => gettext('IPv4'), "6" => gettext('IPv6'));
+                          foreach ($versionlist as $version => $versionname)
+                          {
+                            echo '<option value="' . htmlspecialchars($version) . '"' . ((isset ($filterfieldsarray['version']) && $filterfieldsarray['version'] == $version ) ? ' selected="selected"' : '') . '>' . htmlspecialchars($versionname) . '</option>' ;
+                          }
+                        ?>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="6">
+						<span class="vexpl"><a href="http://en.wikipedia.org/wiki/Transmission_Control_Protocol">TCP Flags</a>: F - FIN, S - SYN, A or . - ACK, R - RST, P - PSH, U - URG, E - ECE, W - CWR</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="6">
+                      <input id="filtersubmit" name="filtersubmit" type="submit" class="btn btn-primary" style="vertical-align:top;" value="<?=gettext("Filter");?>" />
+											<div class="pull-right">
+												<input name="clear" type="submit" class="btn" value="<?= gettext("Clear log");?>" />
+											</div>
+                    </td>
 					        </tr>
 					      </tbody>
 					    </table>
                             </div>
 
 							</form>
-				    </div>
 					</div>
 			    </section>
 			     <section class="col-xs-12">
 
 					<div class="tab-content content-box col-xs-12">
-				    <div class="container-fluid">
 
 							<div class="table-responsive">
 								<table class="table table-striped table-sort">
 
 
-						<?php if (!isset($config['syslog']['rawfilter'])):
+						<?php
 							$iflist = get_configured_interface_with_descr(false, true);
 							if (isset($iflist[$interfacefilter]))
 								$interfacefilter = $iflist[$interfacefilter];
@@ -683,11 +700,12 @@ include("head.inc");
 						?>
 									<tr>
 									  <td colspan="<?=isset($config['syslog']['filterdescriptions']) && $config['syslog']['filterdescriptions']==="1"?7:6?>" class="listtopic">
+										<strong>
 										<?php if ( (!$filtertext) && (!$filterfieldsarray) )
 											printf(gettext("Last %s firewall log entries."),count($filterlog));
 										else
-											echo count($filterlog). ' ' . gettext("matched log entries.");
-									    printf(gettext("Max(%s)"),$nentries);?>
+											echo sprintf(gettext('Showing %s matching log entries (maximum is %s).'), count($filterlog), $nentries);?>
+										</strong>
 									  </td>
 									</tr>
 									<tr class="sortableHeaderRowIdentifier">
@@ -710,12 +728,25 @@ include("head.inc");
 									$rowIndex++;?>
 									<tr class="<?=$evenRowClass?>">
 									  <td class="listMRlr nowrap" align="center" sorttable_customkey="<?=$filterent['act']?>">
-									  <a onclick="javascript:getURL('diag_logs_filter.php?getrulenum=<?php echo "{$filterent['rulenum']},{$filterent['act']}"; ?>', outputrule);" title="<?php echo $filterent['act'] .'/';?>"><span class="glyphicon glyphicon-remove"></span></a></td>
+									  <a href="#" onclick="javascript:getURL('diag_logs_filter.php?getrulenum=<?php echo "{$filterent['rulenum']},{$filterent['act']}"; ?>', outputrule);" title="<?php echo $filterent['act'];?>"><span class="glyphicon glyphicon-<?php switch ($filterent['act']) {
+									    case 'pass':
+                                                                                echo "play";  /* icon triangle */
+                                                                                break;
+                                                                            case 'match':
+                                                                                echo "random";
+                                                                                break;
+                                                                            case 'reject':
+									    case 'block':
+									    default:
+                                                                            echo 'remove'; /* a x*/
+                                                                            break;
+									  }
+									  ?>"></span></a></td>
 									  <?php if (isset($filterent['count'])) echo $filterent['count'];?></a></center></td>
 									  <td class="listMRr nowrap"><?php echo htmlspecialchars($filterent['time']);?></td>
 									  <td class="listMRr nowrap">
 										<?php if ($filterent['direction'] == "out"): ?>
-										<span class="glyphicon glyphicon-cloud-download" alt="Direction=OUT" title="Direction=OUT"></span>
+                    <span class="glyphicon glyphicon-cloud-download" alt="<?= gettext('Direction=OUT') ?>" title="<?= gettext('Direction=OUT') ?>"></span>
 										<?php endif; ?>
 										<?php echo htmlspecialchars($filterent['interface']);?></td>
 									  <?php
@@ -757,7 +788,7 @@ include("head.inc");
 											<input type="hidden" value="<?= $int;?>" id="intf"/>
 											<input type="hidden" value="<?= $proto;?>" id="proto"/>
 											<input type="hidden" value="<?= $ipproto;?>" id="ipproto"/>
-										<span  class="glyphicon glyphicon-play" alt="Icon Easy Rule: Pass this traffic"></span></a>
+                      <span  class="glyphicon glyphicon-play" alt="<?= gettext('Icon Easy Rule: Pass this traffic') ?>"></span></a>
 										<?php echo $dststr . '<span class="RESOLVE-' . $dst_htmlclass . '"></span>';?>
 									  </td>
 									  <?php
@@ -774,34 +805,12 @@ include("head.inc");
 									<?php endif;
 									endforeach;
 									buffer_rules_clear(); ?>
-						<?php else: ?>
-								  <tr>
-									<td colspan="2" class="listtopic">
-									  <?php printf(gettext("Last %s firewall log entries"),$nentries);?></td>
-								  </tr>
-								  <?php
-									if($filtertext)
-										dump_clog($filter_logfile, $nentries, true, array("$filtertext"));
-									else
-										dump_clog($filter_logfile, $nentries);
-								  ?>
-						<?php endif; ?>
 
 								</table>
 								</div>
 							</td>
 						  </tr>
 						</table>
-
-
-						<form id="clearform" name="clearform" action="diag_logs_filter.php" method="post" style="margin-top: 14px;">
-							<input id="submit" name="clear" type="submit" class="btn btn-primary" value="<?=gettext("Clear log");?>" />
-						</form>
-
-						<p><span class="vexpl"><a href="http://en.wikipedia.org/wiki/Transmission_Control_Protocol">TCP Flags</a>: F - FIN, S - SYN, A or . - ACK, R - RST, P - PSH, U - URG, E - ECE, W - CWR</span></p>
-
-
-						</div>
 				    </div>
 			</section>
 			</div>
@@ -826,7 +835,7 @@ $( document ).ready(function() {
 					intf:$(this).find('#intf').val()
 				},
 				complete: function(data,status) {
-					alert("added block rule");
+          alert("<?= gettext('added block rule') ?>");
 				},
 			});
 
@@ -848,7 +857,7 @@ $( document ).ready(function() {
 					intf:$(this).find('#intf').val()
 				},
 				complete: function(data,status) {
-					alert("added pass rule");
+          alert("<?= gettext('added pass rule') ?>");
 				},
 			});
 
@@ -877,11 +886,6 @@ function resolve_ip_callback(transport) {
 	var resolve_text = '<small><br />' + htmlspecialchars(response.resolve_text) + '<\/small>';
 
 	jQuery('span.RESOLVE-' + resolve_class).html(resolve_text);
-	jQuery('img.ICON-' + resolve_class).removeAttr('title');
-	jQuery('img.ICON-' + resolve_class).removeAttr('alt');
-	jQuery('img.ICON-' + resolve_class).attr('src', '/themes/<?= $g['theme']; ?>/images/icons/icon_log_d.gif');
-	jQuery('img.ICON-' + resolve_class).prop('onclick', null);
-	  // jQuery cautions that "removeAttr('onclick')" fails in some versions of IE
 }
 
 // From http://stackoverflow.com/questions/5499078/fastest-method-to-escape-html-tags-as-html-entities

@@ -1,37 +1,34 @@
 <?php
 
 /*
-  Copyright (C) 2008 Bill Marquette, Seth Mos
-  Copyright (C) 2010 Ermal Luçi
-  All rights reserved.
+    Copyright (C) 2008 Bill Marquette, Seth Mos
+    Copyright (C) 2010 Ermal Luçi
+    All rights reserved.
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions are met:
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
 
-  1. Redistributions of source code must retain the above copyright notice,
-  this list of conditions and the following disclaimer.
+    1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
 
-  2. Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.
+    2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
 
-  THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-  INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-  AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-  AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-  OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-  POSSIBILITY OF SUCH DAMAGE.
+    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
 */
 
-require_once("config.inc");
-require_once("rrd.inc");
-
-/* Returns an array of default values used for apinger.conf */
-function return_apinger_defaults() {
+function return_apinger_defaults()
+{
 	return array(
 		"latencylow" => "200",
 		"latencyhigh" => "500",
@@ -41,7 +38,8 @@ function return_apinger_defaults() {
 		"down" => "10",
 		"avg_delay_samples" => "10",
 		"avg_loss_samples" => "50",
-		"avg_loss_delay_samples" => "20");
+		"avg_loss_delay_samples" => "20"
+	);
 }
 
 /*
@@ -55,13 +53,7 @@ function setup_gateways_monitor()
 	@mkdir('/var/db/rrd', 0775);
 	@chown('/var/db/rrd', 'nobody');
 
-	$gateways_arr = return_gateways_array();
-	if (!is_array($gateways_arr)) {
-		log_error("No gateways to monitor. Apinger will not be run.");
-		killbypid('/var/run/apinger.pid');
-		@unlink('/var/run/apinger.status');
-		return;
-	}
+	$gateways_arr_all = return_gateways_array(true);
 
 	$apinger_default = return_apinger_defaults();
 	$apingerconfig = <<<EOD
@@ -148,22 +140,23 @@ target default {
 EOD;
 
 	$monitor_ips = array();
-	foreach($gateways_arr as $name => $gateway) {
-		/* Do not monitor if such was requested */
-		if (isset($gateway['monitor_disable']))
-			continue;
+	foreach($gateways_arr_all as $name => $gateway) {
 		if (empty($gateway['monitor']) || !is_ipaddr($gateway['monitor'])) {
-			if (is_ipaddr($gateway['gateway']))
+			if (is_ipaddr($gateway['gateway'])) {
 				$gateway['monitor'] = $gateway['gateway'];
-			else /* No chance to get an ip to monitor skip target. */
+			} else {
+				/* No chance to get an ip to monitor skip target. */
 				continue;
+			}
 		}
 
 		/* if the monitor address is already used before, skip */
-		if(in_array($gateway['monitor'], $monitor_ips))
+		if (in_array($gateway['monitor'], $monitor_ips)) {
 			continue;
+		}
 
-		/* Interface ip is needed since apinger will bind a socket to it.
+		/*
+		 * Interface IP is needed since apinger will bind a socket to it.
 		 * However the config GUI should already have checked this and when
 		 * PPoE is used the IP address is set to "dynamic". So using is_ipaddrv4
 		 * or is_ipaddrv6 to identify packet type would be wrong, especially as
@@ -171,9 +164,21 @@ EOD;
 		 * the if block. So using $gateway['ipprotocol'] is the better option.
 		 */
 		if ($gateway['ipprotocol'] == "inet") { // This is an IPv4 gateway...
-			$gwifip = find_interface_ip($gateway['interface'], true);
-			if (!is_ipaddrv4($gwifip))
+			$gwifip = find_interface_ip($gateway['interface']);
+			if (!is_ipaddrv4($gwifip)) {
 				continue; //Skip this target
+			}
+
+			/* flush the monitor unconditionally */
+			if (is_ipaddrv4($gateway['gateway']) && $gateway['monitor'] != $gateway['gateway']) {
+				log_error("Removing static route for monitor {$gateway['monitor']}");
+				mwexec("/sbin/route delete -host " . escapeshellarg($gateway['monitor']), true);
+			}
+
+			/* Do not monitor if such was requested */
+			if (isset($gateway['disabled']) || isset($gateway['monitor_disable'])) {
+				continue;
+			}
 
 			/*
 			 * If the gateway is the same as the monitor we do not add a
@@ -182,18 +187,17 @@ EOD;
 			 * not strictly necessary but is a added level of protection.
 			 */
 			if (is_ipaddrv4($gateway['gateway']) && $gateway['monitor'] != $gateway['gateway']) {
-				log_error("Removing static route for monitor {$gateway['monitor']} and adding a new route through {$gateway['gateway']}");
-				mwexec("/sbin/route delete -host " . escapeshellarg($gateway['monitor']), true);
+				log_error("Adding static route for monitor through {$gateway['gateway']}");
 				mwexec("/sbin/route add -host " . escapeshellarg($gateway['monitor']) .
 					" " . escapeshellarg($gateway['gateway']), true);
 			}
-		} else if ($gateway['ipprotocol'] == "inet6") { // This is an IPv6 gateway...
+		} elseif ($gateway['ipprotocol'] == "inet6") { // This is an IPv6 gateway...
 			if ($gateway['monitor'] == $gateway['gateway']) {
 				/* link locals really need a different src ip */
 				if (is_linklocal($gateway['gateway'])) {
-					$gwifip = find_interface_ipv6_ll($gateway['interface'], true);
+					$gwifip = find_interface_ipv6_ll($gateway['interface']);
 				} else {
-					$gwifip = find_interface_ipv6($gateway['interface'], true);
+					$gwifip = find_interface_ipv6($gateway['interface']);
 				}
 			} else {
 				/* 'monitor' has been set, so makes sure it has precedence over
@@ -201,19 +205,31 @@ EOD;
 				 * is a local link and 'monitor' is global routable then the
 				 * ICMP6 response would not find its way back home...
 				 */
-				$gwifip = find_interface_ipv6($gateway['interface'], true);
+				$gwifip = find_interface_ipv6($gateway['interface']);
 				if (is_linklocal($gateway['monitor'])) {
 					if (!strstr($gateway['monitor'], '%')) {
 						$gateway['monitor'] .= "%{$gateway['interface']}";
 					}
 				} else {
 					// Monitor is a routable address, so use a routable address for the "src" part
-					$gwifip = find_interface_ipv6($gateway['interface'], true);
+					$gwifip = find_interface_ipv6($gateway['interface']);
 				}
 			}
 
-			if (!is_ipaddrv6($gwifip))
+			if (!is_ipaddrv6($gwifip)) {
 				continue; //Skip this target
+			}
+
+			/* flush the monitor unconditionally */
+			if (is_ipaddrv6($gateway['gateway']) && $gateway['monitor'] != $gateway['gateway']) {
+				log_error("Removing static route for monitor {$gateway['monitor']}");
+				mwexec("/sbin/route delete -host -inet6 " . escapeshellarg($gateway['monitor']), true);
+			}
+
+			/* Do not monitor if such was requested */
+			if (isset($gateway['disabled']) || isset($gateway['monitor_disable'])) {
+				continue;
+			}
 
 			/*
 			 * If the gateway is the same as the monitor we do not add a
@@ -222,13 +238,13 @@ EOD;
 			 * not strictly necessary but is a added level of protection.
 			 */
 			if (is_ipaddrv6($gateway['gateway']) && $gateway['monitor'] != $gateway['gateway']) {
-				log_error("Removing static route for monitor {$gateway['monitor']} and adding a new route through {$gateway['gateway']}");
-				mwexec("/sbin/route delete -host -inet6 " . escapeshellarg($gateway['monitor']), true);
+				log_error("Adding static route for monitor through {$gateway['gateway']}");
 				mwexec("/sbin/route add -host -inet6 " . escapeshellarg($gateway['monitor']) .
 					" " . escapeshellarg($gateway['gateway']), true);
 			}
-		} else
+		} else {
 			continue;
+		}
 
 		$monitor_ips[] = $gateway['monitor'];
 		$apingercfg = "target \"{$gateway['monitor']}\" {\n";
@@ -332,6 +348,15 @@ EOD;
 		# match the OPNsense gateway quality graph set.
 		create_gateway_quality_rrd("/var/db/rrd/{$gateway['name']}-quality.rrd");
 	}
+
+	$gateways_arr = return_gateways_array();
+	if (!is_array($gateways_arr)) {
+		log_error("No gateways to monitor. Apinger will not be run.");
+		killbypid('/var/run/apinger.pid');
+		@unlink('/var/run/apinger.status');
+		return;
+	}
+
 	@file_put_contents('/var/etc/apinger.conf', $apingerconfig);
 	unset($apingerconfig);
 
@@ -434,8 +459,7 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
 	$found_defaultv4 = 0;
 	$found_defaultv6 = 0;
 
-	// Ensure the interface cache is up to date first
-	$interfaces = get_interface_arr(true);
+	$interfaces = legacy_interface_listget();
 	$interfaces_v4 = array();
 	$interfaces_v6 = array();
 
@@ -487,10 +511,11 @@ function return_gateways_array($disabled = false, $localhost = false, $inactive 
 					$gateway['ipprotocol'] = "inet6";
 			}
 
-			if (isset($gateway['monitor_disable']))
+			if (isset($gateway['monitor_disable'])) {
 				$gateway['monitor_disable'] = true;
-			else if (empty($gateway['monitor']))
+			} elseif (empty($gateway['monitor'])) {
 				$gateway['monitor'] = $gateway['gateway'];
+			}
 
 			$gateway['friendlyiface'] = $gateway['interface'];
 
@@ -822,15 +847,15 @@ function return_gateway_groups_array()
 					$status = $gateways_status[$gwname];
 					$gwdown = false;
 					if (stristr($status['status'], 'down')) {
-						$msg = sprintf(_('MONITOR: %s is down, removing from routing group %s'), $gwname, $group['name']);
+						$msg = sprintf(gettext('MONITOR: %s is down, removing from routing group %s'), $gwname, $group['name']);
 						$gwdown = true;
 					} elseif (stristr($status['status'], 'loss') && strstr($group['trigger'], 'loss')) {
 						/* packet loss */
-						$msg = sprintf(_('MONITOR: %s has packet loss, removing from routing group %s'), $gwname, $group['name']);
+						$msg = sprintf(gettext('MONITOR: %s has packet loss, removing from routing group %s'), $gwname, $group['name']);
 						$gwdown = true;
 					} elseif (stristr($status['status'], 'delay') && strstr($group['trigger'] , 'latency')) {
 						/* high latency */
-						$msg = sprintf(_('MONITOR: %s has high latency, removing from routing group %s'), $gwname, $group['name']);
+						$msg = sprintf(gettext('MONITOR: %s has high latency, removing from routing group %s'), $gwname, $group['name']);
 						$gwdown = true;
 					}
 					if ($gwdown == true) {
@@ -851,7 +876,7 @@ function return_gateway_groups_array()
 			if ($tiers_count == 0) {
 				/* Oh dear, we have no members! Engage Plan B */
 				if (!file_exists('/var/run/booting')) {
-					$msg = sprintf(_('Gateways status could not be determined, considering all as up/active. (Group: %s)'), $group['name']);
+					$msg = sprintf(gettext('Gateways status could not be determined, considering all as up/active. (Group: %s)'), $group['name']);
 					log_error($msg);
 					notify_via_growl($msg);
 					//notify_via_smtp($msg);
@@ -903,7 +928,8 @@ function return_gateway_groups_array()
 
 function lookup_gateway_ip_by_name($name) {
 
-	$gateways_arr = return_gateways_array(false, true);
+	$gateways_arr = return_gateways_array(true, true);
+
 	foreach ($gateways_arr as $gname => $gw) {
 		if ($gw['name'] === $name || $gname === $name)
 			return $gw['gateway'];
@@ -963,7 +989,7 @@ function get_interface_gateway_v6($interface, &$dynamic = false)
 
 	$gw = NULL;
 	$gwcfg = $config['interfaces'][$interface];
-	if (!empty($gwcfg['gatewayv6']) && is_array($config['gateways']['gateway_item'])) {
+	if (!empty($gwcfg['gatewayv6']) && isset($config['gateways']['gateway_item'])) {
 		foreach($config['gateways']['gateway_item'] as $gateway) {
 			if(($gateway['name'] == $gwcfg['gatewayv6']) && (is_ipaddrv6($gateway['gateway']))) {
 				$gw = $gateway['gateway'];

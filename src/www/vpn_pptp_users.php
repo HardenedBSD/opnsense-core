@@ -41,7 +41,7 @@ if ($_POST) {
     if ($_POST['apply']) {
         $retval = 0;
         $retval = vpn_setup();
-        $savemsg = get_std_save_message($retval);
+        $savemsg = get_std_save_message();
         if ($retval == 0) {
             if (is_subsystem_dirty('pptpusers')) {
                 clear_subsystem_dirty('pptpusers');
@@ -60,13 +60,12 @@ if ($_GET['act'] == "del") {
     }
 }
 
-$pgtitle = array(gettext("VPN"),gettext("VPN PPTP"),gettext("Users"));
-$shortcut_section = "pptps";
 include("head.inc");
 
 $main_buttons = array(
     array('label'=>gettext("add user"), 'href'=>'vpn_pptp_users_edit.php'),
 );
+
 ?>
 
 <body>
@@ -85,18 +84,11 @@ $main_buttons = array(
 } ?>
 				<?php if (is_subsystem_dirty('pptpusers')) :
 ?><br/>
-				<?php print_info_box_np(gettext("The PPTP user list has been modified").".<br />".gettext("You must apply the changes in order for them to take effect").".<br /></b><b>".gettext("Warning: this will terminate all current PPTP sessions")."!");?><br />
+				<?php print_info_box_apply(gettext("The PPTP user list has been modified").".<br />".gettext("You must apply the changes in order for them to take effect").".<br /></b><b>".gettext("Warning: this will terminate all current PPTP sessions")."!");?><br />
 				<?php
 endif; ?>
 
 			    <section class="col-xs-12">
-
-				<?php
-                        $tab_array = array();
-                        $tab_array[0] = array(gettext("Configuration"), false, "vpn_pptp.php");
-                        $tab_array[1] = array(gettext("Users"), true, "vpn_pptp_users.php");
-                        display_top_tabs($tab_array);
-                    ?>
 
 					<div class="tab-content content-box col-xs-12">
 
@@ -125,7 +117,7 @@ endif; ?>
 
                                         <a href="vpn_pptp_users.php?act=del&amp;id=<?=$i;
 ?>" class="btn btn-default" onclick="return confirm('<?=gettext("Do you really want to delete this user?");
-?>')"title="<?=gettext("delete user"); ?>"><span class="glyphicon glyphicon-remove"></span></a></td>
+?>')"title="<?=gettext("delete user"); ?>"><span class="fa fa-trash text-muted"></span></a></td>
 										</tr>
                                         <?php $i++;
 

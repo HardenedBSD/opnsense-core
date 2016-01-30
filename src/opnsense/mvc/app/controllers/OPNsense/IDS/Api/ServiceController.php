@@ -223,7 +223,7 @@ class ServiceController extends ApiControllerBase
 
             if ($this->request->getPost('searchPhrase', 'string', '') != "") {
                 $filterTag = $filter->sanitize($this->request->getPost('searchPhrase'), "query");
-                $searchPhrase = 'alert,src_ip/"*'.$filterTag .'*"';
+                $searchPhrase = 'alert,alert_action,src_ip/"*'.$filterTag .'*"';
             } else {
                 $searchPhrase = '';
             }
@@ -237,7 +237,7 @@ class ServiceController extends ApiControllerBase
 
             $backend = new Backend();
             $response = $backend->configdpRun("ids query alerts", array($itemsPerPage,
-                ($currentPage-1)*$itemsPerPage, $searchPhrase,$fileid));
+                ($currentPage-1)*$itemsPerPage, $searchPhrase, $fileid));
             $result = json_decode($response, true);
             if ($result != null) {
                 $result['rowCount'] = count($result['rows']);
@@ -251,15 +251,16 @@ class ServiceController extends ApiControllerBase
 
     /**
      * fetch alert detailed info
-     * @param $alertId alert id, position in log file
+     * @param string $alertId alert id, position in log file
+     * @param string $fileid log file id number (empty for standard)
      * @return array alert info
      */
-    public function getAlertInfoAction($alertId)
+    public function getAlertInfoAction($alertId, $fileid = "")
     {
         $backend = new Backend();
         $filter = new Filter();
         $id = $filter->sanitize($alertId, "int");
-        $response = $backend->configdpRun("ids query alerts", array(1, 0, "filepos/".$id));
+        $response = $backend->configdpRun("ids query alerts", array(1, 0, "filepos/".$id, $fileid));
         $result = json_decode($response, true);
         if ($result != null && count($result['rows']) > 0) {
             return $result['rows'][0];

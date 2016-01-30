@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2008 Bill Marquette <bill.marquette@gmail.com>.
@@ -28,9 +29,10 @@
 */
 
 require_once("guiconfig.inc");
-require_once("functions.inc");
 require_once("filter.inc");
-require_once("util.inc");
+require_once("services.inc");
+require_once("vslb.inc");
+require_once("interfaces.inc");
 
 if (!is_array($config['load_balancer']['setting'])) {
 	$config['load_balancer']['setting'] = array();
@@ -44,7 +46,7 @@ if ($_POST) {
                 $retval |= filter_configure();
                 $retval |= relayd_configure();
 
-                $savemsg = get_std_save_message($retval);
+                $savemsg = get_std_save_message();
                 clear_subsystem_dirty('loadbalancer');
         } else {
 		unset($input_errors);
@@ -81,8 +83,7 @@ if ($_POST) {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("Load Balancer"),gettext("Settings"));
-$shortcut_section = "relayd";
+$service_hook = 'relayd';
 
 include("head.inc");
 
@@ -98,20 +99,10 @@ include("head.inc");
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('loadbalancer')): ?><br/>
-				<?php print_info_box_np(gettext("The load balancer configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The load balancer configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
-
-				<?php
-			        /* active tabs */
-			        $tab_array = array();
-			        $tab_array[] = array(gettext("Pools"), false, "load_balancer_pool.php");
-			        $tab_array[] = array(gettext("Virtual Servers"), false, "load_balancer_virtual_server.php");
-			        $tab_array[] = array(gettext("Monitors"), false, "load_balancer_monitor.php");
-			        $tab_array[] = array(gettext("Settings"), true, "load_balancer_setting.php");
-			        display_top_tabs($tab_array);
-			       ?>
 
 					<div class="tab-content content-box col-xs-12">
 
@@ -122,7 +113,7 @@ include("head.inc");
 
 						            <table class="table table-striped table-sort">
 						              <tr>
-						                 <td colspan="2" valign="top" class="listtopic"><?=gettext("Relayd global settings"); ?></td>
+						                 <td colspan="2" valign="top" class="listtopic"><?=gettext("Global settings"); ?></td>
 						              </tr>
 							      <tr>
 							         <td width="22%" valign="top" class="vncell"><?=gettext("timeout") ; ?></td>

@@ -29,9 +29,8 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-require_once('globals.inc');
 require_once('config.inc');
-require_once('functions.inc');
+require_once("util.inc");
 
 $bin_ssh_keygen = '/usr/local/bin/ssh-keygen';
 $sbin_sshd = '/usr/local/sbin/sshd';
@@ -45,13 +44,12 @@ if (!isset($config['system']['ssh']['enabled'])) {
 }
 
 /* reinstall the backup if it is available */
-if (file_exists('/conf/sshd/ssh_host_key') && !file_exists("{$etc_ssh}/ssh_host_key")) {
+if (file_exists('/conf/sshd/ssh_host_rsa_key') && !file_exists("{$etc_ssh}/ssh_host_rsa_key")) {
 	mwexec("/bin/cp -p /conf/sshd/* {$etc_ssh}/");
 }
 
 $keys = array(
 	/* .pub files are implied */
-	'rsa1' => 'ssh_host_key',
 	'rsa' => 'ssh_host_rsa_key',
 	'dsa' => 'ssh_host_dsa_key',
 	'ecdsa' => 'ssh_host_ecdsa_key',
@@ -130,14 +128,14 @@ foreach ($keys as $name) {
 }
 
 if ($generate_keys) {
-	log_error(_('Started creating your SSH keys. SSH startup is being delayed a wee bit.'));
+	log_error(gettext('Started creating your SSH keys. SSH startup is being delayed a wee bit.'));
 	mark_subsystem_dirty('sshdkeys');
 	mwexec("/bin/rm -f {$etc_ssh}/ssh_host_*");
 	foreach ($keys as $type => $name) {
 		mwexec(sprintf('%s -t %s -N "" -f %s/%s', $bin_ssh_keygen, $type, $etc_ssh, $name));
 	}
 	clear_subsystem_dirty('sshdkeys');
-	log_error(_('Completed creating your SSH keys. SSH will now be started.'));
+	log_error(gettext('Completed creating your SSH keys. SSH will now be started.'));
 }
 
 /* Launch new server process */

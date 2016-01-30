@@ -27,7 +27,6 @@
 	POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('rrd.inc');
 
 function dump_rrd_to_xml($rrddatabase, $xmldumpfile)
 {
@@ -38,7 +37,7 @@ function dump_rrd_to_xml($rrddatabase, $xmldumpfile)
 	exec("$rrdtool dump " . escapeshellarg($rrddatabase) . " {$xmldumpfile} 2>&1", $dumpout, $dumpret);
 	if ($dumpret <> 0) {
 		$dumpout = implode(" ", $dumpout);
-		log_error(sprintf(gettext('RRD dump failed exited with %1$s, the error is: %2$s'), $dumpret, $dumpout));
+		log_error(sprintf(gettext('RRD dump failed exited with %s, the error is: %s'), $dumpret, $dumpout));
 	}
 
 	return($dumpret);
@@ -54,7 +53,7 @@ function migrate_rrd_format($rrdoldxml, $rrdnewxml) {
 	$numrranew = count($rrdnewxml['rra']);
 	$numdsold = count($rrdoldxml['ds']);
 	$numdsnew = count($rrdnewxml['ds']);
-	log_error(sprintf(gettext('Import RRD has %1$s DS values and %2$s RRA databases, new format RRD has %3$s DS values and %4$s RRA databases'), $numdsold, $numrraold, $numdsnew ,$numrranew));
+	log_error(sprintf(gettext('Import RRD has %s DS values and %s RRA databases, new format RRD has %s DS values and %s RRA databases'), $numdsold, $numrraold, $numdsnew ,$numrranew));
 
 	/* add data sources not found in the old array from the new array */
 	$i = 0;
@@ -138,7 +137,7 @@ function migrate_rrd_format($rrdoldxml, $rrdnewxml) {
 
 	$numrranew = count($rrdoldxml['rra']);
 	$numdsnew = count($rrdoldxml['ds']);
-	log_error(sprintf(gettext('The new RRD now has %1$s DS values and %2$s RRA databases'), $numdsnew, $numrranew));
+	log_error(sprintf(gettext('The new RRD now has %s DS values and %s RRA databases'), $numdsnew, $numrranew));
 	return $rrdoldxml;
 }
 
@@ -476,13 +475,6 @@ function upgrade_017_to_018() {
 	}
 }
 
-
-function upgrade_018_to_019() {
-	global $config;
-	$config['theme']="metallic";
-}
-
-
 function upgrade_019_to_020() {
 	global $config;
 	if(is_array($config['ipsec']['tunnel'])) {
@@ -509,7 +501,8 @@ function upgrade_024_to_025() {
 	unset($config['system']['use_rrd_gateway']);
 }
 
-function upgrade_025_to_026() {
+function upgrade_025_to_026()
+{
 	global $config;
 	$cron_item = array();
 	$cron_item['minute'] = "0";
@@ -576,19 +569,7 @@ function upgrade_025_to_026() {
 	$cron_item['command'] = "/usr/local/sbin/expiretable -v -t 3600 virusprot";
 
 	$config['cron']['item'][] = $cron_item;
-
-	$cron_item = array();
-	$cron_item['minute'] = "*/60";
-	$cron_item['hour'] = "*";
-	$cron_item['mday'] = "*";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "/usr/local/sbin/expiretable -t 1800 snort2c";
-
-	$config['cron']['item'][] = $cron_item;
 }
-
 
 function upgrade_028_to_029() {
 	global $config;
@@ -805,13 +786,15 @@ function upgrade_042_to_043() {
 }
 
 
-function upgrade_043_to_044() {
+function upgrade_043_to_044()
+{
 	global $config;
 
 	/* migrate static routes to the new gateways config */
 	$gateways = return_gateways_array(true);
 	$i = 0;
-	if (is_array($config['staticroutes']['route'])) {
+
+	if (isset($config['staticroutes']['route'])) {
 		$gwmap = array();
 		foreach ($config['staticroutes']['route'] as $idx => $sroute) {
 			$found = false;
@@ -1386,7 +1369,7 @@ function upgrade_048_to_049() {
 	/* work around broken gid assignments */
 	$config['system']['nextgid'] = 2000;
 	foreach ($config['system']['group'] as & $group) {
-		if ($group['name'] == $g['admin_group'])
+		if ($group['name'] == 'admins')
 			$group['gid'] = 1999;
 		else
 			$group['gid'] = $config['system']['nextgid']++;
@@ -1410,7 +1393,7 @@ function upgrade_048_to_049() {
 
 	/* reset group scope information */
 	foreach ($config['system']['group'] as & $group)
-		if ($group['name'] != $g['admin_group'])
+		if ($group['name'] != 'admins')
 		$group['scope'] = "user";
 
 	/* insert new all group */
@@ -2251,7 +2234,6 @@ function upgrade_058_to_059() {
 
 function upgrade_059_to_060() {
 	global $config;
-	require_once("certs.inc");
 	if (is_array($config['ca'])) {
 		/* Locate issuer for all CAs */
 		foreach ($config['ca'] as & $ca) {
@@ -2336,18 +2318,6 @@ function upgrade_061_to_062() {
 
 		unset($natent);
 	}
-}
-
-function upgrade_062_to_063() {
-	/* Upgrade legacy Themes to the new pfsense_ng */
-	global $config;
-
-	switch($config['theme']) {
-		case "nervecenter":
-			$config['theme'] = "pfsense_ng";
-			break;
-	}
-
 }
 
 function upgrade_063_to_064() {
@@ -2577,20 +2547,25 @@ function upgrade_071_to_072() {
 		rename_field($config['sysctl']['item'], 'desc', 'descr');
 }
 
-function upgrade_072_to_073() {
+function upgrade_072_to_073()
+{
 	global $config;
-	if (!is_array($config['load_balancer']))
+
+	if (!isset($config['load_balancer'])) {
 		return;
-	if (is_array($config['load_balancer']['monitor_type']))
+	}
+
+	if (isset($config['load_balancer']['monitor_type'])) {
 		rename_field($config['load_balancer']['monitor_type'], 'desc', 'descr');
-	if (is_array($config['load_balancer']['lbpool']))
+	}
+
+	if (isset($config['load_balancer']['lbpool'])) {
 		rename_field($config['load_balancer']['lbpool'], 'desc', 'descr');
-	if (is_array($config['load_balancer']['lbaction']))
-		rename_field($config['load_balancer']['lbaction'], 'desc', 'descr');
-	if (is_array($config['load_balancer']['lbprotocol']))
-		rename_field($config['load_balancer']['lbprotocol'], 'desc', 'descr');
-	if (is_array($config['load_balancer']['virtual_server']))
+	}
+
+	if (isset($config['load_balancer']['virtual_server'])) {
 		rename_field($config['load_balancer']['virtual_server'], 'desc', 'descr');
+	}
 }
 
 function upgrade_073_to_074() {
@@ -3156,7 +3131,6 @@ function upgrade_098_to_099() {
 }
 
 function upgrade_099_to_100() {
-	require_once("services.inc");
 	install_cron_job("newsyslog", false);
 }
 
@@ -3300,46 +3274,18 @@ function upgrade_105_to_106() {
 	}
 }
 
-function upgrade_106_to_107() {
+function upgrade_109_to_110()
+{
 	global $config;
 
-}
-
-function upgrade_107_to_108() {
-	global $config;
-
-	if (isset($config['system']['webgui']['noautocomplete']))
-		unset($config['system']['webgui']['noautocomplete']);
-	else
-		$config['system']['webgui']['loginautocomplete'] = true;
-}
-
-function upgrade_108_to_109() {
-	global $config;
-
-	if (!isset($config['filter']['rule']) || !is_array($config['filter']['rule']))
+	if (!isset($config['ipsec']['phase2'])) {
 		return;
-
-	foreach ($config['filter']['rule'] as &$rule) {
-		if (!isset($rule['dscp']) || empty($rule['dscp']))
-			continue;
-
-		$pos = strpos($rule['dscp'], ' ');
-		if ($pos !== false)
-			$rule['dscp'] = substr($rule['dscp'], 0, $pos);
-		unset($pos);
 	}
-}
-
-function upgrade_109_to_110() {
-	global $config;
-
-	if (!is_array($config['ipsec']) || !is_array($config['ipsec']['phase2']))
-		return;
 
 	foreach ($config['ipsec']['phase2'] as &$rule) {
-		if (!empty($rule['uniqid']))
+		if (!empty($rule['uniqid'])) {
 			continue;
+		}
 
 		$rule['uniqid'] = uniqid();
 	}
@@ -3348,16 +3294,6 @@ function upgrade_109_to_110() {
 function upgrade_110_to_111()
 {
 	global $config;
-
-	/* Make sure unbound user exist */
-	mwexec('/usr/sbin/pw groupadd -n unbound -g 59', true);
-	mwexec('/usr/sbin/pw useradd -n unbound -c "Unbound DNS Resolver" -d /var/unbound -s /usr/sbin/nologin -u 59 -g 59', true);
-
-	/* cleanup old unbound package stuffs */
-	@unlink('/usr/local/www/unbound_status.php');
-	@unlink('/usr/local/www/unbound_acls.php');
-	@unlink('/usr/local/bin/unbound_monitor.sh');
-	@unlink('/usr/local/etc/rc.d/unbound.sh');
 
 	/* Remove old menu and service entries */
 	if (isset($config['installedpackages']['menu']) && is_array($config['installedpackages']['menu'])) {
@@ -3472,8 +3408,6 @@ function upgrade_111_to_112()
 {
 	global $config;
 
-	$config['theme'] = 'opnsense';
-
 	if (isset($config['system']['ssh']['sshdkeyonly'])) {
 		unset($config['system']['ssh']['sshdkeyonly']);
 	} else {
@@ -3483,5 +3417,14 @@ function upgrade_111_to_112()
 	if (isset($config['system']['enablesshd'])) {
 		$config['system']['ssh']['enabled'] = true;
 		unset($config['system']['enablesshd']);
+	}
+
+	if (isset($config['system']['user'])) {
+		foreach ($config['system']['user'] as &$user) {
+			if ($user['uid'] == '0') {
+				/* root user must be named root */
+				$user['name'] = 'root';
+			}
+		}
 	}
 }

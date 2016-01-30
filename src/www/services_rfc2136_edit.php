@@ -28,8 +28,10 @@
 */
 
 require_once("guiconfig.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
 
-if (!is_array($config['dnsupdates']['dnsupdate'])) {
+if (!isset($config['dnsupdates']['dnsupdate'])) {
 	$config['dnsupdates']['dnsupdate'] = array();
 }
 
@@ -110,7 +112,6 @@ if ($_POST) {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("RFC 2136 client"), gettext("Edit"));
 include("head.inc");
 
 ?>
@@ -164,7 +165,7 @@ include("head.inc");
 					                  <td width="22%" valign="top" class="vncellreq"><?=gettext("Hostname");?></td>
 					                  <td width="78%" class="vtable">
 					                    <input name="host" type="text" class="formfld unknown" id="host" size="30" value="<?=htmlspecialchars($pconfig['host']);?>" />
-								<br /><span>Fully qualified hostname of the host to be updated</span>
+								<br /><span><?= gettext('Fully qualified hostname of the host to be updated.') ?></span>
 					                  </td>
 									</tr>
 					                <tr>

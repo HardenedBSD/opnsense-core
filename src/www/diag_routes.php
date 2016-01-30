@@ -1,6 +1,7 @@
 <?php
+
 /*
-	Copyritgh (C) 2014 Deciso B.V.
+	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) 2006 Fernando Lamos
 	All rights reserved.
 
@@ -53,9 +54,6 @@ if (isset($_REQUEST['isAjax'])) {
 
 	exit;
 }
-
-$pgtitle = array(gettext("Diagnostics"),gettext("Routing tables"));
-$shortcut_section = "routing";
 
 include('head.inc');
 
@@ -120,8 +118,9 @@ include('head.inc');
 				j++;
 			}
 			// The 'Expire' field might be blank
-			if (j == (elements - 1))
+			if (j == (elements - 2)) {
 				tmp += '<td class="listr">&nbsp;<\/td>' + "\n";
+			}
 			tmp += '<\/tr>' + "\n";
 			if (i == 0)
 				thead += tmp;
@@ -155,22 +154,18 @@ include('head.inc');
 
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 
-                <div class="content-box">
-
-                    <header class="content-box-head container-fluid">
-				        <h3><?=gettext("Routing tables"); ?></h3>
-				    </header>
-
-				    <div class="content-box-main">
-
+                <div class="tab-content content-box col-xs-12">
 						<form action="<?=$_SERVER['REQUEST_URI'];?>" method="post" name="iform" id="iform">
 					    <div class="table-responsive">
 				        <table class="table table-striped __nomb">
-					        <tbody>
+				<tr>
+				        <td colspan="2" valign="top" class="listtopic"><strong><?= gettext('Routing tables') ?></strong></td>
+				</tr>
 						        <tr>
 						          <td><?=gettext("Name resolution");?></td>
 						          <td><input type="checkbox" class="formfld" id="resolve" name="resolve" value="yes" <?php if ($_POST['resolve'] == 'yes') echo "checked=\"checked\""; ?> />&nbsp;<?=gettext("Enable");?>
-										<p class="text-muted"><em><small><?=gettext("Enable this to attempt to resolve names when displaying the tables.");?></small></em></p>
+										<p class="text-muted"><em><small><?=gettext("Enable this to attempt to resolve names when displaying the tables.");?><br/>
+										  <?= gettext('Note:') ?> <?=gettext("By enabling name resolution, the query should take a bit longer. You can stop it at any time by clicking the Stop button in your browser.");?></small></em></p>
 									  </td>
 						        </tr>
 						        <tr>
@@ -196,16 +191,12 @@ include('head.inc');
 						          <td>&nbsp;</td>
 						          <td>
 							          <input type="button" class="btn btn-primary" name="update" onclick="update_all_routes();" value="<?=gettext("Update"); ?>" />
-										  <p class="text-muted"><em><small><span class="text-danger"><strong><?=gettext("Note:")?></strong></span> <?=gettext("By enabling name resolution, the query should take a bit longer. You can stop it at any time by clicking the Stop button in your browser.");?></small></em></p>
 							      </td>
 						        </tr>
-					        </tbody>
 					    </table>
 					    </div>
 					    </form>
 				    </div>
-
-				</div>
 			</section>
 
 			<section class="col-xs-12">
@@ -215,8 +206,8 @@ include('head.inc');
                     <header class="content-box-head container-fluid">
 				        <h3>IPv4</h3>
 				    </header>
-
-				     <table class="table table-striped table-sort sortable __nomb" id="IPv4" summary="ipv4 routes">
+				     <table class="table table-striped table-sort sortable __nomb" id="IPv4" summary="IPv4 routes">
+						<thead></thead>
 						<tbody>
 							<tr><td class="listhdrr"><?=gettext("Gathering data, please wait...");?></td></tr>
 						</tbody>
@@ -232,7 +223,7 @@ include('head.inc');
 				        <h3>IPv6</h3>
 				    </header>
 					<table class="table table-striped table-sort sortable __nomb" id="IPv6" summary="IPv6 routes">
-
+						<thead></thead>
 						<tbody>
 							<tr><td class="listhdrr"><?=gettext("Gathering data, please wait...");?></td></tr>
 						</tbody>

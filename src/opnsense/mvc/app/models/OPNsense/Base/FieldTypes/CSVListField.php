@@ -55,6 +55,20 @@ class CSVListField extends BaseField
     private $selectOptions = array();
 
     /**
+     * @var string basic regex validation to use for the complete field
+     */
+    protected $internalMask = null ;
+
+    /**
+     * set validation mask
+     * @param string $value regexp validation mask
+     */
+    public function setMask($value)
+    {
+        $this->internalMask = $value ;
+    }
+
+    /**
      * retrieve data including selection options (from setSelectOptions)
      * @return array
      */
@@ -107,10 +121,20 @@ class CSVListField extends BaseField
     }
 
     /**
-     * @return array returns validators
+     * retrieve field validators for this field type
+     * @return array returns regex validator
      */
     public function getValidators()
     {
-        return array() ;
+        if ($this->internalValidationMessage == null) {
+            $msg = "list validation error" ;
+        } else {
+            $msg = $this->internalValidationMessage;
+        }
+        if (($this->internalIsRequired || $this->internalValue != null) && $this->internalMask != null) {
+            return array(new Regex(array('message' => $msg,'pattern'=>trim($this->internalMask))));
+        } else {
+            return array();
+        }
     }
 }

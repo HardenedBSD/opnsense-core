@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2003-2004 Bob Zoller <bob@kludgebox.com> and Manuel Kasper <mk@neon1.net>.
@@ -26,6 +27,10 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
+require_once("guiconfig.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
+
 function hostcmp($a, $b) {
 	return strcasecmp($a['host'], $b['host']);
 }
@@ -38,8 +43,6 @@ function hosts_sort() {
 
         usort($config['dnsmasq']['hosts'], "hostcmp");
 }
-
-require_once("guiconfig.inc");
 
 $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/services_dnsmasq.php');
 
@@ -153,8 +156,8 @@ if ($_POST) {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("DNS forwarder"),gettext("Edit host"));
-$shortcut_section = "resolver";
+$service_hook = 'dnsmasq';
+
 include("head.inc");
 
 ?>
@@ -245,7 +248,7 @@ include("head.inc");
 					                        </tr>
 					                        <?php
 					                          $counter = 0;
-					                          if($pconfig['aliases']['item']):
+					                          if (isset($pconfig['aliases']['item'])):
 					                            foreach($pconfig['aliases']['item'] as $item):
 					                              $host = $item['host'];
 					                              $domain = $item['domain'];
@@ -262,7 +265,9 @@ include("head.inc");
 					                            <input name="aliasdescription<?php echo $counter; ?>" type="text" class="formfld unknown" id="aliasdescription<?php echo $counter; ?>" size="20" value="<?=htmlspecialchars($description);?>" />
 					                          </td>
 					                          <td>
-					                            <a onclick="removeRow(this); return false;" href="#"><img border="0" src="/themes/<?echo $g['theme'];?>/images/icons/icon_x.gif" alt="" title="<?=gettext("remove this entry"); ?>" /></a>
+					                            <a onclick="removeRow(this); return false;" href="#" title="<?=gettext("remove this entry"); ?>">
+					                            <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
+					                            </a>
 					                          </td>
 					                        </tr>
 					                        <?php

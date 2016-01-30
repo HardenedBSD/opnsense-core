@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    Copyright (C) 2015 Deciso B.V.
  *
@@ -28,8 +29,15 @@
  */
 namespace OPNsense\Base\Menu;
 
+/**
+ * Class MenuSystem
+ * @package OPNsense\Base\Menu
+ */
 class MenuSystem
 {
+    /**
+     * @var null|MenuItem root node
+     */
     private $root = null ;
 
     /**
@@ -84,8 +92,15 @@ class MenuSystem
     public function __construct()
     {
         $this->root = new MenuItem("root");
-        $this->addXML(__DIR__."/Menu.xml");
-
+        // crawl all vendors and modules and add menu definitions
+        foreach (glob(__DIR__.'/../../../*') as $vendor) {
+            foreach (glob($vendor.'/*') as $module) {
+                $menu_cfg_xml = $module.'/Menu/Menu.xml';
+                if (file_exists($menu_cfg_xml)) {
+                    $this->addXML($menu_cfg_xml);
+                }
+            }
+        }
     }
 
     /**
@@ -99,5 +114,30 @@ class MenuSystem
         $menu = $this->root->getChildren();
 
         return $menu;
+    }
+
+    /**
+     * return the currently selected page's breadcrumbs
+     * @return array
+     */
+    public function getBreadcrumbs()
+    {
+        $nodes = $this->root->getChildren();
+        $breadcrumbs = array();
+
+        while ($nodes != null) {
+            $next = null;
+            foreach ($nodes as $node) {
+                if ($node->Selected) {
+                    $breadcrumbs[] = array('name' => $node->VisibleName);
+                    /* only go as far as the first reachable URL */
+                    $next = empty($node->Url) ? $node->Children : null;
+                    break;
+                }
+            }
+            $nodes = $next;
+        }
+
+        return $breadcrumbs;
     }
 }

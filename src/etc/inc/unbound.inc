@@ -1,6 +1,7 @@
 <?php
 
 /*
+    Copyright (C) 2015 Manuel Faux <mfaux@conf.at>
     Copyright (C) 2014 Warren Baker <warren@decoy.co.za>
     All rights reserved.
 
@@ -25,11 +26,6 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 */
-
-/* include all configuration functions */
-require_once("config.inc");
-require_once("functions.inc");
-require_once("util.inc");
 
 /* Optimize Unbound for environment */
 function unbound_optimization() {
@@ -93,8 +89,23 @@ function unbound_optimization() {
 
 }
 
-function unbound_generate_config() {
+function bootstrap_unbound_root()
+{
+    global $g;
+
+    if (!is_dir($g['unbound_chroot_path'])) {
+        mkdir($g['unbound_chroot_path']);
+        chown($g['unbound_chroot_path'], 'unbound');
+        chgrp($g['unbound_chroot_path'], 'unbound');
+    }
+}
+
+function unbound_generate_config()
+{
     global $config, $g;
+
+    // Bootstrap needed for /var MFS
+    bootstrap_unbound_root();
 
     // Setup optimization
     $optimization = unbound_optimization();
@@ -111,12 +122,32 @@ function unbound_generate_config() {
         // Private-addresses for DNS Rebinding
         $private_addr = <<<EOF
 # For DNS Rebinding prevention
+#
+# All these addresses are either private or should not be routable in the global IPv4 or IPv6 internet.
+#
+# IPv4 Addresses
+#
+private-address: 0.0.0.0/8       # Broadcast address
 private-address: 10.0.0.0/8
+private-address: 100.64.0.0/10
+private-address: 127.0.0.0/8     # Loopback Localhost
 private-address: 172.16.0.0/12
+private-address: 192.0.0.0/24    # IANA IPv4 special purpose net
+private-address: 192.0.2.0/24    # Documentation network TEST-NET
 private-address: 192.168.0.0/16
 private-address: 192.254.0.0/16
-private-address: fd00::/8
-private-address: fe80::/10
+private-address: 198.18.0.0/15   # Used for testing inter-network communications
+private-address: 198.51.100.0/24 # Documentation network TEST-NET-2
+private-address: 203.0.113.0/24  # Documentation network TEST-NET-3
+private-address: 233.252.0.0/24  # Documentation network MCAST-TEST-NET
+#
+# IPv6 Addresses
+#
+private-address: ::1/128         # Loopback Localhost
+private-address: 2001:db8::/32   # Documentation network IPv6
+private-address: fc00::/8        # Unique local address (ULA) part of "fc00::/7", not defined yet
+private-address: fd00::/8        # Unique local address (ULA) part of "fc00::/7", "/48" prefix group
+private-address: fe80::/10       # Link-local address (LLA)
 EOF;
     }
 
@@ -198,7 +229,7 @@ EOF;
     $infra_lame_ttl = (!empty($config['unbound']['infra_lame_ttl'])) ? $config['unbound']['infra_lame_ttl'] : "900";
     $infra_cache_numhosts = (!empty($config['unbound']['infra_cache_numhosts'])) ? $config['unbound']['infra_cache_numhosts'] : "10000";
     $unwanted_reply_threshold = (!empty($config['unbound']['unwanted_reply_threshold'])) ? $config['unbound']['unwanted_reply_threshold'] : "0";
-    $verbosity = isset($config['unbound']['loglevel']) ? $config['unbound']['loglevel'] : 1;
+    $verbosity = isset($config['unbound']['log_verbosity']) ? $config['unbound']['log_verbosity'] : 1;
 
     // Set up forwarding if it configured
     if (isset($config['unbound']['forwarding'])) {
@@ -295,9 +326,10 @@ include: {$g['unbound_chroot_path']}/host_entries.conf
 
 # Domain overrides
 include: {$g['unbound_chroot_path']}/domainoverrides.conf
-{$forward_conf}
 
 {$custom_options}
+
+{$forward_conf}
 
 ###
 # Remote Control Config
@@ -362,42 +394,38 @@ function read_hosts() {
     return $etc_hosts;
 }
 
-function sync_unbound_service() {
-    global $config, $g;
-
+function sync_unbound_service()
+{
     // Configure chroot
-    if (!is_dir($g['unbound_chroot_path'])) {
-        mkdir($g['unbound_chroot_path']);
-        chown($g['unbound_chroot_path'], "unbound");
-        chgrp($g['unbound_chroot_path'], "unbound");
-    }
+    bootstrap_unbound_root();
 
     // Configure our Unbound service
     do_as_unbound_user("unbound-anchor");
     unbound_remote_control_setup();
     unbound_generate_config();
     do_as_unbound_user("start");
-    if (is_process_running("unbound"))
+    if (is_process_running('unbound')) {
         do_as_unbound_user("restore_cache");
-
+    }
 }
 
 // Execute commands as the user unbound
-function do_as_unbound_user($cmd) {
+function do_as_unbound_user($cmd)
+{
     global $g;
 
     switch ($cmd) {
-        case "start":
-            mwexec("/usr/sbin/unbound -c {$g['unbound_chroot_path']}/unbound.conf");
+        case 'start':
+            mwexec("/usr/local/sbin/unbound -c {$g['unbound_chroot_path']}/unbound.conf");
             break;
-        case "stop":
-            mwexec("chroot -u unbound -g unbound / /usr/sbin/unbound-control stop", true);
+        case 'stop':
+            mwexec("chroot -u unbound -g unbound / /usr/local/sbin/unbound-control stop", true);
             break;
-        case "unbound-anchor":
-            mwexec("chroot -u unbound -g unbound / /usr/sbin/unbound-anchor -a {$g['unbound_chroot_path']}/root.key", true);
+        case 'unbound-anchor':
+            mwexec("chroot -u unbound -g unbound / /usr/local/sbin/unbound-anchor -a {$g['unbound_chroot_path']}/root.key", true);
             break;
-        case "unbound-control-setup":
-            mwexec("chroot -u unbound -g unbound / /usr/sbin/unbound-control-setup -d {$g['unbound_chroot_path']}", true);
+        case 'unbound-control-setup':
+            mwexec("chroot -u unbound -g unbound / /usr/local/sbin/unbound-control-setup -d {$g['unbound_chroot_path']}", true);
             break;
         default:
             break;
@@ -488,20 +516,27 @@ function unbound_add_host_entries() {
         $host_entries = "";
         $added_item = array();
         foreach($config['unbound']['hosts'] as $host) {
-            $current_host = $host['host'];
-            if ($host['host'] != "")
+            if ($host['host'] != "") {
                 $host['host'] = $host['host'].".";
-            if (!$added_item[$current_host]) {
-                $host_entries .= "local-data-ptr: \"{$host['ip']} {$host['host']}{$host['domain']}\"\n";
-                if (is_ipaddrv6($host['ip']))
-                    $host_entries .= "local-data: \"{$host['host']}{$host['domain']} IN AAAA {$host['ip']}\"\n";
-                else
-                    $host_entries .= "local-data: \"{$host['host']}{$host['domain']} IN A {$host['ip']}\"\n";
-                if (!empty($host['descr']) && isset($config['unbound']['txtsupport']))
-                    $host_entries .= "local-data: '{$host['host']}{$host['domain']} TXT \"".addslashes($host['descr'])."\"'\n";
+            }
+            /* Backwards compatibility for records created before introducing RR types. */
+            if (!isset($host['rr'])) {
+                $host['rr'] = (is_ipaddrv6($host['ip'])) ? 'AAAA' : 'A';
+            }
 
-                // Do not add duplicate entries
-                $added_item[$current_host] = true;
+            switch ($host['rr']) {
+                case 'A':
+                case 'AAAA':
+                    $host_entries .= "local-data-ptr: \"{$host['ip']} {$host['host']}{$host['domain']}\"\n";
+                    $host_entries .= "local-data: \"{$host['host']}{$host['domain']} IN {$host['rr']} {$host['ip']}\"\n";
+                    break;
+                case 'MX':
+                    $host_entries .= "local-data: \"{$host['host']}{$host['domain']} IN MX {$host['mxprio']} {$host['mx']}\"\n";
+                    break;
+            }
+
+            if (!empty($host['descr']) && isset($config['unbound']['txtsupport'])) {
+                $host_entries .= "local-data: '{$host['host']}{$host['domain']} TXT \"".addslashes($host['descr'])."\"'\n";
             }
         }
         $unbound_entries .= $host_entries;
@@ -523,21 +558,24 @@ function unbound_add_host_entries() {
     }
 
     // Handle DHCPLeases added host entries
-    $dhcplcfg = read_hosts();
-    $host_entries = "";
-    if (is_array($dhcplcfg)) {
-        foreach($dhcplcfg as $key=>$host) {
-            $host_entries .= "local-data-ptr: \"{$host['ipaddr']} {$host['fqdn']}\"\n";
-            $host_entries .= "local-data: \"{$host['fqdn']} IN A {$host['ipaddr']}\"\n";
-            if (!empty($host['name'])) {
-                $host_entries .= "local-data-ptr: \"{$host['ipaddr']} {$host['name']}\"\n";
-                $host_entries .= "local-data: \"{$host['name']} IN A {$host['ipaddr']}\"\n";
+    if (isset($config['unbound']['regdhcp'])) {
+        $dhcplcfg = read_hosts();
+        $host_entries = "";
+        if (is_array($dhcplcfg)) {
+            foreach($dhcplcfg as $key=>$host) {
+                $host_entries .= "local-data-ptr: \"{$host['ipaddr']} {$host['fqdn']}\"\n";
+                $host_entries .= "local-data: \"{$host['fqdn']} IN A {$host['ipaddr']}\"\n";
+                if (!empty($host['name'])) {
+                    $host_entries .= "local-data-ptr: \"{$host['ipaddr']} {$host['name']}\"\n";
+                    $host_entries .= "local-data: \"{$host['name']} IN A {$host['ipaddr']}\"\n";
+                }
             }
+            $unbound_entries .= $host_entries;
         }
-        $unbound_entries .= $host_entries;
     }
 
     // Write out entries
+    bootstrap_unbound_root();
     file_put_contents("{$g['unbound_chroot_path']}/host_entries.conf", $unbound_entries);
 }
 
@@ -647,9 +685,10 @@ function unbound_acls_config() {
             }
         }
     }
-    // Write out Access list
-    file_put_contents("{$g['unbound_chroot_path']}/access_lists.conf", $aclcfg);
 
+    // Write out Access list
+    bootstrap_unbound_root();
+    file_put_contents("{$g['unbound_chroot_path']}/access_lists.conf", $aclcfg);
 }
 
 // Generate hosts and reload services
@@ -660,5 +699,3 @@ function unbound_hosts_generate() {
     // Reload our service to read the updates
     unbound_control("reload");
 }
-
-?>

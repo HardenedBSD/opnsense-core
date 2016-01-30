@@ -3,10 +3,6 @@
         "name": "User - Config - Deny Config Write",
         "descr": "If present, ignores requests from this user to write config.xml."
     },
-    "user-services-captiveportal-login": {
-        "name": "User - Services - Captive portal login",
-        "descr": "Indicates whether the user is able to login on the captive portal."
-    },
     "user-shell-access": {
         "name": "User - System - Shell account access",
         "descr": "Indicates whether the user is able to login for example via SSH."
@@ -54,7 +50,7 @@
     },
     "page-diagnostics-crash-reporter": {
         "name": "WebCfg - Crash reporter",
-        "descr": "Uploads crash reports to pfSense and or deletes crash reports.",
+        "descr": "Uploads crash reports to the developers.",
         "match": [
             "crash_reporter.php*"
         ]
@@ -66,9 +62,8 @@
             "index.php*",
             "*.widget.php*",
             "graph.php*",
-            "graph_cpu.php*",
             "getstats.php*",
-            "ifstats.php*",
+            "legacy_traffic_stats.php*",
             "diag_logs_filter_dynamic.php*"
         ]
     },
@@ -77,20 +72,6 @@
         "descr": "Allow direct access to all Dashboard widget pages, required for some widgets using AJAX.",
         "match": [
             "*.widget.php*"
-        ]
-    },
-    "page-ipsecxml": {
-        "name": "WebCfg - Diag IPsec XML page",
-        "descr": "Allow access to the 'Diag IPsec XML' page.",
-        "match": [
-            "diag_ipsec_xml.php"
-        ]
-    },
-    "page-diagnostics-arptable": {
-        "name": "WebCfg - Diagnostics: ARP Table page",
-        "descr": "Allow access to the 'Diagnostics: ARP Table' page.",
-        "match": [
-            "diag_arp.php*"
         ]
     },
     "page-diagnostics-authentication": {
@@ -112,13 +93,6 @@
         "descr": "Allow access to the 'Diagnostics: Configuration History' page.",
         "match": [
             "diag_confbak.php*"
-        ]
-    },
-    "page-diagnostics-cpuutilization": {
-        "name": "WebCfg - Diagnostics: CPU Utilization page",
-        "descr": "Allow access to the 'Diagnostics: CPU Utilization' page.",
-        "match": [
-            "stats.php*"
         ]
     },
     "page-diagnostics-factorydefaults": {
@@ -156,13 +130,6 @@
             "diag_logs_dhcp.php*"
         ]
     },
-    "page-diagnostics-logs-firewall": {
-        "name": "WebCfg - Diagnostics: Logs: Firewall page",
-        "descr": "Allow access to the 'Diagnostics: Logs: Firewall' page.",
-        "match": [
-            "diag_logs_filter.php*"
-        ]
-    },
     "page-diagnostics-logs-gateways": {
         "name": "WebCfg - Diagnostics: Logs: Gateways page",
         "descr": "Allow access to the 'Diagnostics: Logs: System: Gateways' page.",
@@ -191,11 +158,25 @@
             "diag_logs.php*"
         ]
     },
-    "page-diagnostics-logs-pptpvpn": {
-        "name": "WebCfg - Diagnostics: Logs: VPN page",
-        "descr": "Allow access to the 'Diagnostics: Logs: VPN' page.",
+    "page-diagnostics-logs-pptp": {
+        "name": "WebCfg - Diagnostics: Logs: PPTP page",
+        "descr": "Allow access to the 'Diagnostics: Logs: PPTP' page.",
         "match": [
-            "diag_logs_vpn.php*"
+            "diag_logs_pptp.php*"
+        ]
+    },
+    "page-diagnostics-logs-poes": {
+        "name": "WebCfg - Diagnostics: Logs: PPPoE page",
+        "descr": "Allow access to the 'Diagnostics: Logs: PPPoE' page.",
+        "match": [
+            "diag_logs_poes.php*"
+        ]
+    },
+    "page-diagnostics-logs-l2tp": {
+        "name": "WebCfg - Diagnostics: Logs: L2TP page",
+        "descr": "Allow access to the 'Diagnostics: Logs: L2TP' page.",
+        "match": [
+            "diag_logs_l2tp.php*"
         ]
     },
     "page-diagnostics-nanobsd": {
@@ -203,13 +184,6 @@
         "descr": "Allow access to the 'Diagnostics: NanoBSD' page.",
         "match": [
             "diag_nanobsd.php*"
-        ]
-    },
-    "page-diagnostics-ndptable": {
-        "name": "Webcfg - Diagnostics: NDP Table page",
-        "descr": "Allow access to the 'Diagnostics: NDP Table' page.",
-        "match": [
-            "diag_ndp.php*"
         ]
     },
     "page-diagnostics-packetcapture": {
@@ -269,7 +243,7 @@
         ]
     },
     "page-diagnostics-restore-full-backup": {
-        "name": "Webcfg - Diagnostics: Restore full backup",
+        "name": "WebCfg - Diagnostics: Restore full backup",
         "descr": "Allow access to the 'Diagnostics: Restore Full Backup' page.",
         "match": [
             "system_firmware_restorefullbackup.php"
@@ -303,15 +277,8 @@
             "diag_states_summary.php*"
         ]
     },
-    "page-diagnostics-system-activity": {
-        "name": "WebCfg - Diagnostics: System Activity",
-        "descr": "Allows access to the 'Diagnostics: System Activity' page",
-        "match": [
-            "diag_system_activity.php*"
-        ]
-    },
     "page-diagnostics-testport": {
-        "name": "Webcfg - Diagnostics: Test Port",
+        "name": "WebCfg - Diagnostics: Test Port",
         "descr": "Allow access to the 'Diagnostics: Test Port' page.",
         "match": [
             "diag_testport.php*"
@@ -374,8 +341,8 @@
         ]
     },
     "page-firewall-nat-npt-edit": {
-        "name": "WebCfg - Firewall: NAT: NPt: Edit page",
-        "descr": "Allow access to the 'Firewall: NAT: NPt: Edit' page.",
+        "name": "WebCfg - Firewall: NAT: NPT: Edit page",
+        "descr": "Allow access to the 'Firewall: NAT: NPT: Edit' page.",
         "match": [
             "firewall_nat_npt_edit.php*"
         ]
@@ -436,14 +403,6 @@
             "firewall_schedule_edit.php*"
         ]
     },
-    "page-firewall-trafficshaper": {
-        "name": "WebCfg - Firewall: Traffic Shaper page",
-        "descr": "Allow access to the 'Firewall: Traffic Shaper' page.",
-        "match": [
-            "ui/trafficshaper/*",
-            "api/trafficshaper/*"
-        ]
-    },
     "page-firewall-virtualipaddress-edit": {
         "name": "WebCfg - Firewall: Virtual IP Address: Edit page",
         "descr": "Allow access to the 'Firewall: Virtual IP Address: Edit' page.",
@@ -472,11 +431,32 @@
             "status.php*"
         ]
     },
-    "page-hidden-nolongerincluded": {
-        "name": "WebCfg - Hidden: No longer included page",
-        "descr": "Allow access to the 'Hidden: No longer included' page.",
+    "page-diagnostics-logs-firewall": {
+        "name": "WebCfg - Diagnostics: Logs: Firewall: Normal View page",
+        "descr": "Allow access to the 'Diagnostics: Logs: Firewall: Normal View' page.",
+        "match": [
+            "diag_logs_filter.php*"
+        ]
+    },
+    "page-diagnostics-logs-firewall-plain": {
+        "name": "WebCfg - Diagnostics: Logs: Firewall: Plain View page",
+        "descr": "Allow access to the 'Diagnostics: Logs: Firewall: Plain View' page.",
+        "match": [
+            "diag_logs_filter_plain.php*"
+        ]
+    },
+    "page-diagnostics-logs-firewall-dynamic": {
+        "name": "WebCfg - Diagnostics: Logs: Firewall: Dynamic View page",
+        "descr": "Allow access to the 'Diagnostics: Logs: Firewall: Dynamic View' page.",
         "match": [
             "diag_logs_filter_dynamic.php*"
+        ]
+    },
+    "page-diagnostics-logs-firewall-summary": {
+        "name": "WebCfg - Diagnostics: Logs: Firewall: Summary View page",
+        "descr": "Allow access to the 'Diagnostics: Logs: Firewall: Summary View' page.",
+        "match": [
+            "diag_logs_filter_summary.php*"
         ]
     },
     "page-interfaces-assignnetworkports": {
@@ -557,8 +537,8 @@
         ]
     },
     "page-interfaces-ppps": {
-        "name": "WebCfg - Interfaces: ppps page",
-        "descr": "Allow access to the 'Interfaces: ppps' page.",
+        "name": "WebCfg - Interfaces: PPPs page",
+        "descr": "Allow access to the 'Interfaces: PPPs' page.",
         "match": [
             "interfaces_ppps.php*"
         ]
@@ -648,94 +628,10 @@
         ]
     },
     "page-pfsensewizardsubsystem": {
-        "name": "WebCfg - pfSense wizard subsystem page",
-        "descr": "Allow access to the 'pfSense wizard subsystem' page.",
+        "name": "WebCfg - Wizard subsystem page",
+        "descr": "Allow access to the 'Wizard subsystem' page.",
         "match": [
             "wizard.php*"
-        ]
-    },
-    "page-services-captiveportal": {
-        "name": "WebCfg - Services: Captive portal page",
-        "descr": "Allow access to the 'Services: Captive portal' page.",
-        "match": [
-            "services_captiveportal.php*"
-        ]
-    },
-    "page-services-captiveportal-allowedhostnames": {
-        "name": "WebCfg - Services: Captive portal: Allowed Hostnames page",
-        "descr": "Allow access to the 'Services: Captive portal: Allowed Hostnames' page.",
-        "match": [
-            "services_captiveportal_hostname.php*"
-        ]
-    },
-    "page-services-captiveportal-allowedips": {
-        "name": "WebCfg - Services: Captive portal: Allowed IPs page",
-        "descr": "Allow access to the 'Services: Captive portal: Allowed IPs' page.",
-        "match": [
-            "services_captiveportal_ip.php*"
-        ]
-    },
-    "page-services-captiveportal-editallowedhostnames": {
-        "name": "WebCfg - Services: Captive portal: Edit Allowed Hostnames page",
-        "descr": "Allow access to the 'Services: Captive portal: Allowed Hostnames' page.",
-        "match": [
-            "services_captiveportal_hostname_edit.php*"
-        ]
-    },
-    "page-services-captiveportal-editallowedips": {
-        "name": "WebCfg - Services: Captive portal: Edit Allowed IPs page",
-        "descr": "Allow access to the 'Services: Captive portal: Edit Allowed IPs' page.",
-        "match": [
-            "services_captiveportal_ip_edit.php*"
-        ]
-    },
-    "page-services-captiveportal-editmacaddresses": {
-        "name": "WebCfg - Services: Captive portal: Edit MAC Addresses page",
-        "descr": "Allow access to the 'Services: Captive portal: Edit MAC Addresses' page.",
-        "match": [
-            "services_captiveportal_mac_edit.php*"
-        ]
-    },
-    "page-services-captiveportal-voucher-edit": {
-        "name": "WebCfg - Services: Captive portal: Edit Voucher Rolls page",
-        "descr": "Allow access to the 'Services: Captive portal: Edit Voucher Rolls' page.",
-        "match": [
-            "services_captiveportal_vouchers_edit.php*"
-        ]
-    },
-    "page-services-captiveportal-editzones": {
-        "name": "WebCfg - Services: Captive portal: Edit Zones page",
-        "descr": "Allow access to the 'Services: Captive portal: Edit Zones' page.",
-        "match": [
-            "services_captiveportal_zones_edit.php*"
-        ]
-    },
-    "page-services-captiveportal-filemanager": {
-        "name": "WebCfg - Services: Captive portal: File Manager page",
-        "descr": "Allow access to the 'Services: Captive portal: File Manager' page.",
-        "match": [
-            "services_captiveportal_filemanager.php*"
-        ]
-    },
-    "page-services-captiveportal-macaddresses": {
-        "name": "WebCfg - Services: Captive portal: Mac Addresses page",
-        "descr": "Allow access to the 'Services: Captive portal: Mac Addresses' page.",
-        "match": [
-            "services_captiveportal_mac.php*"
-        ]
-    },
-    "page-services-captiveportal-vouchers": {
-        "name": "WebCfg - Services: Captive portal: Vouchers page",
-        "descr": "Allow access to the 'Services: Captive portal: Vouchers' page.",
-        "match": [
-            "services_captiveportal_vouchers.php*"
-        ]
-    },
-    "page-services-captiveportal-zones": {
-        "name": "WebCfg - Services: Captive portal: Zones page",
-        "descr": "Allow access to the 'Services: Captive portal: Zones' page.",
-        "match": [
-            "services_captiveportal_zones.php*"
         ]
     },
     "page-services-dhcprelay": {
@@ -892,34 +788,6 @@
             "load_balancer_monitor.php*"
         ]
     },
-    "page-services-loadbalancer-relay-action-edit": {
-        "name": "WebCfg - Services: Load Balancer: Relay Action: Edit page",
-        "descr": "Allow access to the 'Services: Load Balancer: Relay Action: Edit' page.",
-        "match": [
-            "load_balancer_relay_action_edit.php*"
-        ]
-    },
-    "page-services-loadbalancer-relay-action": {
-        "name": "WebCfg - Services: Load Balancer: Relay Actions page",
-        "descr": "Allow access to the 'Services: Load Balancer: Relay Actions' page.",
-        "match": [
-            "load_balancer_relay_action.php*"
-        ]
-    },
-    "page-services-loadbalancer-relay-protocol-edit": {
-        "name": "WebCfg - Services: Load Balancer: Relay Protocol: Edit page",
-        "descr": "Allow access to the 'Services: Load Balancer: Relay Protocol: Edit' page.",
-        "match": [
-            "load_balancer_relay_protocol_edit.php*"
-        ]
-    },
-    "page-services-loadbalancer-relay-protocol": {
-        "name": "WebCfg - Services: Load Balancer: Relay Protocols page",
-        "descr": "Allow access to the 'Services: Load Balancer: Relay Protocols' page.",
-        "match": [
-            "load_balancer_relay_protocol.php*"
-        ]
-    },
     "page-services-loadbalancer-setting": {
         "name": "WebCfg - Services: Load Balancer: setting page",
         "descr": "Allow access to the 'Settings: Load Balancer: Settings' page.",
@@ -990,53 +858,11 @@
             "services_wol_edit.php*"
         ]
     },
-    "page-status-captiveportal": {
-        "name": "WebCfg - Status: Captive portal page",
-        "descr": "Allow access to the 'Status: Captive portal' page.",
-        "match": [
-            "status_captiveportal.php*"
-        ]
-    },
-    "page-status-captiveportal-expire": {
-        "name": "WebCfg - Status: Captive portal: Expire Vouchers page",
-        "descr": "Allow access to the 'Status: Captive portal: Expire Vouchers' page.",
-        "match": [
-            "status_captiveportal_expire.php*"
-        ]
-    },
-    "page-status-captiveportal-test": {
-        "name": "WebCfg - Status: Captive portal: Test Vouchers page",
-        "descr": "Allow access to the 'Status: Captive portal: Test Vouchers' page.",
-        "match": [
-            "status_captiveportal_test.php*"
-        ]
-    },
-    "page-status-captiveportal-voucher-rolls": {
-        "name": "WebCfg - Status: Captive portal: Voucher Rolls page",
-        "descr": "Allow access to the 'Status: Captive portal: Voucher Rolls' page.",
-        "match": [
-            "status_captiveportal_voucher_rolls.php*"
-        ]
-    },
-    "page-status-captiveportal-vouchers": {
-        "name": "WebCfg - Status: Captive portal: Vouchers page",
-        "descr": "Allow access to the 'Status: Captive portal: Vouchers' page.",
-        "match": [
-            "status_captiveportal_vouchers.php*"
-        ]
-    },
     "page-status-carp": {
         "name": "WebCfg - Status: CARP page",
         "descr": "Allow access to the 'Status: CARP' page.",
         "match": [
             "carp_status.php*"
-        ]
-    },
-    "page-status-cpuload": {
-        "name": "WebCfg - Status: CPU load page",
-        "descr": "Allow access to the 'Status: CPU load' page.",
-        "match": [
-            "status_graph_cpu.php*"
         ]
     },
     "page-status-dhcpleases": {
@@ -1047,7 +873,7 @@
         ]
     },
     "page-status-dhcpv6leases": {
-        "name": "Webcfg - Status: DHCPv6 leases page",
+        "name": "WebCfg - Status: DHCPv6 leases page",
         "descr": "Allow access to the 'Status: DHCPv6 leases' page.",
         "match": [
             "status_dhcpv6_leases.php*"
@@ -1131,7 +957,7 @@
         ]
     },
     "page-status-ntp": {
-        "name": "Webcfg - Status: NTP page",
+        "name": "WebCfg - Status: NTP page",
         "descr": "Allow access to the 'Status: NTP' page.",
         "match": [
             "status_ntpd.php*"
@@ -1149,21 +975,6 @@
         "descr": "Allow access to the 'Status: OpenVPN' page.",
         "match": [
             "status_openvpn.php*"
-        ]
-    },
-    "page-status-rrdgraphs": {
-        "name": "WebCfg - Status: RRD Graphs page",
-        "descr": "Allow access to the 'Status: RRD Graphs' page.",
-        "match": [
-            "status_rrd_graph.php*",
-            "status_rrd_graph_img.php*"
-        ]
-    },
-    "page-status-rrdgraph-settings": {
-        "name": "WebCfg - Status: RRD Graphs settings page",
-        "descr": "Allow access to the 'Status: RRD Graphs: settings' page.",
-        "match": [
-            "status_rrd_graph_settings.php*"
         ]
     },
     "page-status-services": {
@@ -1216,14 +1027,14 @@
         ]
     },
     "page-status-systemlogs-routing": {
-        "name": "Webcfg - Status: System logs: Routing page",
+        "name": "WebCfg - Status: System logs: Routing page",
         "descr": "Allow access to the 'Status: System logs: System: Routing' page.",
         "match": [
             "diag_logs_routing.php*"
         ]
     },
     "page-status-systemlogs-wireless": {
-        "name": "Webcfg - Status: System logs: Wireless page",
+        "name": "WebCfg - Status: System logs: Wireless page",
         "descr": "Allow access to the 'Status: System logs: System: Wireless' page.",
         "match": [
             "diag_logs_wireless.php*"
@@ -1234,21 +1045,20 @@
         "descr": "Allow access to the 'Status: Traffic Graph' page.",
         "match": [
             "status_graph.php*",
-            "bandwidth_by_ip.php*",
             "graph.php*",
-            "ifstats.php*"
+            "legacy_traffic_stats.php*"
         ]
     },
     "page-service-upnp": {
-        "name": "WebCfg - Service: Univeral Plug and Play page",
-        "descr": "Allow access to the 'Service: Univeral Plug and Play' page.",
+        "name": "WebCfg - Service: Universal Plug and Play page",
+        "descr": "Allow access to the 'Service: Universal Plug and Play' page.",
         "match": [
             "services_upnp.php*"
         ]
     },
     "page-status-upnpstatus": {
-        "name": "WebCfg - Status: Univeral Plug and Play Status page",
-        "descr": "Allow access to the 'Status: Univeral Plug and Play Status' page.",
+        "name": "WebCfg - Status: Universal Plug and Play page",
+        "descr": "Allow access to the 'Status: Universal Plug and Play' page.",
         "match": [
             "status_upnp.php*"
         ]
@@ -1409,7 +1219,7 @@
         ]
     },
     "page-system-hasync": {
-        "name": "Webcfg - System: High Availability",
+        "name": "WebCfg - System: High Availability",
         "descr": "Allow access to the 'System: High Availability' page.",
         "match": [
             "system_hasync.php*"
@@ -1587,7 +1397,7 @@
         "name": "WebCfg - XMLRPC Interface Stats page",
         "descr": "Allow access to the 'XMLRPC Interface Stats' page.",
         "match": [
-            "ifstats.php*"
+            "legacy_traffic_stats.php*"
         ]
     },
     "page-xmlrpclibrary": {
@@ -1596,21 +1406,5 @@
         "match": [
             "xmlrpc.php*"
         ]
-    },
-    "page-services-proxy": {
-      "name": "WebCfg - Services: Proxy page",
-      "descr": "Allow access to the 'Services: Proxy' page.",
-      "match": [
-        "ui/proxy/*",
-        "api/proxy/*"
-      ]
-    },
-    "page-services-ids": {
-      "name": "WebCfg - Services: Intrusion Detection page",
-      "descr": "Allow access to the 'Services: Intrusion Detection' page'",
-       "match": [
-           "ui/ids/*",
-           "api/ids/*"
-      ]
     }
 }

@@ -33,7 +33,7 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("pfsense-utils.inc");
-require_once("functions.inc");
+require_once("interfaces.inc");
 require_once("widgets/include/interface_statistics.inc");
 
 $ifdescrs = get_configured_interface_with_descr();
@@ -61,13 +61,13 @@ foreach ($ifdescrs as $ifdescr => $ifname) {
             $array_in_errors[] = $ifinfo['inerrs'];
             $array_out_errors[] = $ifinfo['outerrs'];
         } else {
-            $array_in_errors[] = "n/a";
-            $array_out_errors[] = "n/a";
+            $array_in_errors[] = gettext("n/a");
+            $array_out_errors[] = gettext("n/a");
         }
         if (isset($ifinfo['collisions'])) {
             $array_collisions[] = htmlspecialchars($ifinfo['collisions']);
         } else {
-            $array_collisions[] = "n/a";
+            $array_collisions[] = gettext("n/a");
         }
     }
 

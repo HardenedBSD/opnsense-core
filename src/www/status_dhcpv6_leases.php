@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2004-2009 Scott Ullrich
@@ -29,10 +30,9 @@
 */
 
 require_once("guiconfig.inc");
-require_once("config.inc");
-
-$pgtitle = array(gettext("Status"),gettext("DHCPv6 leases"));
-$shortcut_section = "dhcp6";
+require_once("pfsense-utils.inc");
+require_once("interfaces.inc");
+require_once("services.inc");
 
 $leasesfile = "{$g['dhcpd_chroot_path']}/var/db/dhcpd6.leases";
 
@@ -73,6 +73,8 @@ if (($_GET['deleteip']) && (is_ipaddr($_GET['deleteip']))) {
 
 // Load MAC-Manufacturer table
 $mac_man = load_mac_manufacturer_table();
+
+$service_hook = 'dhcpd';
 
 include("head.inc");
 
@@ -341,8 +343,7 @@ if(count($pools) > 0) {
 }
 
 foreach($config['interfaces'] as $ifname => $ifarr) {
-	if (is_array($config['dhcpdv6'][$ifname]) &&
-		is_array($config['dhcpdv6'][$ifname]['staticmap'])) {
+	if (isset($config['dhcpdv6'][$ifname]['staticmap'])) {
 		foreach($config['dhcpdv6'][$ifname]['staticmap'] as $static) {
 			$slease = array();
 			$slease['ip'] = $static['ipaddrv6'];
@@ -351,6 +352,7 @@ foreach($config['interfaces'] as $ifname => $ifarr) {
 			$slease['start'] = "";
 			$slease['end'] = "";
 			$slease['hostname'] = htmlentities($static['hostname']);
+			$slease['descr'] = htmlentities($static['descr']);
 			$slease['act'] = "static";
 			if (in_array($slease['ip'], array_keys($ndpdata))) {
 				$slease['online'] = 'online';
@@ -418,6 +420,7 @@ if(count($pools) > 0) {
 							    <td class="listhdrr"><?=gettext("IAID"); ?></td>
 							    <td class="listhdrr"><?=gettext("DUID"); ?></td>
 							    <td class="listhdrr"><?=gettext("Hostname/MAC"); ?></td>
+							    <td class="listhdrr"><?=gettext("Description"); ?></td>
 							    <td class="listhdrr"><?=gettext("Start"); ?></td>
 							    <td class="listhdrr"><?=gettext("End"); ?></td>
 							    <td class="listhdrr"><?=gettext("Online"); ?></td>
@@ -459,8 +462,13 @@ if(count($pools) > 0) {
 									if (!empty($data['hostname'])) {
 										echo htmlentities($data['hostname']) . "<br />";
 									}
+									if (isset($data['descr'])) {
+										echo "<td class=\"listr\">{$fspans}"  . htmlentities($data['descr']) . "{$fspane}</td>\n";
+									} else {
+										echo "<td class=\"listr\">{$fspans} n/a {$fspane}</td>\n";
+									}
 
-									$mac=trim($ndpdata[$data['ip']]['mac']);
+									$mac = trim($ndpdata[$data['ip']]['mac']);
 									if (!empty($mac)) {
 										$mac_hi = strtoupper($mac[0] . $mac[1] . $mac[3] . $mac[4] . $mac[6] . $mac[7]);
 										print htmlentities($mac);
@@ -479,17 +487,17 @@ if(count($pools) > 0) {
 									echo "<td class=\"listr\">{$fspans}{$data['act']}{$fspane}</td>\n";
 
 									if ($data['type'] == "dynamic") {
-										echo "<td valign=\"middle\"><a href=\"services_dhcpv6_edit.php?if={$data['if']}&amp;duid={$data['duid']}&amp;hostname={$data['hostname']}\">";
-										echo "<img src=\"/themes/{$g['theme']}/images/icons/icon_plus.gif\" width=\"17\" height=\"17\" border=\"0\" title=\"" . gettext("add a static mapping for this MAC address") ."\" alt=\"add\" /></a></td>\n";
+										echo "<td valign=\"middle\" style=\"padding-left: 0px;\"><a href=\"services_dhcpv6_edit.php?if={$data['if']}&amp;duid={$data['duid']}&amp;hostname={$data['hostname']}\" class=\"btn btn-default btn-xs\">";
+										echo "<span class=\"glyphicon glyphicon-plus\"></span></a><br />\n";
 									} else {
-										echo "<td class=\"list\" valign=\"middle\">";
-										echo "<img src=\"/themes/{$g['theme']}/images/icons/icon_plus_mo.gif\" width=\"17\" height=\"17\" border=\"0\" alt=\"add\" /></td>\n";
+										echo "<td class=\"list\" valign=\"middle\" style=\"padding-left: 0px;\">";
+										echo "<span class=\"glyphicon glyphicon-plus\"></span>\n";
 									}
 
 									/* Only show the button for offline dynamic leases */
 									if (($data['type'] == "dynamic") && ($data['online'] != "online")) {
-										echo "<td class=\"list\" valign=\"middle\"><a href=\"status_dhcpv6_leases.php?deleteip={$data['ip']}&amp;all=" . htmlspecialchars($_GET['all']) . "\">";
-										echo "<img src=\"/themes/{$g['theme']}/images/icons/icon_x.gif\" width=\"17\" height=\"17\" border=\"0\" title=\"" . gettext("delete this DHCP lease") . "\" alt=\"delete\" /></a></td>\n";
+										echo "<a href=\"status_dhcpv6_leases.php?deleteip={$data['ip']}&amp;all=" . htmlspecialchars($_GET['all']) . "\" class=\"btn btn-default btn-xs\">";
+										echo "<span class=\"glyphicon glyphicon-remove\"></span></a></td>\n";
 									}
 									echo "</tr>\n";
 								}

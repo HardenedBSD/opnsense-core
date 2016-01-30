@@ -28,10 +28,11 @@
 */
 
 require_once("guiconfig.inc");
-require_once("functions.inc");
 require_once("filter.inc");
 require_once("vslb.inc");
 require_once("load_balancer_maintable.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
 
 /* Cleanup relayd anchors that have been marked for cleanup. */
 function cleanup_lb_marked()
@@ -84,7 +85,7 @@ if ($_POST) {
 		$retval = 0;
 		$retval |= filter_configure();
 		$retval |= relayd_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 		/* Wipe out old relayd anchors no longer in use. */
 		cleanup_lb_marked();
 		clear_subsystem_dirty('loadbalancer');
@@ -121,13 +122,12 @@ for ($i = 0; isset($config['load_balancer']['virtual_server'][$i]); $i++) {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("Load Balancer"),gettext("Virtual Servers"));
-$shortcut_section = "relayd-virtualservers";
+$service_hook = 'relayd';
 
 include("head.inc");
 
 $main_buttons = array(
-	array('label'=>'Add', 'href'=>'load_balancer_virtual_server_edit.php'),
+	array('label'=>gettext('Add'), 'href'=>'load_balancer_virtual_server_edit.php'),
 );
 
 ?>
@@ -142,20 +142,10 @@ $main_buttons = array(
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('loadbalancer')): ?><br/>
-				<?php print_info_box_np(gettext("The virtual server configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The virtual server configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
-
-				<?php
-				        /* active tabs */
-				        $tab_array = array();
-				        $tab_array[] = array(gettext("Pools"), false, "load_balancer_pool.php");
-				        $tab_array[] = array(gettext("Virtual Servers"), true, "load_balancer_virtual_server.php");
-				        $tab_array[] = array(gettext("Monitors"), false, "load_balancer_monitor.php");
-				        $tab_array[] = array(gettext("Settings"), false, "load_balancer_setting.php");
-				        display_top_tabs($tab_array);
-					?>
 
 					<div class="tab-content content-box col-xs-12">
 					  <form action="load_balancer_virtual_server.php" method="post" name="iform" id="iform">

@@ -31,15 +31,15 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("pfsense-utils.inc");
-require_once("functions.inc");
+require_once("interfaces.inc");
 require_once("widgets/include/carp_status.inc");
 
-$carp_enabled = get_carp_status();
+$carp_enabled = (get_single_sysctl('net.inet.carp.allow') > 0);
 
 ?>
 <table class="table table-striped" width="100%" border="0" cellspacing="0" cellpadding="0" summary="carp status">
 <?php
-if (is_array($config['virtualip']['vip'])) {
+if (isset($config['virtualip']['vip'])) {
     $carpint=0;
     foreach ($config['virtualip']['vip'] as $carp) {
         if ($carp['mode'] != "carp") {
@@ -61,14 +61,14 @@ if (is_array($config['virtualip']['vip'])) {
 <td width="65%"  class="listr">
 <?php
 if ($carp_enabled == false) {
-    $status = "DISABLED";
+    $status = gettext("DISABLED");
     echo "<span class=\"glyphicon glyphicon-remove text-danger\" title=\"$status\" alt=\"$status\" ></span>";
 } else {
-    if ($status == "MASTER") {
+    if ($status == gettext("MASTER")) {
         echo "<span class=\"glyphicon glyphicon-play text-success\" title=\"$status\" alt=\"$status\" ></span>";
-    } elseif ($status == "BACKUP") {
+    } elseif ($status == gettext("BACKUP")) {
         echo "<span class=\"glyphicon glyphicon-play text-muted\" title=\"$status\" alt=\"$status\" ></span>";
-    } elseif ($status == "INIT") {
+    } elseif ($status == gettext("INIT")) {
         echo "<span class=\"glyphicon glyphicon-info-sign\" title=\"$status\" alt=\"$status\" ></span>";
     }
 }
@@ -81,7 +81,7 @@ if ($ipaddress) {
     }
 } else {
 ?>
-		<tr><td class="listr">No CARP Interfaces Defined. Click <a href="carp_status.php">here</a> to configure CARP.</td></tr>
+  <tr><td class="listr"><?= sprintf(gettext('No CARP Interfaces Defined. Click %shere%s to configure CARP.'), '<a href="carp_status.php">', '</a>'); ?></td></tr>
 <?php
 } ?>
 </table>

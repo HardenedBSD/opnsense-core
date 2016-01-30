@@ -26,6 +26,8 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
+require_once("IPv6.inc");
+
 function killbyname($procname, $sig = 'TERM')
 {
 	if (!is_process_running($procname)) {
@@ -106,17 +108,12 @@ function lock($lock, $op = LOCK_SH)
 
 
 /* unlock configuration file */
-function unlock($cfglckkey = 0)
+function unlock($cfglckkey = null)
 {
-	flock($cfglckkey, LOCK_UN);
-	fclose($cfglckkey);
-}
-
-function configd_run($cmd, $detach = false)
-{
-	require_once("script/load_phalcon.php");
-	$backend = new OPNsense\Core\Backend();
-	return $backend->configdRun("{$cmd}", $detach);
+	if ($cfglckkey) {
+		flock($cfglckkey, LOCK_UN);
+		fclose($cfglckkey);
+	}
 }
 
 function is_module_loaded($module_name) {
@@ -310,14 +307,6 @@ function ip_range_to_subnet_array($startip, $endip) {
 		$rangesubnets = array_merge($rangesubnets, ip_range_to_subnet_array(ip_after($targetsub_max), $endip));
 	}
 	return $rangesubnets;
-}
-
-function is_iprange($range) {
-	if (substr_count($range, '-') != 1) {
-		return false;
-	}
-	list($ip1, $ip2) = explode ('-', $range);
-	return (is_ipaddr($ip1) && is_ipaddr($ip2));
 }
 
 /* returns true if $ipaddr is a valid dotted IPv4 address or a IPv6 */
@@ -577,11 +566,6 @@ function group_ports($ports) {
 	return $result;
 }
 
-/* returns true if $val is a valid shaper bandwidth value */
-function is_valid_shaperbw($val) {
-	return (preg_match("/^(\d+(?:\.\d+)?)([MKG]?b|%)$/", $val));
-}
-
 /* returns true if $test is in the range between $start and $end */
 function is_inrange_v4($test, $start, $end) {
 	if ( (ip2ulong($test) <= ip2ulong($end)) && (ip2ulong($test) >= ip2ulong($start)) )
@@ -765,8 +749,6 @@ function get_configured_interface_with_descr($only_opt = false, $withdisabled = 
 function get_configured_ip_addresses() {
 	global $config;
 
-	if (!function_exists('get_interface_ip'))
-		require_once("interfaces.inc");
 	$ip_array = array();
 	$interfaces = get_configured_interface_list();
 	if (is_array($interfaces)) {
@@ -804,7 +786,6 @@ function get_configured_ip_addresses() {
  */
 function get_configured_ipv6_addresses()
 {
-	require_once("interfaces.inc");
 	$ipv6_array = array();
 	$interfaces = get_configured_interface_list();
 	if(is_array($interfaces)) {
@@ -822,119 +803,95 @@ function get_configured_ipv6_addresses()
 
 /*
  *   get_interface_list() - Return a list of all physical interfaces
- *   along with MAC and status.
+ *   along with MAC, IPv4 and status.
  *
- *   $mode = "active" - use ifconfig -lu
- *           "media"  - use ifconfig to check physical connection
- *			status (much slower)
+ *   $only_active = false -- interfaces that are available in the system
+ *                  true  -- interfaces that are physically connected
  */
-function get_interface_list($mode = "active", $keyby = "physical", $vfaces = "") {
+function get_interface_list($only_active = false)
+{
 	global $config;
-	$upints = array();
-	/* get a list of virtual interface types */
-	if(!$vfaces) {
-		$vfaces = array (
-				'bridge',
-				'ppp',
-				'pppoe',
-				'pptp',
-				'l2tp',
-				'sl',
-				'gif',
-				'gre',
-				'faith',
-				'lo',
-				'ng',
-				'_vlan',
-				'_wlan',
-				'pflog',
-				'plip',
-				'pfsync',
-				'enc',
-				'tun',
-				'carp',
-				'lagg',
-				'vip',
-				'ipfw'
-		);
-	}
-	switch($mode) {
-	case 'active':
-		$upints = legacy_interface_listget('up');
-		break;
-	case 'media':
-		$intlist = legacy_interface_listget();
-		$ifconfig = "";
-		exec("/sbin/ifconfig -a", $ifconfig);
-		$regexp = '/(' . implode('|', $intlist) . '):\s/';
-		$ifstatus = preg_grep('/status:/', $ifconfig);
-		foreach ($ifstatus as $status) {
-			$int = array_shift($intlist);
-			if (stristr($status, 'active')) {
-				$upints[] = $int;
-			}
-		}
-		break;
-	default:
-		$upints = legacy_interface_listget();
-		break;
-	}
-	/* build interface list with netstat */
-	$linkinfo = "";
-	exec("/usr/bin/netstat -inW -f link | awk '{ print $1, $4 }'", $linkinfo);
-	array_shift($linkinfo);
-	/* build ip address list with netstat */
-	$ipinfo = "";
-	exec("/usr/bin/netstat -inW -f inet | awk '{ print $1, $4 }'", $ipinfo);
-	array_shift($ipinfo);
-	foreach($linkinfo as $link) {
-		$friendly = "";
-		$alink = explode(" ", $link);
-		$ifname = rtrim(trim($alink[0]), '*');
-		/* trim out all numbers before checking for vfaces */
-		if (!in_array(array_shift(preg_split('/\d/', $ifname)), $vfaces) &&
-			!stristr($ifname, "_vlan") && !stristr($ifname, "_wlan")) {
-			$toput = array(
-					"mac" => trim($alink[1]),
-					"up" => in_array($ifname, $upints)
-				);
-			foreach($ipinfo as $ip) {
-				$aip = explode(" ", $ip);
-				if($aip[0] == $ifname) {
-					$toput['ipaddr'] = $aip[1];
-				}
-			}
-			if (isset($config['interfaces'])) {
-				foreach($config['interfaces'] as $name => $int) {
-					if($int['if'] == $ifname) $friendly = $name;
-				}
-			}
-			switch($keyby) {
-			case "physical":
-				if($friendly != "") {
-					$toput['friendly'] = $friendly;
-				}
-				$dmesg_arr = array();
-				exec("/sbin/dmesg |grep $ifname | head -n1", $dmesg_arr);
-				preg_match_all("/<(.*?)>/i", $dmesg_arr[0], $dmesg);
-				if (isset($dmesg[1][0])) {
-					$toput['dmesg'] = $dmesg[1][0];
-				} else {
-					$toput['dmesg'] = null;
-				}
-				$iflist[$ifname] = $toput;
-				break;
-			case "ppp":
+	$iflist = array();
 
-			case "friendly":
-				if($friendly != "") {
-					$toput['if'] = $ifname;
-					$iflist[$friendly] = $toput;
+	/* list of virtual interface types */
+	$vfaces = array(
+		'_vlan',
+		'_wlan',
+		'bridge',
+		'carp',
+		'enc',
+		'faith',
+		'gif',
+		'gre',
+		'ipfw',
+		'l2tp',
+		'lagg',
+		'lo',
+		'ng',
+		'pflog',
+		'plip',
+		'ppp',
+		'pppoe',
+		'pptp',
+		'pfsync',
+		'sl',
+		'tun',
+		'vip'
+	);
+
+	$ifnames_up = legacy_interface_listget('up');
+	$ifnames = legacy_interface_listget();
+
+	if ($only_active) {
+		$_ifnames = array();
+
+		foreach ($ifnames as $ifname) {
+			$ifinfo = legacy_interface_stats($ifname);
+			if (isset($ifinfo['link state'])) {
+				if ($ifinfo['link state'] == '2') {
+					$_ifnames[] = $ifname;
 				}
-				break;
 			}
 		}
+
+		$ifnames = $_ifnames;
 	}
+
+	foreach ($ifnames as $ifname) {
+		$tmp_ifnames = preg_split('/\d/', $ifname);
+		if (in_array(array_shift($tmp_ifnames), $vfaces)) {
+			continue;
+		}
+
+		$ifdata = pfSense_get_interface_addresses($ifname);
+
+		$toput = array(
+			'up' => in_array($ifname, $ifnames_up),
+			'ipaddr' => !empty($ifdata['ipaddr']) ? $ifdata['ipaddr'] : null,
+			'mac' => $ifdata['macaddr']
+		);
+
+		if (isset($config['interfaces'])) {
+			foreach($config['interfaces'] as $name => $int) {
+				if ($int['if'] == $ifname) {
+					$toput['friendly'] = $name;
+					break;
+				}
+			}
+		}
+
+		$dmesg_arr = array();
+		exec("/sbin/dmesg |grep $ifname | head -n1", $dmesg_arr);
+		preg_match_all("/<(.*?)>/i", $dmesg_arr[0], $dmesg);
+		if (isset($dmesg[1][0])) {
+			$toput['dmesg'] = $dmesg[1][0];
+		} else {
+			$toput['dmesg'] = null;
+		}
+
+		$iflist[$ifname] = $toput;
+	}
+
 	return $iflist;
 }
 
@@ -1018,8 +975,7 @@ function mwexec_bg($command, $mute = false)
 /* check if an alias exists */
 function is_alias($name) {
 	global $aliastable;
-
-	return isset($aliastable[$name]);
+	return array_key_exists($name, $aliastable);
 }
 
 function alias_get_type($name) {
@@ -1039,12 +995,13 @@ function alias_get_type($name) {
 function alias_expand($name) {
 	global $aliastable;
 
-	if (isset($aliastable[$name]))
+	if (array_key_exists($name, $aliastable)) {
 		return "\${$name}";
-	else if (is_ipaddr($name) || is_subnet($name) || is_port($name) || is_portrange($name))
+	} elseif (is_ipaddr($name) || is_subnet($name) || is_port($name) || is_portrange($name)) {
 		return "{$name}";
-	else
+	} else {
 		return null;
+	}
 }
 
 function subnet_size($subnet) {
@@ -1101,36 +1058,11 @@ function ip_in_subnet($addr,$subnet) {
 	}
 }
 
-
-
-function mac_format($clientmac) {
-	global $config, $cpzone;
-
-	$mac = explode(":", $clientmac);
-	$mac_format = $cpzone ? $config['captiveportal'][$cpzone]['radmac_format'] : false;
-
-	switch($mac_format) {
-	case 'singledash':
-		return "$mac[0]$mac[1]$mac[2]-$mac[3]$mac[4]$mac[5]";
-
-	case 'ietf':
-		return "$mac[0]-$mac[1]-$mac[2]-$mac[3]-$mac[4]-$mac[5]";
-
-	case 'cisco':
-		return "$mac[0]$mac[1].$mac[2]$mac[3].$mac[4]$mac[5]";
-
-	case 'unformatted':
-		return "$mac[0]$mac[1]$mac[2]$mac[3]$mac[4]$mac[5]";
-
-	default:
-		return $clientmac;
-	}
-}
-
-function resolve_retry($hostname, $retries = 5) {
-
-	if (is_ipaddr($hostname))
+function resolve_retry($hostname, $retries = 5)
+{
+	if (is_ipaddr($hostname)) {
 		return $hostname;
+	}
 
 	for ($i = 0; $i < $retries; $i++) {
 		// FIXME: gethostbyname does not work for AAAA hostnames, boo, hiss
@@ -1159,9 +1091,19 @@ function format_bytes($bytes) {
 	}
 }
 
-function update_filter_reload_status($text)
+function update_filter_reload_status($text, $first = false)
 {
-	file_put_contents('/var/run/filter_reload_status', $text);
+	$filter_reload_status = '/var/run/filter_reload_status';
+
+	if ($first) {
+		@unlink($filter_reload_status);
+	}
+
+	file_put_contents(
+		$filter_reload_status,
+		sprintf("%s: %s\n", microtime(true), $text),
+		FILE_APPEND
+	);
 }
 
 /****** util/return_dir_as_array
@@ -1300,18 +1242,6 @@ function unmute_kernel_msgs()
 	exec('/sbin/conscontrol mute off');
 }
 
-/****f* util/isAjax
- * NAME
- *   isAjax - reports if the request is driven from prototype
- * INPUTS
- *   none
- * RESULT
- *   true/false
- ******/
-function isAjax() {
-	return isset ($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest';
-}
-
 /****f* util/msort
  * NAME
  *   msort - sort array
@@ -1437,17 +1367,6 @@ function get_alias_list($type = null)
 	return $result;
 }
 
-function get_current_theme()
-{
-	$theme = 'opnsense';
-
-	if (isset($config['theme']) && is_dir('/usr/local/www/themes/' . $config['theme'])) {
-		$theme = $config['theme'];
-	}
-
-	return $theme;
-}
-
 /* Define what is preferred, IPv4 or IPv6 */
 function prefer_ipv4_or_ipv6() {
 	global $config;
@@ -1456,17 +1375,4 @@ function prefer_ipv4_or_ipv6() {
 		mwexec("/etc/rc.d/ip6addrctl prefer_ipv4");
 	else
 		mwexec("/etc/rc.d/ip6addrctl prefer_ipv6");
-}
-
-/* Redirect to page passing parameters via POST */
-function post_redirect($page, $params) {
-	if (!is_array($params))
-		return;
-
-	print "<html><body><form action=\"{$page}\" name=\"formredir\" method=\"post\">\n";
-	foreach ($params as $key => $value) {
-		print "<input type=\"hidden\" name=\"{$key}\" value=\"{$value}\" />\n";
-	}
-	print "</form><script type=\"text/javascript\">document.formredir.submit();</script>\n";
-	print "</body></html>\n";
 }

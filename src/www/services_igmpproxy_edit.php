@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2009 Ermal Luçi
@@ -28,11 +29,9 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-$pgtitle = array(gettext("Firewall"),gettext("IGMP Proxy"), gettext("Edit"));
-
 require_once("guiconfig.inc");
 
-if (!is_array($config['igmpproxy']['igmpentry']))
+if (!isset($config['igmpproxy']['igmpentry']))
 	$config['igmpproxy']['igmpentry'] = array();
 
 //igmpproxy_sort();
@@ -190,14 +189,14 @@ include("head.inc");
 								      </select>
 								      <br />
 								      <span class="vexpl">
-								        <?=gettext("The <b>upstream</b> network interface is the outgoing interface which is".
+								        <?=gettext("The upstream network interface is the outgoing interface which is".
 								      " responsible for communicating to available multicast data sources.".
 								      " There can only be one upstream interface.");?>
 									</span>
 									<br />
 									<span class="vexpl">
-								       <b><?=gettext("Downstream"); ?></b> <?=gettext("network interfaces are the distribution  interfaces  to  the".
-								      " destination  networks,  where  multicast  clients  can  join groups and".
+								       <?=gettext("Downstream network interfaces are the distribution interfaces to the".
+								      " destination networks, where multicast clients can join groups and".
 								      " receive multicast data. One or more downstream interfaces must be configured.");?>
 								      </span>
 								    </td>
@@ -208,14 +207,14 @@ include("head.inc");
 								      <input name="threshold" class="formfld unknown" id="threshold" value="<?php echo htmlspecialchars($pconfig['threshold']);?>" />
 								      <br />
 								      <span class="vexpl">
-									      <?=gettext("Defines the TTL threshold for  the  network  interface.  Packets".
-								             " with  a lower TTL than the threshold value will be ignored. This".
-								             " setting is optional, and by default the threshold is 1.");?>
+									      <?=gettext("Defines the TTL threshold for the network interface. ".
+								             "Packets with a lower TTL than the threshold value will be ignored. ".
+								             "This setting is optional, and by default the threshold is 1.");?>
 								      </span>
 								    </td>
 								  </tr>
 								  <tr>
-								    <td width="22%" valign="top" class="vncellreq"><div id="addressnetworkport"><?=gettext("Network (s)");?></div></td>
+								    <td width="22%" valign="top" class="vncellreq"><div id="addressnetworkport"><?=gettext("Network(s)");?></div></td>
 								    <td width="78%" class="vtable">
 								      <table id="maintable">
 								        <tbody>
@@ -255,7 +254,9 @@ include("head.inc");
 											        </select>
 											      </td>
 								            <td>
-										<a onclick="removeRow(this); return false;" href="#"><img border="0" src="/themes/<?echo $g['theme'];?>/images/icons/icon_x.gif" alt="delete" /></a>
+										<a onclick="removeRow(this); return false;" href="#">
+										<div style="cursor:pointer;" class="btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
+										</a>
 									      </td>
 								          </tr>
 								<?php

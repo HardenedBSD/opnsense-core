@@ -79,6 +79,12 @@ class MenuItem
     private $isExternal = "N";
 
     /**
+     * visibility level, all, hidden, ...
+     * @var string
+     */
+    private $visibility = 'all';
+
+    /**
      * parent node, used to mark active nodes
      * @var null|MenuItem
      */
@@ -136,6 +142,15 @@ class MenuItem
     public function setOrder($value)
     {
         $this->sortOrder = $value;
+    }
+
+    /**
+     * set visibility
+     * @param $value visibility level
+     */
+    public function setVisibility($value)
+    {
+        $this->visibility = $value;
     }
 
     /**
@@ -220,6 +235,16 @@ class MenuItem
     }
 
     /**
+     * getter for visibility level
+     * @return string
+     */
+    public function getVisibility()
+    {
+        return $this->visibility;
+    }
+
+    /**
+     * check if this item is selected
      * @return bool is this item selected
      */
     public function getSelected()
@@ -252,15 +277,23 @@ class MenuItem
         // set attributes
         foreach ($properties as $propname => $propvalue) {
             $methodName = $newMenuItem->getXmlPropertySetterName($propname);
-            if ($methodName != null) {
-                $newMenuItem->$methodName((string)$propvalue);
-            }
+            $newMenuItem->$methodName((string)$propvalue);
         }
 
+        $orderNum = sprintf("%05d", $newMenuItem->getOrder());
+        $idx = $orderNum."_".$newMenuItem->id;
         if ($isNew) {
             // new item, add to child list
-            $orderNum = sprintf("%05d", $newMenuItem->getOrder());
-            $this->children[$orderNum."_".$newMenuItem->id] = $newMenuItem;
+            $this->children[$idx] = $newMenuItem;
+        } else {
+            // update existing, if the sort order changed, move this child into the new position
+            foreach ($this->children as $key => $node) {
+                if ($node == $newMenuItem && $key != $idx) {
+                    unset($this->children[$key]);
+                    $this->children[$idx] = $newMenuItem;
+                    break;
+                }
+            }
         }
 
         return $newMenuItem;

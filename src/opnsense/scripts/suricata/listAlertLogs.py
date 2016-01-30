@@ -1,9 +1,7 @@
 #!/usr/local/bin/python2.7
+
 """
     Copyright (c) 2015 Ad Schellevis
-
-    part of OPNsense (https://www.opnsense.org/)
-
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -28,25 +26,46 @@
     POSSIBILITY OF SUCH DAMAGE.
 
     --------------------------------------------------------------------------------------
+
     list all available alert logs
 """
+
 import os
 import glob
 import ujson
+import time
+import datetime
 from lib import suricata_alert_log
+from lib.log import reverse_log_reader
 
-result = []
-for filename in sorted(glob.glob('%s*'%suricata_alert_log)):
-    row = dict()
-    row['modified'] = os.stat(filename).st_mtime
-    row['filename'] = filename.split('/')[-1]
-    ext=filename.split('.')[-1]
-    if ext.isdigit():
-        row['sequence'] = int(ext)
-    else:
-        row['sequence'] = None
+if __name__ == '__main__':
+    result = []
+    for filename in sorted(glob.glob('%s*' % suricata_alert_log)):
+        row = dict()
+        row['size'] = os.stat(filename).st_size
+        # always list first file and non empty next.
+        if row['size'] > 0 or filename.split('/')[-1].count('.') == 1:
+            row['modified'] = os.stat(filename).st_mtime
+            row['filename'] = filename.split('/')[-1]
+            # try to find actual timestamp from file
+            for line in reverse_log_reader(filename=filename):
+                if line['line'] != '':
+                    try:
+                        record = ujson.loads(line['line'])
+                    except ValueError:
+                        continue
+                    if 'timestamp' in record:
+                        row['modified'] = int(time.mktime(datetime.datetime.strptime(record['timestamp'].split('.')[0],
+                                                                                     "%Y-%m-%dT%H:%M:%S").timetuple()))
+                        break
 
-    result.append(row)
+            ext = filename.split('.')[-1]
+            if ext.isdigit():
+                row['sequence'] = int(ext)
+            else:
+                row['sequence'] = None
 
-# output results
-print(ujson.dumps(result))
+            result.append(row)
+
+    # output results
+    print(ujson.dumps(result))

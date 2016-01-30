@@ -1,9 +1,9 @@
 <?php
 
 /*
-	Copyritgh (C) 2014 Deciso B.V.
+	Copyright (C) 2014 Deciso B.V.
 	Copyright (C) 2010 Jim Pingle
-	Copyright (C) 2010 Seth Mos <seth.mos@dds.nl>.
+	Copyright (C) 2010 Seth Mos <seth.mos@dds.nl>
 	Copyright (C) 2005-2008 Bill Marquette
 	Copyright (C) 2004-2005 T. Lechat <dev@lechat.org>, Manuel Kasper <mk@neon1.net>
 	and Jonathan Watt <jwatt@jwatt.org>.
@@ -35,7 +35,7 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("pfsense-utils.inc");
-require_once("functions.inc");
+require_once("filter.inc");
 require_once("vslb.inc");
 
 $now = time();
@@ -65,9 +65,9 @@ if (!$nentries) {
 
 <table class="table table-stiped" bgcolor="#990000" width="100%" border="0" cellspacing="0" cellpadding="0" summary="load balancer">
 	<thead>
-		<td width="10%" class="listhdrr">Server</td>
-		<td width="10%" class="listhdrr">Pool</td>
-		<td width="30%" class="listhdr">Description</td>
+    <td width="10%" class="listhdrr"><?= gettext('Server') ?></td>
+    <td width="10%" class="listhdrr"><?= gettext('Pool') ?></td>
+    <td width="30%" class="listhdr"><?= gettext('Description') ?></td>
 	</thead>
 	<?php $i = 0; foreach ($a_vs as $vsent) :
 ?>
@@ -76,20 +76,20 @@ if (!$nentries) {
         switch (trim($rdr_a[$vsent['name']]['status'])) {
             case 'active':
                 $bgcolor = "#90EE90";  // lightgreen
-                $rdr_a[$vsent['name']]['status'] = "Active";
+                $rdr_a[$vsent['name']]['status'] = gettext("Active");
                 break;
             case 'down':
                 $bgcolor = "#F08080";  // lightcoral
-                $rdr_a[$vsent['name']]['status'] = "Down";
+                $rdr_a[$vsent['name']]['status'] = gettext("Down");
                 break;
             default:
                 $bgcolor = "#D3D3D3";  // lightgray
-                 $rdr_a[$vsent['name']]['status'] = 'Unknown - relayd not running?';
+                 $rdr_a[$vsent['name']]['status'] = gettext('Unknown - relayd not running?');
         }
         ?>
 		<td class="listlr">
 			<?=$vsent['name'];?><br />
-			<span style="background-color: <?=$bgcolor?>; display: block"><i><?=$rdr_a[$vsent['name']]['status']?></i></span>
+			<span style="background-color: <?=$bgcolor?>; display: block"><i><?= $rdr_a[$vsent['name']]['status'] ?></i></span>
 			<?=$vsent['ipaddr'].":".$vsent['port'];?><br />
 		</td>
 		<td class="listr" align="center" >
@@ -140,7 +140,7 @@ if (!$nentries) {
 		</table>
 		</td>
 		<td class="listbg" >
-			<font color="#FFFFFF"><?=$vsent['descr'];?></font>
+			<?=$vsent['descr'];?>
 		</td>
 	</tr>
 	<?php $i++;

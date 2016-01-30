@@ -30,19 +30,22 @@
 
 require_once("guiconfig.inc");
 require_once("filter.inc");
-
-/*  Fix failover DHCP problem
- *  http://article.gmane.org/gmane.comp.security.firewalls.pfsense.support/18749
- */
-ini_set("memory_limit","64M");
+require_once("system.inc");
+require_once("unbound.inc");
+require_once("pfsense-utils.inc");
+require_once("interfaces.inc");
+require_once("services.inc");
 
 $if = $_GET['if'];
 if ($_POST['if'])
 	$if = $_POST['if'];
 
-if (!$_GET['if'])
-	$savemsg = gettext("The DHCPv6 Server can only be enabled on interfaces configured with static IP addresses") .
-		   gettext("Only interfaces configured with a static IP will be shown") . ".";
+if (!$_GET['if']) {
+	$savemsg = gettext(
+		"The DHCPv6 Server can only be enabled on interfaces configured with static " .
+		"IP addresses. Only interfaces configured with a static IP will be shown."
+	);
+}
 
 $iflist = get_configured_interface_with_descr();
 $iflist = array_merge($iflist, get_configured_pppoe_server_interfaces());
@@ -324,7 +327,7 @@ if ($_POST) {
 			$retvalfc = filter_configure();
 		if($retvaldhcp == 1 || $retvaldns == 1 || $retvalfc == 1)
 			$retval = 1;
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
         }
 }
 
@@ -342,9 +345,7 @@ if ($_GET['act'] == "del") {
 	}
 }
 
-$closehead = false;
-$pgtitle = array(gettext("Services"),gettext("DHCPv6 server"));
-$shortcut_section = "dhcp6";
+$service_hook = 'dhcpd';
 
 include("head.inc");
 
@@ -445,7 +446,7 @@ include("head.inc");
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('staticmaps')): ?><p>
-				<?php print_info_box_np(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The static mapping configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
@@ -456,8 +457,8 @@ include("head.inc");
 						$i = 0;
 						foreach ($iflist as $ifent => $ifname) {
 							$oc = $config['interfaces'][$ifent];
-							if ((is_array($config['dhcpdv6'][$ifent]) && !isset($config['dhcpdv6'][$ifent]['enable']) && !(is_ipaddrv6($oc['ipaddrv6']) && (!is_linklocal($oc['ipaddrv6'])))) ||
-								(!is_array($config['dhcpdv6'][$ifent]) && !(is_ipaddrv6($oc['ipaddrv6']) && (!is_linklocal($oc['ipaddrv6'])))))
+							if ((!isset($config['dhcpdv6'][$ifent]['enable']) && !(is_ipaddrv6($oc['ipaddrv6']) && (!is_linklocal($oc['ipaddrv6'])))) ||
+								(empty($config['dhcpdv6'][$ifent]) && !(is_ipaddrv6($oc['ipaddrv6']) && (!is_linklocal($oc['ipaddrv6'])))))
 								continue;
 							if ($ifent == $if)
 								$active = true;
@@ -468,7 +469,7 @@ include("head.inc");
 						}
 						/* tack on PPPoE or PPtP servers here */
 						/* pppoe server */
-						if (is_array($config['pppoes']['pppoe'])) {
+						if (isset($config['pppoes']['pppoe'])) {
 							foreach($config['pppoes']['pppoe'] as $pppoe) {
 								if ($pppoe['mode'] == "server") {
 									$ifent = "poes". $pppoe['pppoeid'];
@@ -505,12 +506,12 @@ include("head.inc");
                         <form action="services_dhcpv6.php" method="post" name="iform" id="iform">
 
 							<?php if ($dhcrelay_enabled): ?>
-								<p>DHCP Relay is currently enabled. Cannot enable the DHCP Server service while the DHCP Relay is enabled on any interface.</p>
-							<? else: ?>
+              <p><?= gettext('DHCP Relay is currently enabled. Cannot enable the DHCP Server service while the DHCP Relay is enabled on any interface.') ?></p>
+							<?php else: ?>
 
-						    <!--<ul class="nav nav-pills" role="tablist"><? foreach ($tab_array as $tab): ?>
-									<li role="presentation" <? if ($tab[1]):?>class="active"<? endif; ?>><a href="<?=$tab[2];?>"><?=$tab[0];?></a></li>
-								<? endforeach; ?></ul><br />-->
+						    <!--<ul class="nav nav-pills" role="tablist"><?php foreach ($tab_array as $tab): ?>
+									<li role="presentation" <?php if ($tab[1]):?>class="active"<?php endif; ?>><a href="<?=$tab[2];?>"><?=$tab[0];?></a></li>
+								<?php endforeach; ?></ul><br />-->
 
 						    <div class="table-responsive">
 									<table class="table table-striped table-sort">
@@ -779,7 +780,7 @@ include("head.inc");
 													<input autocomplete="off" name="value<?php echo $counter; ?>" type="text" class="formfld" id="value<?php echo $counter; ?>" size="55" value="<?=htmlspecialchars($value);?>" />
 												</td>
 												<td>
-													<butto onclick="removeRow(this); return false;" value="<?=gettext("Delete");?>" ><span class="glyphicon glyphicon-remove"></span></button>
+													<butto onclick="removeRow(this); return false;" value="<?=gettext("Delete");?>" ><span class="fa fa-trash"></span></button>
 												</td>
 												</tr>
 												<?php $counter++; ?>
@@ -863,7 +864,7 @@ include("head.inc");
 											<table border="0" cellspacing="0" cellpadding="1" summary="icons">
 											<tr>
 											<td valign="middle"><a href="services_dhcpv6_edit.php?if=<?=$if;?>&amp;id=<?=$i;?>" alt="edit"><span class="glyphicon glyphicon-pencil"></span></a></td>
-											<td valign="middle"><a href="services_dhcpv6.php?if=<?=$if;?>&amp;act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this mapping?");?>')" alt="delete"><span class="glyphicon glyphicon-remove"></span></a></td>
+											<td valign="middle"><a href="services_dhcpv6.php?if=<?=$if;?>&amp;act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this mapping?");?>')" alt="delete"><span class="fa fa-trash"></span></a></td>
 											</tr>
 											</table>
 										</td>
@@ -884,7 +885,7 @@ include("head.inc");
 										</tr>
 										</table>
 									</div>
-					    <? endif; ?>
+					    <?php endif; ?>
                         </form>
 				</div>
 			    </section>

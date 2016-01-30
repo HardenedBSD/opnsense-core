@@ -28,15 +28,11 @@
 
 require_once("guiconfig.inc");
 require_once("pfsense-utils.inc");
-require_once("functions.inc");;
 
 $system_logfile = '/var/log/system.log';
 
 if (!$config['widgets']['systemlogfiltercount']){
-	$syslogEntriesToFetch = $config['syslog']['nentries'];
-	if (!$syslogEntriesToFetch) {
-		$syslogEntriesToFetch = 20;
-	}
+	$syslogEntriesToFetch = isset($config['syslog']['nentries']) ? $config['syslog']['nentries'] : 20;
 } else {
 	$syslogEntriesToFetch = $config['widgets']['systemlogfiltercount'];
 }
@@ -66,7 +62,7 @@ if(is_numeric($_POST['logfiltercount'])) {
 			</td>
 
 			<td>
-			<input id="submit" name="submit" type="submit" class="btn btn-primary formbtn" value="Save" autocomplete="off">
+			<input id="submit" name="submit" type="submit" class="btn btn-primary formbtn" value="<?= gettext('Save') ?>" autocomplete="off">
 			</td>
 
 		</tr>
@@ -76,7 +72,7 @@ if(is_numeric($_POST['logfiltercount'])) {
 
 <div id="system_log-widgets" class="content-box" style="overflow:scroll;">
 	<table class="table table-striped" cellspacing="0" cellpadding="0">
-		<?php dump_clog($system_logfile, $syslogEntriesToFetch, true, array(), array("ppp")); ?>
+		<?php dump_clog($system_logfile, $syslogEntriesToFetch); ?>
 	</table>
 </div>
 

@@ -29,32 +29,20 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-require_once('config.inc');
-require_once('certs.inc');
-require_once('pfsense-utils.inc');
-require_once('auth.inc');
-require_once('util.inc');
-
-global $openvpn_prots;
-$openvpn_prots = array("UDP", "UDP6", "TCP", "TCP6");
-
-global $openvpn_dev_mode;
-$openvpn_dev_mode = array("tun", "tap");
-
 global $openvpn_verbosity_level;
 $openvpn_verbosity_level = array(
-	0 =>	"none",
-	1 =>	"default",
-	2 =>	"2",
-	3 =>	"3 (recommended)",
-	4 =>	"4",
-	5 =>	"5",
-	6 =>	"6",
-	7 =>	"7",
-	8 =>	"8",
-	9 =>	"9",
-	10 =>	"10",
-	11 =>	"11"
+	0 => gettext('0 (none)'),
+	1 => gettext('1 (default)'),
+	2 => gettext('2'),
+	3 => gettext('3 (recommended)'),
+	4 => gettext('4'),
+	5 => gettext('5'),
+	6 => gettext('6'),
+	7 => gettext('7'),
+	8 => gettext('8'),
+	9 => gettext('9'),
+	10 => gettext('10'),
+	11 => gettext('11'),
 );
 
 /*
@@ -77,11 +65,12 @@ $openvpn_compression_modes = array(
 	'adaptive' =>	gettext("Enabled with Adaptive Compression"),
 	'yes' =>	gettext("Enabled without Adaptive Compression"));
 
-function openvpn_create_key() {
-
+function openvpn_create_key()
+{
 	$fp = popen("/usr/local/sbin/openvpn --genkey --secret /dev/stdout 2>/dev/null", "r");
-	if (!$fp)
+	if (!$fp) {
 		return false;
+	}
 
 	$rslt = stream_get_contents($fp);
 	pclose($fp);
@@ -89,18 +78,25 @@ function openvpn_create_key() {
 	return $rslt;
 }
 
-function openvpn_vpnid_used($vpnid) {
+function openvpn_vpnid_used($vpnid)
+{
 	global $config;
 
-	if (is_array($config['openvpn']['openvpn-server']))
-		foreach ($config['openvpn']['openvpn-server'] as & $settings)
-			if ($vpnid == $settings['vpnid'])
+	if (isset($config['openvpn']['openvpn-server'])) {
+		foreach ($config['openvpn']['openvpn-server'] as &$settings) {
+			if ($vpnid == $settings['vpnid']) {
 				return true;
+			}
+		}
+	}
 
-	if (is_array($config['openvpn']['openvpn-client']))
-		foreach ($config['openvpn']['openvpn-client'] as & $settings)
-			if ($vpnid == $settings['vpnid'])
+	if (isset($config['openvpn']['openvpn-client'])) {
+		foreach ($config['openvpn']['openvpn-client'] as &$settings) {
+			if ($vpnid == $settings['vpnid']) {
 				return true;
+			}
+		}
+	}
 
 	return false;
 }
@@ -117,7 +113,7 @@ function openvpn_vpnid_next() {
 function openvpn_port_used($prot, $interface, $port, $curvpnid = 0) {
 	global $config;
 
-	if (is_array($config['openvpn']['openvpn-server'])) {
+	if (isset($config['openvpn']['openvpn-server'])) {
 		foreach ($config['openvpn']['openvpn-server'] as & $settings) {
 			if (isset($settings['disable']))
 				continue;
@@ -131,7 +127,7 @@ function openvpn_port_used($prot, $interface, $port, $curvpnid = 0) {
 		}
 	}
 
-	if (is_array($config['openvpn']['openvpn-client'])) {
+	if (isset($config['openvpn']['openvpn-client'])) {
 		foreach ($config['openvpn']['openvpn-client'] as & $settings) {
 			if (isset($settings['disable']))
 				continue;
@@ -191,6 +187,12 @@ function openvpn_get_engines()
 {
 	$openssl_engines = array('none' => 'No Hardware Crypto Acceleration');
 	exec('/usr/local/bin/openssl engine -t -c', $openssl_engine_output);
+
+	if (!count($openssl_engine_output)) {
+		/* LibreSSL doesn't offer anything of value */
+		return $openssl_engines;
+	}
+
 	$openssl_engine_output = implode("\n", $openssl_engine_output);
 	$openssl_engine_output = preg_replace("/\\n\\s+/", "|", $openssl_engine_output);
 	$openssl_engine_output = explode("\n", $openssl_engine_output);
@@ -300,8 +302,7 @@ function openvpn_add_dhcpopts(& $settings, & $conf) {
 	if (!empty($settings['ntp_server2']))
 		$conf .= "push \"dhcp-option NTP {$settings['ntp_server2']}\"\n";
 
-	if ($settings['netbios_enable']) {
-
+	if (!empty($settings['netbios_enable'])) {
 		if (!empty($settings['dhcp_nbttype']) && ($settings['dhcp_nbttype'] != 0))
 			$conf .= "push \"dhcp-option NBT {$settings['dhcp_nbttype']}\"\n";
 		if (!empty($settings['dhcp_nbtscope']))
@@ -311,12 +312,9 @@ function openvpn_add_dhcpopts(& $settings, & $conf) {
 			$conf .= "push \"dhcp-option WINS {$settings['wins_server1']}\"\n";
 		if (!empty($settings['wins_server2']))
 			$conf .= "push \"dhcp-option WINS {$settings['wins_server2']}\"\n";
-
-		if (!empty($settings['nbdd_server1']))
-			$conf .= "push \"dhcp-option NBDD {$settings['nbdd_server1']}\"\n";
 	}
 
-	if ($settings['gwredir'])
+	if (!empty($settings['gwredir']))
 		$conf .= "push \"redirect-gateway def1\"\n";
 }
 
@@ -402,26 +400,18 @@ function openvpn_reconfigure($mode, $settings)
 
 	$interface = get_failover_interface($settings['interface']);
 	$ipaddr = $settings['ipaddr'];
-	$ipaddrv6 = $settings['ipaddrv6'];
 
 	// If a specific ip address (VIP) is requested, use it.
 	// Otherwise, if a specific interface is requested, use it
 	// If "any" interface was selected, local directive will be ommited.
-	if (is_ipaddrv4($ipaddr)) {
+	if (is_ipaddr($ipaddr)) {
 		$iface_ip=$ipaddr;
-	} else {
-		if ((!empty($interface)) && (strcmp($interface, "any"))) {
-			$iface_ip=get_interface_ip($interface);
+	} elseif (!empty($interface) && $interface != "any") {
+		$iface_ip=get_interface_ip($interface);
+		if (empty($iface_ip)) {
+			$iface_ip = get_interface_ipv6($interface);
 		}
 	}
-	if (is_ipaddrv6($ipaddrv6)) {
-		$iface_ipv6=$ipaddrv6;
-	} else {
-		if ((!empty($interface)) && (strcmp($interface, "any"))) {
-			$iface_ipv6=get_interface_ipv6($interface);
-		}
-	}
-
 
 	$conf = "dev {$devname}\n";
 	if (isset($settings['verbosity_level'])) {
@@ -461,11 +451,8 @@ function openvpn_reconfigure($mode, $settings)
 		}
 	}
 
-	/* Determine the local IP to use - and make sure it matches with the selected protocol. */
-	if (is_ipaddrv4($iface_ip) && (stristr($settings['protocol'], "6") === false)) {
+	if (!empty($iface_ip)) {
 		$conf .= "local {$iface_ip}\n";
-	} elseif (is_ipaddrv6($iface_ipv6) && (stristr($settings['protocol'], "6") !== false)) {
-		$conf .= "local {$iface_ipv6}\n";
 	}
 
 	if (openvpn_validate_engine($settings['engine']) && ($settings['engine'] != "none"))
@@ -853,10 +840,10 @@ function openvpn_resync_csc(&$settings)
 	openvpn_create_dirs();
 
 	$conf = '';
-	if ($settings['block'])
+	if (!empty($settings['block']))
 		$conf .= "disable\n";
 
-	if ($settings['push_reset'])
+	if (!empty($settings['push_reset']))
 		$conf .= "push-reset\n";
 
 	if (!empty($settings['tunnel_network'])) {
@@ -889,7 +876,7 @@ function openvpn_resync_csc(&$settings)
 
 	openvpn_add_dhcpopts($settings, $conf);
 
-	if ($settings['gwredir'])
+	if (!empty($settings['gwredir']))
 		$conf .= "push \"redirect-gateway def1\"\n";
 
 	openvpn_add_custom($settings, $conf);
@@ -1276,4 +1263,3 @@ function openvpn_get_settings($mode, $vpnid) {
 
 	return array();
 }
-

@@ -28,9 +28,7 @@
  *
  */
 
-require_once("globals.inc");
 require_once("led.inc");
-require_once("util.inc");
 require_once("notices.growl.class");
 require_once("notices.sasl.inc");
 require_once("notices.smtp.inc");
@@ -90,23 +88,24 @@ function file_notice($id, $notice, $category = "General", $url = "", $priority =
  ******/
 function get_notices($category = 'all')
 {
-	global $g;
-
 	if (file_exists('/tmp/notices')) {
 		$queue = unserialize(file_get_contents('/tmp/notices'));
-		if(!$queue) return false;
-		if($category != 'all') {
+		if (!$queue) {
+			return false;
+		}
+		if ($category != 'all') {
 			foreach($queue as $time => $notice) {
-				if(strtolower($notice['category']) == strtolower($category))
+				if (strtolower($notice['category']) == strtolower($category)) {
 					$toreturn[$time] = $notice;
+				}
 			}
 			return $toreturn;
-		} else {
-			return $queue;
 		}
-	} else {
-		return false;
+
+		return $queue;
 	}
+
+	return false;
 }
 
 /****f* notices/close_notice
@@ -163,8 +162,14 @@ function close_notice($id)
  * RESULT
  *   prints notices to the GUI
  ******/
-function print_notices($notices, $category = "all") {
-	foreach($notices as $notice) {
+function print_notices($notices, $category = "all")
+{
+	if (!is_array($notices) || count($notices) == 0) {
+		/* nothing to do */
+		return;
+	}
+
+	foreach ($notices as $notice) {
 		if($category != "all") {
 			if(in_array($notice['category'], $category)) $categories[] = $notice['category'];
 		} else {
@@ -188,6 +193,7 @@ function print_notices($notices, $category = "all") {
 		}
 		$toreturn .= "</ul></li></ul>";
 	}
+
 	return $toreturn;
 }
 
@@ -218,7 +224,7 @@ function are_notices_pending($category = 'all')
  *   returns true if message was sent
  ******/
 function notify_via_smtp($message, $force = false) {
-	global $config, $g;
+	global $config;
 	if(file_exists("/var/run/booting"))
 		return;
 
@@ -242,7 +248,7 @@ function notify_via_smtp($message, $force = false) {
 }
 
 function send_smtp_message($message, $subject = "(no subject)") {
-	global $config, $g;
+	global $config;
 
 	if(!$config['notifications']['smtp']['ipaddress'])
 		return;
@@ -287,8 +293,9 @@ function send_smtp_message($message, $subject = "(no subject)") {
 		log_error(sprintf(gettext("Message sent to %s OK"), $to));
 		return;
 	} else {
-		log_error(sprintf(gettext('Could not send the message to %1$s -- Error: %2$s'), $to, $smtp->error));
-		return(sprintf(gettext('Could not send the message to %1$s -- Error: %2$s'), $to, $smtp->error));
+		$msg = sprintf(gettext('Could not send the message to %s -- Error: %s'), $to, $smtp->error);
+		log_error($msg);
+		return ($msg);
 	}
 }
 

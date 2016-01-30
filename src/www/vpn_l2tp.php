@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2005 Scott Ullrich (sullrich@gmail.com)
@@ -26,13 +27,12 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-$pgtitle = array(gettext("VPN"), gettext("L2TP"), gettext("L2TP"));
-$shortcut_section = "l2tps";
-
 require_once("guiconfig.inc");
 require_once("vpn.inc");
+require_once("pfsense-utils.inc");
+require_once("interfaces.inc");
 
-if (!is_array($config['l2tp']['radius'])) {
+if (!isset($config['l2tp']['radius']) || !is_array($config['l2tp']['radius'])) {
     $config['l2tp']['radius'] = array();
 }
 $l2tpcfg = &$config['l2tp'];
@@ -86,12 +86,6 @@ if ($_POST) {
             $input_errors[] = gettext("A valid RADIUS server address must be specified.");
         }
 
-        /* if this is an AJAX caller then handle via JSON */
-        if (isAjax() && is_array($input_errors)) {
-            input_errors2Ajax($input_errors);
-            exit;
-        }
-
         if (!$input_errors) {
             $_POST['remoteip'] = $pconfig['remoteip'] = gen_subnet($_POST['remoteip'], $_POST['l2tp_subnet']);
             $subnet_start = ip2ulong($_POST['remoteip']);
@@ -105,12 +99,6 @@ if ($_POST) {
                 $input_errors[] = gettext("The specified server address is equal to the LAN interface address.");
             }
         }
-    }
-
-    /* if this is an AJAX caller then handle via JSON */
-    if (isAjax() && is_array($input_errors)) {
-        input_errors2Ajax($input_errors);
-        exit;
     }
 
     if (!$input_errors) {
@@ -172,12 +160,7 @@ if ($_POST) {
 
         $retval = 0;
         $retval = vpn_l2tp_configure();
-        $savemsg = get_std_save_message($retval);
-
-        /* if ajax is calling, give them an update message */
-        if (isAjax()) {
-            print_info_box_np($savemsg);
-        }
+        $savemsg = get_std_save_message();
     }
 }
 
@@ -293,13 +276,6 @@ function enable_change(enable_over) {
 
 			    <section class="col-xs-12">
 
-				<?php
-                        $tab_array = array();
-                        $tab_array[0] = array(gettext("Configuration"), true, "vpn_l2tp.php");
-                        $tab_array[1] = array(gettext("Users"), false, "vpn_l2tp_users.php");
-                        display_top_tabs($tab_array);
-                    ?>
-
 					<div class="tab-content content-box col-xs-12">
 
 							<form action="vpn_l2tp.php" method="post" name="iform" id="iform">
@@ -349,12 +325,12 @@ function enable_change(enable_over) {
 					                  <td width="78%" class="vtable">
 					                    <input name="localip" type="text" class="form-control unknown" id="localip" size="20" value="<?=htmlspecialchars($pconfig['localip']);?>" />
 								<p class="text-muted"><em><small>
-								<?=gettext("Enter the IP address the L2TP server should give to clients for use as their \"gateway\""); ?>.
+								<?=gettext("Enter the IP address the L2TP server should give to clients for use as their \"gateway\"."); ?>
 								<br />
 								<?=gettext("Typically this is set to an unused IP just outside of the client range"); ?>.
 								<br />
 								<br />
-								<?=gettext("NOTE: This should NOT be set to any IP address currently in use on this firewall"); ?>.</small></em></p></td>
+								<?=gettext("NOTE: This should NOT be set to any IP address currently in use on this firewall."); ?></small></em></p></td>
 					                </tr>
 					                <tr>
 					                  <td width="22%" valign="top" class="vncellreq"><?=gettext("Remote Address Range");?></td>
@@ -398,7 +374,7 @@ function enable_change(enable_over) {
                                         ?>
 					                    </select>
 					                    <p class="text-muted"><em><small><?=gettext("Hint:");
-?> 10 <?=gettext("is ten L2TP clients"); ?></small></em></p>
+?> <?=gettext("10 is ten L2TP clients"); ?></small></em></p>
 					                  </td>
 					                </tr>
 							<tr>

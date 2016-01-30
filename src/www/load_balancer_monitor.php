@@ -28,10 +28,11 @@
 */
 
 require_once("guiconfig.inc");
-require_once("functions.inc");
 require_once("filter.inc");
-require_once("util.inc");
 require_once("load_balancer_maintable.inc");
+require_once("services.inc");
+require_once("vslb.inc");
+require_once("interfaces.inc");
 
 if (!is_array($config['load_balancer']['monitor_type'])) {
 	$config['load_balancer']['monitor_type'] = array();
@@ -46,7 +47,7 @@ if ($_POST) {
 		$retval |= filter_configure();
 		$retval |= relayd_configure();
 
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 		clear_subsystem_dirty('loadbalancer');
 	}
 }
@@ -73,14 +74,14 @@ if ($_GET['act'] == "del") {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("Load Balancer"),gettext("Monitor"));
-$shortcut_section = "relayd";
+$service_hook = 'relayd';
 
 include("head.inc");
 
 $main_buttons = array(
-	array('label'=>'Add', 'href'=>'load_balancer_monitor_edit.php'),
+	array('label'=>gettext('Add'), 'href'=>'load_balancer_monitor_edit.php'),
 );
+
 ?>
 
 <body>
@@ -93,20 +94,10 @@ $main_buttons = array(
 				<?php if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 				<?php if (is_subsystem_dirty('loadbalancer')): ?><br/>
-				<?php print_info_box_np(gettext("The load balancer configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
+				<?php print_info_box_apply(gettext("The load balancer configuration has been changed") . ".<br />" . gettext("You must apply the changes in order for them to take effect."));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
-
-				<?php
-				        /* active tabs */
-				        $tab_array = array();
-				        $tab_array[] = array(gettext("Pools"), false, "load_balancer_pool.php");
-				        $tab_array[] = array(gettext("Virtual Servers"), false, "load_balancer_virtual_server.php");
-				        $tab_array[] = array(gettext("Monitors"), true, "load_balancer_monitor.php");
-				        $tab_array[] = array(gettext("Settings"), false, "load_balancer_setting.php");
-				        display_top_tabs($tab_array);
-					?>
 
 					<div class="tab-content content-box col-xs-12">
 

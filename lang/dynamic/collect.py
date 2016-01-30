@@ -1,9 +1,7 @@
 #!/usr/bin/env python2.7
+
 """
     Copyright (c) 2015 Deciso B.V.
-
-    part of OPNsense (https://www.opnsense.org/)
-
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -26,7 +24,6 @@
     CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
-
 """
 __author__ = 'Ad Schellevis'
 
@@ -59,8 +56,14 @@ for filename in glob.glob('%s/plugins/*.py'%'/'.join(os.path.realpath(__file__).
         fOut=open('%s/%s.php'%(targetPath,modulename),'w')
         fOut.write(templateText)
 
-        # fill with gettext tags
+        # collect and sort tags
+        translations = list()
         for textValue in lang.getTranslations(OPNsenseRoot):
+            translations.append(textValue)
+        translations.sort()
+
+        # fill with gettext tags
+        for textValue in translations:
             line="echo gettext('%s');\n"%(unicode(textValue).replace("'","\\'"))
             fOut.write(line)
 

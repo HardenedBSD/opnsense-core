@@ -1,4 +1,5 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
 	Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
@@ -27,6 +28,7 @@
 */
 
 require_once("guiconfig.inc");
+require_once("interfaces.inc");
 
 if (!is_array($config['wol'])) {
   $config['wol'] = array();
@@ -49,10 +51,11 @@ if($_GET['wakeall'] <> "") {
 			continue;
 		$bcip = gen_subnet_max($ipaddr, get_interface_subnet($if));
 		/* Execute wol command and check return code. */
-		if (!mwexec("/usr/local/bin/wol -i {$bcip} {$mac}"))
-			$savemsg .= sprintf(gettext('Sent magic packet to %1$s (%2$s)%3$s'),$mac, $description, ".<br />");
-		else
-			$savemsg .= sprintf(gettext('Please check the %1$ssystem log%2$s, the wol command for %3$s (%4$s) did not complete successfully%5$s'),'<a href="/diag_logs.php">','</a>',$description,$mac,".<br />");
+		if (!mwexec("/usr/local/bin/wol -i {$bcip} {$mac}")) {
+			$savemsg = sprintf(gettext('Sent magic packet to %s (%s).'), $mac, $description);
+		} else {
+			$savemsg = sprintf(gettext('Please check the %ssystem log%s, the wol command for %s (%s) did not complete successfully.'), '<a href="/diag_logs.php">', '</a>', $description, $mac);
+		}
 	}
 }
 
@@ -85,10 +88,11 @@ if ($_POST || $_GET['mac']) {
 		else {
 			$bcip = gen_subnet_max($ipaddr, get_interface_subnet($if));
 			/* Execute wol command and check return code. */
-			if(!mwexec("/usr/local/bin/wol -i {$bcip} " . escapeshellarg($mac)))
-				$savemsg .= sprintf(gettext("Sent magic packet to %s."),$mac);
-			else
-				$savemsg .= sprintf(gettext('Please check the %1$ssystem log%2$s, the wol command for %3$s did not complete successfully%4$s'),'<a href="/diag_logs.php">', '</a>', $mac, ".<br />");
+			if(!mwexec("/usr/local/bin/wol -i {$bcip} " . escapeshellarg($mac))) {
+				$savemsg = sprintf(gettext('Sent magic packet to %s.'), $mac);
+			} else {
+				$savemsg = sprintf(gettext('Please check the %ssystem log%s, the wol command for %s did not complete successfully.'), '<a href="/diag_logs.php">', '</a>', $mac);
+			}
 		}
 	}
 }
@@ -102,7 +106,6 @@ if ($_GET['act'] == "del") {
 	}
 }
 
-$pgtitle = array(gettext("Services"),gettext("Wake on LAN"));
 include("head.inc");
 
 ?>
@@ -151,7 +154,7 @@ include("head.inc");
 										  <td width="78%" class="vtable">
 						                      <input name="mac" type="text" class="formfld unknown" id="mac" size="20" value="<?=htmlspecialchars($mac);?>" />
 						                      <br />
-						                      <?=gettext("Enter a MAC address ");?><span class="vexpl"> <?=gettext("in the following format: xx:xx:xx:xx:xx:xx");?></span></td></tr>
+						                      <?=sprintf(gettext("Enter a MAC address %sin the following format: xx:xx:xx:xx:xx:xx%s"),'<span class="vexpl">','</span>');?></td></tr>
 										<tr>
 										  <td width="22%" valign="top">&nbsp;</td>
 										  <td width="78%">
@@ -195,7 +198,7 @@ include("head.inc");
 						                    <table border="0" cellspacing="0" cellpadding="1" summary="icons">
 						                      <tr>
 						                        <td valign="middle"><a href="services_wol_edit.php?id=<?=$i;?>" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-pencil"></span></a></td>
-						                        <td valign="middle"><a href="services_wol.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this entry?");?>')" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a></td>
+						                        <td valign="middle"><a href="services_wol.php?act=del&amp;id=<?=$i;?>" onclick="return confirm('<?=gettext("Do you really want to delete this entry?");?>')" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a></td>
 						                      </tr>
 						                    </table>
 						                  </td>
@@ -210,7 +213,7 @@ include("head.inc");
 						<strong>
 							<?=gettext("Note:");?><br />
 				</strong>
-					</span><?=gettext("This service can be used to wake up (power on) computers by sending special"); ?> &quot;<?=gettext("Magic Packets"); ?>&quot;. <?=gettext("The NIC in the computer that is to be woken up must support Wake on LAN and has to be configured properly (WOL cable, BIOS settings). ");?>
+					</span><?= gettext('This service can be used to wake up (power on) computers by sending special "Magic Packets". The NIC in the computer that is to be woken up must support Wake on LAN and has to be configured properly (WOL cable, BIOS settings).');?>
 			</p>
 					</div>
 				</form>

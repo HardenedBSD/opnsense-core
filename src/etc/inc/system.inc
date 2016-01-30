@@ -51,11 +51,59 @@ function activate_powerd()
 	}
 }
 
-function get_default_sysctl_value($id) {
-	global $sysctls;
+function get_default_sysctl_value($id)
+{
+	$sysctls = array(
+		"debug.pfftpproxy" => "0",
+		"hw.syscons.kbd_reboot" => "0",
+		"kern.ipc.maxsockbuf" => "4262144",
+		"kern.randompid" => "347",
+		"kern.random.sys.harvest.interrupt" => 0,
+		"kern.random.sys.harvest.point_to_point" => 0,
+		"kern.random.sys.harvest.ethernet" => 0,
+		"kern.filedelay" => "5",
+		"kern.dirdelay" => "4",
+		"kern.metadelay" => "3",
+		"net.bpf.zerocopy_enable" => 1,
+		"net.inet.ip.portrange.first" => "1024",
+		"net.inet.tcp.blackhole" => "2",
+		"net.inet.udp.blackhole" => "1",
+		"net.inet.ip.random_id" => "1",
+		"net.inet.tcp.drop_synfin" => "1",
+		"net.inet.ip.redirect" => "1",
+		"net.inet6.ip6.redirect" => "1",
+		"net.inet6.ip6.use_tempaddr" => "0",
+		"net.inet6.ip6.prefer_tempaddr" => "0",
+		"net.inet.tcp.syncookies" => "1",
+		"net.inet.tcp.recvspace" => "65228",
+		"net.inet.tcp.sendspace" => "65228",
+		"net.inet.ip.fastforwarding" => "0",
+		'net.inet.ip.sourceroute' => '0',
+		'net.inet.ip.accept_sourceroute' => '0',
+		'net.inet.icmp.drop_redirect' => '0',
+		'net.inet.icmp.log_redirect' => '0',
+		"net.inet.tcp.delayed_ack" => "0",
+		"net.inet.udp.maxdgram" => "57344",
+		"net.inet.ip.intr_queue_maxlen" => "1000",
+		"net.inet.tcp.log_debug" => "0",
+		"net.inet.tcp.tso" => "1",
+		"net.inet.icmp.icmplim" => "0",
+		"net.inet.ip.process_options" => 0,
+		"net.inet.udp.checksum" => 1,
+		"net.link.bridge.pfil_onlyip" => "0",
+		"net.link.bridge.pfil_member" => "1",
+		"net.link.bridge.pfil_bridge" => "0",
+		"net.link.tap.user_open" => "1",
+		"net.route.netisr_maxqlen" => 1024,
+		"net.inet.icmp.reply_from_interface" => 1,
+		"vfs.read_max" => "32",
+	);
 
-	if (isset($sysctls[$id]))
+	if (isset($sysctls[$id])) {
 		return $sysctls[$id];
+	}
+
+	return null;
 }
 
 function activate_sysctls()
@@ -63,18 +111,19 @@ function activate_sysctls()
 	global $config;
 
 	$sysctls = array(
+		"net.enc.in.ipsec_bpf_mask" => "0x0002",
+		"net.enc.in.ipsec_filter_mask" => "0x0002",
 		"net.enc.out.ipsec_bpf_mask" => "0x0001",
 		"net.enc.out.ipsec_filter_mask" => "0x0001",
-		"net.enc.in.ipsec_bpf_mask" => "0x0002",
-		"net.enc.in.ipsec_filter_mask" => "0x0002"
 	);
 
-	if(is_array($config['sysctl'])) {
+	if (isset($config['sysctl']['item'])) {
 		foreach($config['sysctl']['item'] as $tunable) {
-			if($tunable['value'] == "default")
+			if ($tunable['value'] == 'default') {
 				$value = get_default_sysctl_value($tunable['tunable']);
-			else
+			} else {
 				$value = $tunable['value'];
+			}
 
 			$sysctls[$tunable['tunable']] = $value;
 		}
@@ -187,6 +236,37 @@ function get_country_codes()
     return $dn_cc;
 }
 
+function get_firmware_mirrors()
+{
+	$mirrors = array();
+
+	$mirrors['default'] = '(default)';
+	$mirrors['https://opnsense.aivian.org'] = 'Aivian (Shaoxing, CN)';
+	$mirrors['https://opnsense.c0urier.net'] = 'c0urier.net (Lund, SE)';
+	$mirrors['https://fleximus.org/mirror/opnsense'] = 'Fleximus (Roubaix, FR)';
+	$mirrors['http://mirror.ams1.nl.leaseweb.net/opnsense'] = 'LeaseWeb (Amsterdam, NL)';
+	$mirrors['http://mirror.fra10.de.leaseweb.net/opnsense'] = 'LeaseWeb (Frankfurt, DE)';
+	$mirrors['http://mirror.sfo12.us.leaseweb.net/opnsense'] = 'LeaseWeb (San Francisco, US)';
+	$mirrors['http://mirror.wdc1.us.leaseweb.net/opnsense'] = 'LeaseWeb (Washington, D.C., US)';
+	$mirrors['http://mirrors.nycbug.org/pub/opnsense'] = 'NYC*BUG (New York, US)';
+	$mirrors['http://pkg.opnsense.org'] = 'OPNsense (Amsterdam, NL)';
+	$mirrors['http://mirror.ragenetwork.de/opnsense'] = 'RageNetwork (Munich, DE)';
+	$mirrors['http://mirrors.supranet.net/pub/opnsense'] = 'Supranet Communications (Middleton, US)';
+
+	return $mirrors;
+}
+
+function get_firmware_flavours()
+{
+	$flavours = array();
+
+	$flavours['default'] = '(default)';
+	$flavours['libressl'] = 'LibreSSL';
+	$flavours['latest'] = 'OpenSSL';
+
+	return $flavours;
+}
+
 function get_zoneinfo()
 {
 	return timezone_identifiers_list(DateTimeZone::ALL ^ DateTimeZone::UTC);
@@ -284,8 +364,9 @@ function system_hosts_generate()
 				$lhosts .= "{$host['ip']}	{$host['host']}.{$host['domain']} {$host['host']}\n";
 			else
 				$lhosts .= "{$host['ip']}	{$host['domain']}\n";
-			if (!is_array($host['aliases']) || !is_array($host['aliases']['item']))
+			if (!isset($host['aliases']) || !is_array($host['aliases']) || !is_array($host['aliases']['item'])) {
 				continue;
+			}
 			foreach ($host['aliases']['item'] as $alias) {
 				if ($alias['host'])
 					$lhosts .= "{$host['ip']}	{$alias['host']}.{$alias['domain']} {$alias['host']}\n";
@@ -294,32 +375,41 @@ function system_hosts_generate()
 			}
 		}
 		if (isset($dnsmasqcfg['regdhcpstatic']) && is_array($config['dhcpd'])) {
-			foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf)
-				if(is_array($dhcpifconf['staticmap']) && isset($dhcpifconf['enable']))
-						foreach ($dhcpifconf['staticmap'] as $host)
-							if ($host['ipaddr'] && $host['hostname'] && $host['domain'])
-								$dhosts .= "{$host['ipaddr']}	{$host['hostname']}.{$host['domain']} {$host['hostname']}\n";
-							else if ($host['ipaddr'] && $host['hostname'] && $dhcpifconf['domain'])
-								$dhosts .= "{$host['ipaddr']}	{$host['hostname']}.{$dhcpifconf['domain']} {$host['hostname']}\n";
-							else if ($host['ipaddr'] && $host['hostname'])
-								$dhosts .= "{$host['ipaddr']}	{$host['hostname']}.{$syscfg['domain']} {$host['hostname']}\n";
+			foreach ($config['dhcpd'] as $dhcpif => $dhcpifconf) {
+				if (isset($dhcpifconf['staticmap']) && isset($dhcpifconf['enable'])) {
+					foreach ($dhcpifconf['staticmap'] as $host) {
+						if ($host['ipaddr'] && $host['hostname'] && $host['domain']) {
+							$dhosts .= "{$host['ipaddr']}	{$host['hostname']}.{$host['domain']} {$host['hostname']}\n";
+						} elseif ($host['ipaddr'] && $host['hostname'] && $dhcpifconf['domain']) {
+							$dhosts .= "{$host['ipaddr']}	{$host['hostname']}.{$dhcpifconf['domain']} {$host['hostname']}\n";
+						} elseif ($host['ipaddr'] && $host['hostname']) {
+							$dhosts .= "{$host['ipaddr']}	{$host['hostname']}.{$syscfg['domain']} {$host['hostname']}\n";
+						}
+					}
+				}
+			}
 		}
 		if (isset($dnsmasqcfg['regdhcpstatic']) && is_array($config['dhcpdv6'])) {
-			foreach ($config['dhcpdv6'] as $dhcpif => $dhcpifconf)
-				if(is_array($dhcpifconf['staticmap']) && isset($dhcpifconf['enable']))
-						foreach ($dhcpifconf['staticmap'] as $host)
-							if ($host['ipaddrv6'] && $host['hostname'] && $host['domain'])
-								$dhosts .= "{$host['ipaddrv6']}	{$host['hostname']}.{$host['domain']} {$host['hostname']}\n";
-							else if ($host['ipaddrv6'] && $host['hostname'] && $dhcpifconf['domain'])
-								$dhosts .= "{$host['ipaddrv6']}	{$host['hostname']}.{$dhcpifconf['domain']} {$host['hostname']}\n";
-							else if ($host['ipaddrv6'] && $host['hostname'])
-								$dhosts .= "{$host['ipaddrv6']}	{$host['hostname']}.{$syscfg['domain']} {$host['hostname']}\n";
+			foreach ($config['dhcpdv6'] as $dhcpif => $dhcpifconf) {
+				if (isset($dhcpifconf['staticmap']) && isset($dhcpifconf['enable'])) {
+					foreach ($dhcpifconf['staticmap'] as $host) {
+						if ($host['ipaddrv6'] && $host['hostname'] && $host['domain']) {
+							$dhosts .= "{$host['ipaddrv6']}	{$host['hostname']}.{$host['domain']} {$host['hostname']}\n";
+						} elseif ($host['ipaddrv6'] && $host['hostname'] && $dhcpifconf['domain']) {
+							$dhosts .= "{$host['ipaddrv6']}	{$host['hostname']}.{$dhcpifconf['domain']} {$host['hostname']}\n";
+						} elseif ($host['ipaddrv6'] && $host['hostname']) {
+							$dhosts .= "{$host['ipaddrv6']}	{$host['hostname']}.{$syscfg['domain']} {$host['hostname']}\n";
+						}
+					}
+				}
+			}
 		}
 
-		if (isset($dnsmasqcfg['dhcpfirst']))
+		if (isset($dnsmasqcfg['dhcpfirst'])) {
 			$hosts .= $dhosts . $lhosts;
-		else
+		} else {
 			$hosts .= $lhosts . $dhosts;
+		}
 	}
 
 	/*
@@ -337,7 +427,6 @@ function system_hosts_generate()
 	fclose($fd);
 
 	if (isset($config['unbound']['enable'])) {
-		require_once("unbound.inc");
 		unbound_hosts_generate();
 	}
 
@@ -520,7 +609,7 @@ function compare_hostname_to_dnscache($hostname) {
         }
 
         if(trim($oldcontents) != trim($contents)) {
-                log_error(sprintf(gettext('DNSCACHE: Found old IP %1$s and new IP %2$s'), $oldcontents, $contents));
+                log_error(sprintf(gettext('DNSCACHE: Found old IP %s and new IP %s'), $oldcontents, $contents));
                 return ($oldcontents);
         } else {
                 return false;
@@ -659,12 +748,15 @@ function system_syslogd_get_remote_servers($syslogcfg, $facility = "*.*") {
 	$remote_servers = "";
 	$pad_to  = 56;
 	$padding = ceil(($pad_to - strlen($facility))/8)+1;
-	if($syslogcfg['remoteserver'])
-		$remote_servers .= "{$facility}" . str_repeat("\t", $padding) . "@" . system_syslogd_fixup_server($syslogcfg['remoteserver']) . "\n";
-	if($syslogcfg['remoteserver2'])
-		$remote_servers .= "{$facility}" . str_repeat("\t", $padding) . "@" . system_syslogd_fixup_server($syslogcfg['remoteserver2']) . "\n";
-	if($syslogcfg['remoteserver3'])
-		$remote_servers .= "{$facility}" . str_repeat("\t", $padding) . "@" . system_syslogd_fixup_server($syslogcfg['remoteserver3']) . "\n";
+	if(!empty($syslogcfg['remoteserver'])) {
+			$remote_servers .= "{$facility}" . str_repeat("\t", $padding) . "@" . system_syslogd_fixup_server($syslogcfg['remoteserver']) . "\n";
+	}
+	if(!empty($syslogcfg['remoteserver2'])) {
+			$remote_servers .= "{$facility}" . str_repeat("\t", $padding) . "@" . system_syslogd_fixup_server($syslogcfg['remoteserver2']) . "\n";
+	}
+	if(!empty($syslogcfg['remoteserver3'])) {
+			$remote_servers .= "{$facility}" . str_repeat("\t", $padding) . "@" . system_syslogd_fixup_server($syslogcfg['remoteserver3']) . "\n";
+	}
 	return $remote_servers;
 }
 
@@ -680,95 +772,74 @@ function system_syslogd_start()
 
 	$syslogcfg = $config['syslog'];
 
-	if (file_exists("/var/run/booting"))
-		echo gettext("Starting syslog...");
-
-	// Which logging type are we using this week??
-	if (isset($config['system']['disablesyslogclog'])) {
-		$log_directive = "";
-		$log_create_directive = "/usr/bin/touch ";
-		$log_size = "";
-	} else { // Defaults to CLOG
-		$log_directive = "%";
-		$log_size = isset($config['syslog']['logfilesize']) ? $config['syslog']['logfilesize'] : "10240";
-		$log_create_directive = "/usr/local/sbin/clog -i -s ";
+	if (file_exists('/var/run/booting')) {
+		echo gettext('Starting syslog...');
 	}
 
-	$syslogd_extra = "";
+	$log_directive = '%';
+	$syslogd_extra = '';
+
 	if (isset($syslogcfg)) {
-		$separatelogfacilities = array('ntp','ntpd','ntpdate','charon','openvpn','pptps','poes','l2tps','relayd','hostapd','dnsmasq','filterdns','unbound','dhcpd','dhcrelay','dhclient','dhcp6c','apinger','radvd','routed','olsrd','zebra','ospfd','bgpd','miniupnpd','filterlog');
-		$syslogconf = "";
+		$separatelogfacilities = array(
+			'apinger',
+			'bgpd',
+			'charon',
+			'dhclient',
+			'dhcp6c',
+			'dhcpd',
+			'dhcrelay',
+			'dnsmasq',
+			'filterdns',
+			'filterlog',
+			'hostapd',
+			'l2tps',
+			'miniupnpd',
+			'ntp',
+			'ntpd',
+			'ntpdate',
+			'olsrd',
+			'openvpn',
+			'ospfd',
+			'poes',
+			'ppp',
+			'pptps',
+			'radvd',
+			'relayd',
+			'routed',
+			'unbound',
+			'zebra',
+		);
+		$syslogconf = '';
+
+		// create structure with log section definitions and config tags for remote usage
+		$syslogconfs = array();
+		$syslogconfs['routing'] = array("conf" => "!radvd,routed,olsrd,zebra,ospfd,bgpd,miniupnpd" , "remote" => null);
+		$syslogconfs['ntpd'] = array("conf" => "!ntp,ntpd,ntpdate", "remote" => null);
+		$syslogconfs['ppps'] = array("conf" => "!ppp", "remote" => null);
+		$syslogconfs['pptps'] = array("conf" => "!pptps", "remote" => null);
+		$syslogconfs['poes'] = array("conf" => "!poes", "remote" => null);
+		$syslogconfs['l2tps'] = array("conf" => "!l2tps", "remote" => null);
+		$syslogconfs['ipsec'] = array("conf" => "!charon", "remote" => null);
+		$syslogconfs['openvpn'] = array("conf" => "!openvpn", "remote" => "vpn");
+		$syslogconfs['gateways'] = array("conf" => "!apinger", "remote" => "apinger");
+		$syslogconfs['resolver'] = array("conf" => "!dnsmasq,filterdns,unbound", "remote" => null);
+		$syslogconfs['dhcpd'] = array("conf" => "!dhcpd,dhcrelay,dhclient,dhcp6c", "remote" => "dhcp");
+		$syslogconfs['relayd'] = array("conf" => "!relayd", "remote" => "relayd");
+		$syslogconfs['wireless'] = array("conf" => "!hostapd", "remote" => "hostapd");
+		$syslogconfs['filter'] = array("conf" => "!filterlog", "remote" => "filter");
+
+		foreach ($syslogconfs as $logTopic => $logConfig) {
+				$syslogconf .= "{$logConfig['conf']}\n";
+				if (!isset($syslogcfg['disablelocallogging'])) {
+						$syslogconf .= "*.*								{$log_directive}/var/log/{$logTopic}.log\n";
+				}
+				if ($logConfig['remote'] != null && !empty($syslogcfg[$logConfig['remote']]) && !empty($syslogcfg['enable'])) {
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
+				}
+		}
+
 
 		$facilitylist = implode(',', array_unique($separatelogfacilities));
-		$syslogconf .= "!radvd,routed,olsrd,zebra,ospfd,bgpd,miniupnpd\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/routing.log\n";
-
-		$syslogconf .= "!ntp,ntpd,ntpdate\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/ntpd.log\n";
-
-		$syslogconf .= "!ppp\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/ppps.log\n";
-
-		$syslogconf .= "!pptps\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/pptps.log\n";
-
-		$syslogconf .= "!poes\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/poes.log\n";
-
-		$syslogconf .= "!l2tps\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/l2tps.log\n";
-
-		$syslogconf .= "!charon\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/ipsec.log\n";
-		if (isset($syslogcfg['vpn']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
-
-		$syslogconf .= "!openvpn\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/openvpn.log\n";
-		if (isset($syslogcfg['vpn']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
-
-		$syslogconf .= "!apinger\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/gateways.log\n";
-		if (isset($syslogcfg['apinger']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
-
-		$syslogconf .= "!dnsmasq,filterdns,unbound\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/resolver.log\n";
-
-		$syslogconf .= "!dhcpd,dhcrelay,dhclient,dhcp6c\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/dhcpd.log\n";
-		if (isset($syslogcfg['dhcp']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
-
-		$syslogconf .= "!relayd\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/relayd.log\n";
-		if (isset($syslogcfg['relayd']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
-
-		$syslogconf .= "!hostapd\n";
-		if (!isset($syslogcfg['disablelocallogging']))
-			$syslogconf .= "*.*								{$log_directive}/var/log/wireless.log\n";
-		if (isset($syslogcfg['hostapd']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
-
-		$syslogconf .= "!filterlog\n";
-		$syslogconf .= "*.*								{$log_directive}/var/log/filter.log\n";
-		if (isset($syslogcfg['filter']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
-
 		$syslogconf .= "!-{$facilitylist}\n";
 		if (!isset($syslogcfg['disablelocallogging']))
 			$syslogconf .= <<<EOD
@@ -784,23 +855,30 @@ auth.info;authpriv.info						|exec /usr/local/sbin/sshlockout_pf 15
 *.emerg								*
 
 EOD;
-		if (isset($syslogcfg['vpn']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "local3.*");
-		if (isset($syslogcfg['portalauth']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "local4.*");
-		if (isset($syslogcfg['dhcp']))
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "local7.*");
-		if (isset($syslogcfg['system'])) {
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.notice;kern.debug;lpr.info;mail.crit;");
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "news.err;local0.none;local3.none;local7.none");
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "security.*");
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "auth.info;authpriv.info;daemon.info");
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.emerg");
-		}
-		if (isset($syslogcfg['logall'])) {
-			// Make everything mean everything, including facilities excluded above.
-			$syslogconf .= "!*\n";
-			$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
+		if (!empty($syslogcfg['enable'])) {
+				if (isset($syslogcfg['vpn'])) {
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "local3.*");
+				}
+				if (isset($syslogcfg['portalauth'])) {
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "local4.*");
+				}
+
+				if (isset($syslogcfg['dhcp'])) {
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "local7.*");
+				}
+
+				if (isset($syslogcfg['system'])) {
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.notice;kern.debug;lpr.info;mail.crit;");
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "news.err;local0.none;local3.none;local7.none");
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "security.*");
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "auth.info;authpriv.info;daemon.info");
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.emerg");
+				}
+				if (isset($syslogcfg['logall'])) {
+						// Make everything mean everything, including facilities excluded above.
+						$syslogconf .= "!*\n";
+						$syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.*");
+				}
 		}
 
 		/* write syslog.conf */
@@ -892,16 +970,16 @@ function system_webgui_start()
 			$a_cert[] = $cert;
 			$config['system']['webgui']['ssl-certref'] = $cert['refid'];
 			write_config(gettext("Importing HTTPS certificate"));
-			if(!$config['system']['webgui']['port'])
-				$portarg = "443";
-			$ca = ca_chain($cert);
 		} else {
 			$crt = base64_decode($cert['crt']);
 			$key = base64_decode($cert['prv']);
-			if(!$config['system']['webgui']['port'])
-				$portarg = "443";
-			$ca = ca_chain($cert);
 		}
+
+		if (!$config['system']['webgui']['port']) {
+			$portarg = '443';
+		}
+
+		$ca = ca_chain($cert);
 	}
 
 	/* generate lighttpd configuration */
@@ -945,32 +1023,13 @@ function system_generate_lighty_config(
 	$port = 80,
 	$document_root = '/usr/local/www/',
 	$cert_location = 'cert.pem',
-	$ca_location = 'ca.pem',
-	$captive_portal = false)
+	$ca_location = 'ca.pem')
 {
 	global $config;
 
 	@mkdir('/tmp/lighttpdcompress');
 
-	if ($captive_portal !== false)  {
-		$captiveportal = ',"mod_evasive"';
-		$http_rewrite_rules = "url.rewrite-once = ( \"(.*captiveportal.*)\" => \"$1\", \"(.*)\" => \"/index.php?zone={$captive_portal}&redirurl=$1\" )\n";
-
-		if (!isset($config['captiveportal'][$captive_portal]['maxprocperip']) || empty($config['captiveportal'][$captive_portal]['maxprocperip'])) {
-			$maxprocperip = 10;
-		} else {
-			$maxprocperip = $config['captiveportal'][$captive_portal]['maxprocperip'];
-		}
-
-		$captive_portal_mod_evasive = "evasive.max-conns-per-ip = {$maxprocperip}";
-
-		$server_upload_dirs = "server.upload-dirs = ( \"/tmp/captiveportal/\" )\n";
-		@mkdir('/tmp/captiveportal', 0555);
-		$server_max_request_size = "server.max-request-size    = 384";
-		$cgi_config = "";
-	} else {
-		$captiveportal = ",\"mod_cgi\"";
-		$http_rewrite_rules = <<<EOD
+	$http_rewrite_rules = <<<EOD
 # Phalcon ui and api routing
 alias.url += ( "/ui/" => "/usr/local/opnsense/www/" )
 alias.url += ( "/api/"  => "/usr/local/opnsense/www/" )
@@ -979,46 +1038,14 @@ url.rewrite-if-not-file = ( "^/ui/(.*)$" => "/ui/index.php?_url=/$1" ,
 )
 
 EOD;
-		$captive_portal_mod_evasive = "";
-		$server_upload_dirs = "server.upload-dirs = ( \"/root/\", \"/tmp/\", \"/var/\" )\n";
-		$server_max_request_size = "server.max-request-size    = 2097152";
-		$cgi_config = "cgi.assign                 = ( \".cgi\" => \"\" )";
-	}
+	$server_upload_dirs = "server.upload-dirs = ( \"/root/\", \"/tmp/\", \"/var/\" )\n";
+	$server_max_request_size = "server.max-request-size    = 2097152";
+	$cgi_config = "cgi.assign                 = ( \".cgi\" => \"\" )";
 
 	if (empty($port))
 		$lighty_port = "80";
 	else
 		$lighty_port = $port;
-
-	$memory = get_memory();
-	$realmem = $memory[1];
-
-	// Determine web GUI process settings and take into account low memory systems
-	if ($realmem < 255)
-		$max_procs = 1;
-	else
-		$max_procs = ($config['system']['webgui']['max_procs']) ? $config['system']['webgui']['max_procs'] : 2;
-
-	// Ramp up captive portal max procs, assuming each PHP process can consume up to 64MB RAM
-	if ($captive_portal !== false)  {
-		if ($realmem > 135 and $realmem < 256) {
-			$max_procs += 1; // 2 worker processes
-		} else if ($realmem > 255 and $realmem < 513) {
-			$max_procs += 2; // 3 worker processes
-		} else if ($realmem > 512) {
-			$max_procs += 4; // 6 worker processes
-		}
-		if ($max_procs > 1)
-			$max_php_children = intval($max_procs/2);
-		else
-			$max_php_children = 1;
-
-	} else {
-		if ($realmem < 78)
-			$max_php_children = 0;
-		else
-			$max_php_children = 1;
-	}
 
 	if(!isset($config['syslog']['nologlighttpd'])) {
 		$lighty_use_syslog = <<<EOD
@@ -1027,11 +1054,7 @@ server.errorlog-use-syslog="enable"
 EOD;
 	}
 
-        if ($captive_portal !== false) {
-                $fast_cgi_path = "/tmp/php-fastcgi-{$captive_portal}.socket";
-        } else {
-                $fast_cgi_path = "/tmp/php-fastcgi.socket";
-	}
+	$fast_cgi_path = "/tmp/php-fastcgi.socket";
 
 	$fastcgi_config = <<<EOD
 #### fastcgi module
@@ -1040,10 +1063,10 @@ fastcgi.server = ( ".php" =>
 	( "localhost" =>
 		(
 			"socket" => "{$fast_cgi_path}",
-			"max-procs" => {$max_procs},
+			"max-procs" => 2,
 			"bin-environment" => (
-				"PHP_FCGI_CHILDREN" => "{$max_php_children}",
-				"PHP_FCGI_MAX_REQUESTS" => "500"
+				"PHP_FCGI_CHILDREN" => "3",
+				"PHP_FCGI_MAX_REQUESTS" => "100"
 			),
 			"bin-path" => "/usr/local/bin/php-cgi"
 		)
@@ -1067,7 +1090,7 @@ server.network-backend	= "writev"
 
 ## modules to load
 server.modules              =   ( "mod_access", "mod_expire", "mod_compress", "mod_redirect",
-	{$captiveportal}, "mod_fastcgi","mod_alias", "mod_rewrite"
+	"mod_cgi", "mod_fastcgi","mod_alias", "mod_rewrite"
 )
 
 server.max-keep-alive-requests = 15
@@ -1205,8 +1228,6 @@ compress.filetype  = ("text/plain","text/css", "text/xml", "text/javascript" )
 
 {$cgi_config}
 
-{$captive_portal_mod_evasive}
-
 expire.url = (
 				"" => "access 50 hours",
         )
@@ -1257,7 +1278,7 @@ EOD;
 	}
 
 	// Add HTTP to HTTPS redirect
-	if ($captive_portal === false && $config['system']['webgui']['protocol'] == "https" && !isset($config['system']['webgui']['disablehttpredirect'])) {
+	if ($config['system']['webgui']['protocol'] == "https" && !isset($config['system']['webgui']['disablehttpredirect'])) {
 		if($lighty_port != "443") {
 			$redirectport = ":{$lighty_port}";
 		} else {
@@ -1287,6 +1308,30 @@ EOD;
 
 	return 0;
 
+}
+
+function system_firmware_configure()
+{
+	global $config;
+
+	/* our own ABI prefix on the mirror */
+	$osabi = '16.1';
+
+	/* rewrite the config via the defaults */
+	$origin_conf = '/usr/local/etc/pkg/repos/origin.conf';
+	copy("${origin_conf}.sample", $origin_conf);
+
+	if (isset($config['system']['firmware']['mirror'])) {
+		configd_run('firmware mirror ' . escapeshellarg(
+			str_replace('/', '\/', $config['system']['firmware']['mirror'])
+		));
+	}
+
+	if (isset($config['system']['firmware']['flavour'])) {
+		configd_run('firmware flavour ' . escapeshellarg(
+			str_replace('/', '\/', $osabi . '/' . $config['system']['firmware']['flavour'])
+		));
+	}
 }
 
 function system_timezone_configure()
@@ -1330,9 +1375,9 @@ function system_ntp_setup_gps($serialport)
 	symlink($serialport, $gps_device);
 
 	/* Send the following to the GPS port to initialize the GPS */
-	if (is_array($config['ntpd']) && is_array($config['ntpd']['gps']) && !empty($config['ntpd']['gps']['type'])) {
+	if (isset($config['ntpd']['gps'])) {
 		$gps_init = base64_decode($config['ntpd']['gps']['initcmd']);
-	}else{
+	} else {
 		$gps_init = base64_decode('JFBVQlgsNDAsR1NWLDAsMCwwLDAqNTkNCiRQVUJYLDQwLEdMTCwwLDAsMCwwKjVDDQokUFVCWCw0MCxaREEsMCwwLDAsMCo0NA0KJFBVQlgsNDAsVlRHLDAsMCwwLDAqNUUNCiRQVUJYLDQwLEdTViwwLDAsMCwwKjU5DQokUFVCWCw0MCxHU0EsMCwwLDAsMCo0RQ0KJFBVQlgsNDAsR0dBLDAsMCwwLDANCiRQVUJYLDQwLFRYVCwwLDAsMCwwDQokUFVCWCw0MCxSTUMsMCwwLDAsMCo0Ng0KJFBVQlgsNDEsMSwwMDA3LDAwMDMsNDgwMCwwDQokUFVCWCw0MCxaREEsMSwxLDEsMQ==');
 	}
 
@@ -1511,16 +1556,6 @@ function system_ntp_configure($start_ntpd = true)
 			$ntpcfg .= $config['ntpd']['gps']['refid'];
 		}
 		$ntpcfg .= "\n";
-	}elseif (!empty($config['ntpd']['gpsport'])
-		&& file_exists('/dev/'.$config['ntpd']['gpsport'])
-		&& system_ntp_setup_gps($config['ntpd']['gpsport'])) {
-		/* This handles a 2.1 and earlier config */
-		$ntpcfg .= "# GPS Setup\n";
-		$ntpcfg .= "server 127.127.20.0 mode 0 minpoll 4 maxpoll 4 prefer\n";
-		$ntpcfg .= "fudge 127.127.20.0 time1 0.155 time2 0.000 flag1 1 flag2 0 flag3 1\n";
-		// Fall back to local clock if GPS is out of sync?
-		$ntpcfg .= "server 127.127.1.0\n";
-		$ntpcfg .= "fudge 127.127.1.0 stratum 12\n";
 	}
 	/* End GPS configuration */
 
@@ -1684,34 +1719,6 @@ function system_console_configure()
 	setup_serial_port();
 }
 
-function system_set_harddisk_standby()
-{
-	global $config;
-
-	if (isset($config['system']['harddiskstandby'])) {
-		if (file_exists("/var/run/booting")) {
-			echo gettext('Setting hard disk standby... ');
-		}
-
-		$standby = $config['system']['harddiskstandby'];
-		// Check for a numeric value
-		if (is_numeric($standby)) {
-			mwexec('/bin/sync');
-			if (set_single_sysctl('hw.ata.standby', (int)$standby)) {
-				// Reinitialize ATA-drives
-				mwexec('/usr/local/sbin/atareinit');
-				if (file_exists("/var/run/booting")) {
-					echo gettext("done.") . "\n";
-				}
-			} else if (file_exists("/var/run/booting")) {
-				echo gettext("failed!") . "\n";
-			}
-		} else if (file_exists("/var/run/booting")) {
-			echo gettext("failed!") . "\n";
-		}
-	}
-}
-
 function system_setup_sysctl()
 {
 	global $config;
@@ -1801,4 +1808,3 @@ function get_possible_traffic_source_addresses($include_ipv6_link_local=false) {
 	}
 	return $sourceips;
 }
-?>

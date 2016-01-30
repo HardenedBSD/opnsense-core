@@ -1,8 +1,5 @@
 """
     Copyright (c) 2015 Ad Schellevis
-
-    part of OPNsense (https://www.opnsense.org/)
-
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -27,43 +24,58 @@
     POSSIBILITY OF SUCH DAMAGE.
 
     --------------------------------------------------------------------------------------
+
     shared module for suricata rule metadata
 """
+
 import os
 import syslog
 import glob
 import xml.etree.ElementTree
 
+
 class Metadata(object):
     def __init__(self):
-        self._rules_dir = '%s/../metadata/rules/'%(os.path.dirname(os.path.abspath(__file__)))
+        self._rules_dir = '%s/../metadata/rules/' % (os.path.dirname(os.path.abspath(__file__)))
 
     def list_rules(self):
         """ list all available rules
         :return: generator method returning all known rulefiles
         """
-        for filename in sorted(glob.glob('%s*.xml'%self._rules_dir)):
+        for filename in sorted(glob.glob('%s*.xml' % self._rules_dir)):
             try:
-                ruleXML=xml.etree.ElementTree.fromstring(open(filename).read())
+                rule_xml = xml.etree.ElementTree.fromstring(open(filename).read())
             except xml.etree.ElementTree.ParseError:
                 # unparseable metadata
-                syslog.syslog(syslog.LOG_ERR,'suricata metadata unparsable @ %s'%filename)
+                syslog.syslog(syslog.LOG_ERR, 'suricata metadata unparsable @ %s' % filename)
                 continue
 
-            src_location = ruleXML.find('location')
+            src_location = rule_xml.find('location')
             if src_location is None or 'url' not in src_location.attrib:
-                syslog.syslog(syslog.LOG_ERR,'suricata metadata missing location  @ %s'%filename)
+                syslog.syslog(syslog.LOG_ERR, 'suricata metadata missing location  @ %s' % filename)
             else:
-                if ruleXML.find('files') is None:
-                    syslog.syslog(syslog.LOG_ERR,'suricata metadata missing files  @ %s'%filename)
+                if rule_xml.find('files') is None:
+                    syslog.syslog(syslog.LOG_ERR, 'suricata metadata missing files  @ %s' % filename)
                 else:
-                    for rule_filename in ruleXML.find('files'):
+                    for rule_filename in rule_xml.find('files'):
                         metadata_record = dict()
                         metadata_record['source'] = src_location.attrib
                         metadata_record['filename'] = rule_filename.text.strip()
-                        if 'description' in rule_filename.attrib:
-                            metadata_record['description'] = rule_filename.attrib['description']
+                        if 'url' in rule_filename.attrib:
+                            metadata_record['url'] = (rule_filename.attrib['url'])
                         else:
-                            metadata_record['description'] = rule_filename.text
+                            metadata_record['url'] = ('%s/%s' % (metadata_record['source']['url'],
+                                                                 metadata_record['filename']))
+
+                        if 'prefix' in src_location.attrib:
+                            description_prefix = "%s/" % src_location.attrib['prefix']
+                        else:
+                            description_prefix = ""
+                        if 'description' in rule_filename.attrib:
+                            metadata_record['description'] = '%s%s' % (description_prefix,
+                                                                       rule_filename.attrib['description'])
+                        else:
+                            metadata_record['description'] = '%s%s' % (description_prefix,
+                                                                       rule_filename.text)
 
                         yield metadata_record

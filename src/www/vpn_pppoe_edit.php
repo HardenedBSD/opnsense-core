@@ -30,13 +30,15 @@
 
 require_once("guiconfig.inc");
 require_once("vpn.inc");
+require_once("interfaces.inc");
 
 function vpn_pppoe_get_id()
 {
     global $config;
 
     $vpnid = 1;
-    if (is_array($config['pppoes']['pppoe'])) {
+
+    if (isset($config['pppoes']['pppoe'])) {
         foreach ($config['pppoes']['pppoe'] as $pppoe) {
             if ($vpnid == $pppoe['pppoeid']) {
                 $vpnid++;
@@ -49,7 +51,7 @@ function vpn_pppoe_get_id()
     return $vpnid;
 }
 
-if (!is_array($config['pppoes']['pppoe'])) {
+if (!isset($config['pppoes']['pppoe'])) {
     $config['pppoes']['pppoe'] = array();
 }
 $a_pppoes = &$config['pppoes']['pppoe'];
@@ -251,8 +253,6 @@ if ($_POST) {
     }
 }
 
-$pgtitle = array(gettext("Services"),gettext("PPPoE Server"), gettext("Edit"));
-$shortcut_section = "pppoes";
 include("head.inc");
 
 ?>
@@ -620,7 +620,7 @@ function enable_change(enable_over) {
 ?>" size="10" value="<?=htmlspecialchars($ip);?>" />
                                     </td>
                                     <td>
-                                        <a onclick="removeRow(this); return false;" href="#" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-remove"></span></a>
+                                        <a onclick="removeRow(this); return false;" href="#" class="btn btn-default btn-xs"><span class="fa fa-trash text-muted"></span></a>
                                     </td>
                                 </tr>
 						<?php

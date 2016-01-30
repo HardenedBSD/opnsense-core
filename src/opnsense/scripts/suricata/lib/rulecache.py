@@ -1,8 +1,5 @@
 """
     Copyright (c) 2015 Ad Schellevis
-
-    part of OPNsense (https://www.opnsense.org/)
-
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -27,63 +24,71 @@
     POSSIBILITY OF SUCH DAMAGE.
 
     --------------------------------------------------------------------------------------
+
     shared module for suricata scripts, handles the installed rules cache for easy access
 """
+
 import os
 import os.path
 import glob
 import sqlite3
 import shlex
+import fcntl
 from lib import rule_source_directory
 
 
 class RuleCache(object):
     """
     """
+
     def __init__(self):
         # suricata rule settings, source directory and cache json file to use
-        self.cachefile = '%srules.sqlite'%rule_source_directory
-        self._rule_fields = ['sid','msg','classtype','rev','gid','source','enabled','reference']
-        self._rule_defaults = {'classtype':'##none##'}
+        self.cachefile = '%srules.sqlite' % rule_source_directory
+        self._rule_fields = ['sid', 'msg', 'classtype', 'rev', 'gid', 'source', 'enabled', 'reference', 'action']
+        self._rule_defaults = {'classtype': '##none##'}
 
-    def listLocal(self):
-        all_rule_files=[]
-        for filename in glob.glob('%s*.rules'%(rule_source_directory)):
+    @staticmethod
+    def list_local():
+        all_rule_files = []
+        for filename in glob.glob('%s*.rules' % rule_source_directory):
             all_rule_files.append(filename)
 
         return all_rule_files
 
-    def listRules(self, filename):
+    def list_rules(self, filename):
         """ generator function to list rule file content including metadata
         :param filename:
         :return:
         """
         data = open(filename)
         for rule in data.read().split('\n'):
-            rule_info_record = {'rule':rule, 'metadata':None}
+            rule_info_record = {'rule': rule, 'metadata': None}
             if rule.find('msg:') != -1:
                 # define basic record
-                record = {'enabled':True, 'source':filename.split('/')[-1]}
-                if rule.strip()[0] =='#':
+                record = {'enabled': True, 'source': filename.split('/')[-1]}
+                if rule.strip()[0] == '#':
                     record['enabled'] = False
+                    record['action'] = rule.strip()[1:].split(' ')[0].replace('#', '')
+                else:
+                    record['action'] = rule.strip().split(' ')[0]
 
                 rule_metadata = rule[rule.find('msg:'):-1]
                 for field in rule_metadata.split(';'):
-                    fieldName = field[0:field.find(':')].strip()
-                    fieldContent = field[field.find(':')+1:].strip()
-                    if fieldName in self._rule_fields:
-                        if fieldContent[0] == '"':
-                            content = fieldContent[1:-1]
+                    fieldname = field[0:field.find(':')].strip()
+                    fieldcontent = field[field.find(':') + 1:].strip()
+                    if fieldname in self._rule_fields:
+                        if fieldcontent[0] == '"':
+                            content = fieldcontent[1:-1]
                         else:
-                            content = fieldContent
+                            content = fieldcontent
 
-                        if fieldName in record:
+                        if fieldname in record:
                             # if same field repeats, put items in list
-                            if type(record[fieldName]) != list:
-                                record[fieldName] = [record[fieldName]]
-                            record[fieldName].append(content)
+                            if type(record[fieldname]) != list:
+                                record[fieldname] = [record[fieldname]]
+                            record[fieldname].append(content)
                         else:
-                            record[fieldName] = content
+                            record[fieldname] = content
 
                 for rule_field in self._rule_fields:
                     if rule_field not in record:
@@ -101,13 +106,13 @@ class RuleCache(object):
 
             yield rule_info_record
 
-    def isChanged(self):
+    def is_changed(self):
         """ check if rules on disk are probably different from rules in cache
         :return: boolean
         """
         if os.path.exists(self.cachefile):
             last_mtime = 0
-            all_rule_files = self.listLocal()
+            all_rule_files = self.list_local()
             for filename in all_rule_files:
                 file_mtime = os.stat(filename).st_mtime
                 if file_mtime > last_mtime:
@@ -116,7 +121,7 @@ class RuleCache(object):
             try:
                 db = sqlite3.connect(self.cachefile)
                 cur = db.cursor()
-                cur.execute('select max(timestamp), max(files) from stats')
+                cur.execute('SELECT max(timestamp), max(files) FROM stats')
                 results = cur.fetchall()
                 if last_mtime == results[0][0] and len(all_rule_files) == results[0][1]:
                     return False
@@ -129,42 +134,56 @@ class RuleCache(object):
         """ create new cache
         :return: None
         """
+        # lock create process
+        lock = open(self.cachefile + '.LCK', 'w')
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            # other process is already creating the cache, wait, let the other process do it's work and return.
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            return
+
+        # remove existing DB
         if os.path.exists(self.cachefile):
             os.remove(self.cachefile)
 
         db = sqlite3.connect(self.cachefile)
         cur = db.cursor()
-        cur.execute('create table stats (timestamp number, files number)')
-        cur.execute("""create table rules (sid number, msg text, classtype text,
-                                           rev integer, gid integer,reference text,
-                                           enabled boolean,source text)""")
 
-        last_mtime=0
-        all_rule_files = self.listLocal()
+        cur.execute("CREATE TABLE stats (timestamp number, files number)")
+        cur.execute("""CREATE TABLE rules (sid number, msg TEXT, classtype TEXT,
+                                           rev INTEGER, gid INTEGER, reference TEXT,
+                                           enabled BOOLEAN, action text, source TEXT)""")
+
+        last_mtime = 0
+        all_rule_files = self.list_local()
         for filename in all_rule_files:
             file_mtime = os.stat(filename).st_mtime
             if file_mtime > last_mtime:
                 last_mtime = file_mtime
             rules = []
-            for rule_info_record in self.listRules(filename=filename):
+            for rule_info_record in self.list_rules(filename=filename):
                 if rule_info_record['metadata'] is not None:
                     rules.append(rule_info_record['metadata'])
 
             cur.executemany('insert into rules(%(fieldnames)s) '
-                            'values (%(fieldvalues)s)'%{'fieldnames':(','.join(self._rule_fields)),
-                                                        'fieldvalues':':'+(',:'.join(self._rule_fields))}, rules)
-        cur.execute('insert into stats (timestamp,files) values (?,?) ',(last_mtime,len(all_rule_files)))
+                            'values (%(fieldvalues)s)' % {'fieldnames': (','.join(self._rule_fields)),
+                                                          'fieldvalues': ':' + (',:'.join(self._rule_fields))}, rules)
+        cur.execute('INSERT INTO stats (timestamp,files) VALUES (?,?) ', (last_mtime, len(all_rule_files)))
         db.commit()
+        # release lock
+        fcntl.flock(lock, fcntl.LOCK_UN)
 
-    def search(self, limit, offset, filter, sort_by):
+    def search(self, limit, offset, filter_txt, sort_by):
         """ search installed rules
         :param limit: limit number of rows
         :param offset: limit offset
-        :param filter: text to search, used format fieldname1,fieldname2/searchphrase include % to match on a part
-        :param sort: order by, list of fields and possible asc/desc parameter
+        :param filter_txt: text to search, used format fieldname1,fieldname2/searchphrase include % to match on a part
+        :param sort_by: order by, list of fields and possible asc/desc parameter
         :return: dict
         """
-        result = {'rows':[]}
+        result = {'rows': []}
         if os.path.exists(self.cachefile):
             db = sqlite3.connect(self.cachefile)
             cur = db.cursor()
@@ -173,7 +192,7 @@ class RuleCache(object):
             sql = 'select * from rules '
             sql_filters = {}
 
-            for filtertag in shlex.split(filter):
+            for filtertag in shlex.split(filter_txt):
                 fieldnames = filtertag.split('/')[0]
                 searchcontent = '/'.join(filtertag.split('/')[1:])
                 if len(sql_filters) > 0:
@@ -185,9 +204,9 @@ class RuleCache(object):
                         if fieldname != fieldnames.split(',')[0].strip():
                             sql += ' or '
                         if searchcontent.find('*') == -1:
-                            sql += 'cast('+fieldname + " as text) like :"+fieldname+" "
+                            sql += 'cast(' + fieldname + " as text) like :" + fieldname + " "
                         else:
-                            sql += 'cast('+fieldname + " as text) like '%'|| :"+fieldname+" || '%' "
+                            sql += 'cast(' + fieldname + " as text) like '%'|| :" + fieldname + " || '%' "
                         sql_filters[fieldname] = searchcontent.replace('*', '')
                     else:
                         # not a valid fieldname, add a tag to make sure our sql statement is valid
@@ -195,28 +214,28 @@ class RuleCache(object):
                 sql += ' ) '
 
             # apply sort order (if any)
-            sql_sort =[]
+            sql_sort = []
             for sortField in sort_by.split(','):
                 if sortField.split(' ')[0] in self._rule_fields:
                     if sortField.split(' ')[-1].lower() == 'desc':
-                        sql_sort.append('%s desc'%sortField.split()[0])
+                        sql_sort.append('%s desc' % sortField.split()[0])
                     else:
-                        sql_sort.append('%s asc'%sortField.split()[0])
+                        sql_sort.append('%s asc' % sortField.split()[0])
 
             # count total number of rows
-            cur.execute('select count(*) from (%s) a'%sql, sql_filters)
+            cur.execute('select count(*) from (%s) a' % sql, sql_filters)
             result['total_rows'] = cur.fetchall()[0][0]
 
             if len(sql_sort) > 0:
-                sql += ' order by %s'%(','.join(sql_sort))
+                sql += ' order by %s' % (','.join(sql_sort))
 
             if str(limit) != '0' and str(limit).isdigit():
-                sql += ' limit %s'%(limit)
+                sql += ' limit %s' % limit
                 if str(offset) != '0' and str(offset).isdigit():
-                    sql += ' offset %s'%(offset)
+                    sql += ' offset %s' % offset
 
             # fetch results
-            cur.execute(sql,sql_filters)
+            cur.execute(sql, sql_filters)
             while True:
                 row = cur.fetchone()
                 if row is None:
@@ -229,7 +248,7 @@ class RuleCache(object):
 
         return result
 
-    def listClassTypes(self):
+    def list_class_types(self):
         """
         :return: list of installed classtypes
         """
@@ -237,7 +256,7 @@ class RuleCache(object):
         if os.path.exists(self.cachefile):
             db = sqlite3.connect(self.cachefile)
             cur = db.cursor()
-            cur.execute('select distinct classtype from rules')
+            cur.execute('SELECT DISTINCT classtype FROM rules')
             for record in cur.fetchall():
                 result.append(record[0])
 

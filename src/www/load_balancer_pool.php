@@ -28,9 +28,11 @@
 */
 
 require_once("guiconfig.inc");
-require_once("functions.inc");
 require_once("filter.inc");
 require_once("load_balancer_maintable.inc");
+require_once("services.inc");
+require_once("vslb.inc");
+require_once("interfaces.inc");
 
 if (!is_array($config['load_balancer']['lbpool'])) {
 	$config['load_balancer']['lbpool'] = array();
@@ -46,7 +48,7 @@ if ($_POST) {
 		$retval |= filter_configure();
 		$retval |= relayd_configure();
 
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 		clear_subsystem_dirty('loadbalancer');
 	}
 }
@@ -82,13 +84,12 @@ for ($i = 0; isset($config['load_balancer']['lbpool'][$i]); $i++) {
 	$a_pool[$i]['monitor'] = "<a href=\"/load_balancer_monitor_edit.php?id={$mondex[$a_pool[$i]['monitor']]}\">{$a_pool[$i]['monitor']}</a>";
 }
 
-$pgtitle = array(gettext("Services"), gettext("Load Balancer"),gettext("Pool"));
-$shortcut_section = "relayd";
+$service_hook = 'relayd';
 
 include("head.inc");
 
 $main_buttons = array(
-	array('label'=>'Add', 'href'=>'load_balancer_pool_edit.php'),
+	array('label'=>gettext('Add'), 'href'=>'load_balancer_pool_edit.php'),
 );
 
 ?>
@@ -104,20 +105,10 @@ $main_buttons = array(
 				<?php if (isset($savemsg)) print_info_box($savemsg); ?>
 
 				<?php if (is_subsystem_dirty('loadbalancer')): ?><br/>
-				<?php print_info_box_np(sprintf(gettext("The load balancer configuration has been changed%sYou must apply the changes in order for them to take effect."), "<br />"));?><br />
+				<?php print_info_box_apply(sprintf(gettext("The load balancer configuration has been changed%sYou must apply the changes in order for them to take effect."), "<br />"));?><br />
 				<?php endif; ?>
 
 			    <section class="col-xs-12">
-
-				<?php
-				        /* active tabs */
-				        $tab_array = array();
-				        $tab_array[] = array(gettext("Pools"), true, "load_balancer_pool.php");
-				        $tab_array[] = array(gettext("Virtual Servers"), false, "load_balancer_virtual_server.php");
-				        $tab_array[] = array(gettext("Monitors"), false, "load_balancer_monitor.php");
-				        $tab_array[] = array(gettext("Settings"), false, "load_balancer_setting.php");
-				        display_top_tabs($tab_array);
-					?>
 
 					<div class="tab-content content-box col-xs-12">
 
@@ -143,11 +134,9 @@ $main_buttons = array(
 											$t->display();
 								?>
 								</div>
-								<div class="container-fluid">
-								<br /><span class="red"><strong><?=gettext("Hint:");?></strong></span><br />
-	<?= sprintf(gettext("The Load Balancer in %s is for server load balancing, not Multi-WAN. For load balancing or failover for multiple WANs, use "), $g['product_name']);?>
-	<a href="/system_gateway_groups.php"><?= gettext("Gateway Groups"); ?></a>
-								</div>
+						<table class="table table-striped table-sort "><tbody><tr><td>
+	<?= sprintf(gettext('This feature is intended for server load balancing, not multi-WAN. For load balancing or failover for multiple WANs, use %sGateway Groups%s.'), '<a href="/system_gateway_groups.php">', '</a>'); ?>
+						</td></tr></tbody></table>
 					  </form>
 					</div>
 			    </section>

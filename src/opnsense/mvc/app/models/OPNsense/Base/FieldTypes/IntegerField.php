@@ -32,7 +32,7 @@ use OPNsense\Base\Validators\MinMaxValidator;
 use OPNsense\Base\Validators\IntegerValidator;
 
 /**
- * Class TextField
+ * Class IntegerField
  * @package OPNsense\Base\FieldTypes
  */
 class IntegerField extends BaseField
@@ -56,6 +56,8 @@ class IntegerField extends BaseField
 
     /**
      * constructor, set absolute min and max values
+     * @param null|string $ref direct reference to this object
+     * @param null|string $tagname xml tagname to use
      */
     public function __construct($ref = null, $tagname = null)
     {
@@ -87,6 +89,7 @@ class IntegerField extends BaseField
     }
 
     /**
+     * retrieve field validators for this field type
      * @return array returns Text/regex validator
      */
     public function getValidators()

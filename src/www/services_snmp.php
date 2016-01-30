@@ -28,7 +28,9 @@
 */
 
 require_once("guiconfig.inc");
-require_once("functions.inc");
+require_once("interfaces.inc");
+require_once("services.inc");
+require_once("system.inc");
 
 if (!is_array($config['snmpd'])) {
 	$config['snmpd'] = array();
@@ -146,13 +148,12 @@ if ($_POST) {
 
 		$retval = 0;
 		$retval = services_snmpd_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 	}
 }
 
-$closehead = false;
-$pgtitle = array(gettext("Services"),gettext("SNMP"));
-$shortcut_section = "snmp";
+$service_hook = 'bsnmpd';
+
 include("head.inc");
 
 ?>
@@ -460,7 +461,7 @@ function enable_change(whichone) {
 									<td width="22%" valign="top" class="vncellreq"><?=gettext("Bind Interface"); ?></td>
 									<td width="78%" class="vtable">
 										<select name="bindip" class="formselect">
-											<option value="">All</option>
+											<option value=""><?= gettext('All') ?></option>
 										<?php  $listenips = get_possible_listen_ips();
 											foreach ($listenips as $lip):
 												$selected = "";

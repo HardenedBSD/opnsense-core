@@ -71,7 +71,7 @@ function create_new_rrd($rrdcreatecmd) {
 	$_gb = exec("$rrdcreatecmd 2>&1", $rrdcreateoutput, $rrdcreatereturn);
 	if ($rrdcreatereturn <> 0) {
 		$rrdcreateoutput = implode(" ", $rrdcreateoutput);
-		log_error(sprintf(gettext('RRD create failed exited with %1$s, the error is: %2$s'), $rrdcreatereturn, $rrdcreateoutput));
+		log_error(sprintf(gettext('RRD create failed exited with %s, the error is: %s'), $rrdcreatereturn, $rrdcreateoutput));
 	}
 	unset($rrdcreateoutput);
 	return $rrdcreatereturn;
@@ -92,14 +92,11 @@ function enable_rrd_graphing()
 	$packets = "-packets.rrd";
 	$states = "-states.rrd";
 	$wireless = "-wireless.rrd";
-	$spamd = "-spamd.rrd";
 	$proc = "-processor.rrd";
 	$mem = "-memory.rrd";
 	$mbuf = "-mbuf.rrd";
 	$cellular = "-cellular.rrd";
 	$vpnusers = "-vpnusers.rrd";
-	$captiveportalconcurrent = "-concurrent.rrd";
-	$captiveportalloggedin = "-loggedin.rrd";
 	$ntpd = "ntpd.rrd";
 
 	$rrdtool = "/usr/local/bin/rrdtool";
@@ -110,37 +107,31 @@ function enable_rrd_graphing()
 	$sysctl = "/sbin/sysctl";
 	$php = "/usr/local/bin/php";
 	$cpustats = "/usr/local/sbin/cpustats";
-	$spamd_gather = "/usr/local/bin/spamd_gather_stats.php";
 	$ifconfig = "/sbin/ifconfig";
-	$captiveportal_gather = "/usr/local/sbin/captiveportal_gather_stats.php";
 	$ntpq = "/usr/local/sbin/ntpq";
 
 	$rrdtrafficinterval = 60;
 	$rrdwirelessinterval = 60;
 	$rrdpacketsinterval = 60;
 	$rrdstatesinterval = 60;
-	$rrdspamdinterval = 60;
 	$rrdlbpoolinterval = 60;
 	$rrdprocinterval = 60;
 	$rrdmeminterval = 60;
 	$rrdmbufinterval = 60;
 	$rrdcellularinterval = 60;
 	$rrdvpninterval = 60;
-	$rrdcaptiveportalinterval = 60;
 	$rrdntpdinterval = 60;
 
 	$trafficvalid = $rrdtrafficinterval * 2;
 	$wirelessvalid = $rrdwirelessinterval * 2;
 	$packetsvalid = $rrdpacketsinterval * 2;
 	$statesvalid = $rrdstatesinterval*2;
-	$spamdvalid = $rrdspamdinterval * 2;
 	$lbpoolvalid = $rrdlbpoolinterval * 2;
 	$procvalid = $rrdlbpoolinterval * 2;
 	$memvalid = $rrdmeminterval * 2;
 	$mbufvalid = $rrdmbufinterval * 2;
 	$cellularvalid = $rrdcellularinterval * 2;
 	$vpnvalid = $rrdvpninterval * 2;
-	$captiveportalvalid = $rrdcaptiveportalinterval * 2;
 	$ntpdvalid = $rrdntpdinterval * 2;
 
 	/* Assume 2*10GigE for now */
@@ -490,93 +481,9 @@ function enable_rrd_graphing()
 		$rrdupdatesh .= "MBUF=`$netstat -m | ";
 		$rrdupdatesh .= " $awk '/mbuf clusters in use/ { gsub(/\//, \":\", $1); print $1; }'`\n";
 		$rrdupdatesh .= "$rrdtool update $rrddbpath$ifname$mbuf N:\${MBUF}\n";
-
 		/* End mbuf statistics */
 
 		/* End System statistics */
-
-		/* Captive Portal statistics, set up the rrd file */
-		if(is_array($config['captiveportal'])) {
-			foreach ($config['captiveportal'] as $cpkey => $cp) {
-				if (!isset($cp['enable']))
-					continue;
-
-				$ifname= "captiveportal";
-				$concurrent_filename = $rrddbpath . $ifname . '-' . $cpkey . $captiveportalconcurrent;
-				if (!file_exists("$concurrent_filename")) {
-					$rrdcreate = "$rrdtool create $concurrent_filename --step $rrdcaptiveportalinterval ";
-					$rrdcreate .= "DS:concurrentusers:GAUGE:$captiveportalvalid:0:10000 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:1:1200 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:5:720 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:60:1860 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:1440:2284 ";
-					$rrdcreate .= "RRA:MIN:0.5:1:1200 ";
-					$rrdcreate .= "RRA:MIN:0.5:5:720 ";
-					$rrdcreate .= "RRA:MIN:0.5:60:1860 ";
-					$rrdcreate .= "RRA:MIN:0.5:1440:2284 ";
-					$rrdcreate .= "RRA:MAX:0.5:1:1200 ";
-					$rrdcreate .= "RRA:MAX:0.5:5:720 ";
-					$rrdcreate .= "RRA:MAX:0.5:60:1860 ";
-					$rrdcreate .= "RRA:MAX:0.5:1440:2284 ";
-					$rrdcreate .= "RRA:LAST:0.5:1:1200 ";
-					$rrdcreate .= "RRA:LAST:0.5:5:720 ";
-					$rrdcreate .= "RRA:LAST:0.5:60:1860 ";
-					$rrdcreate .= "RRA:LAST:0.5:1440:2284 ";
-
-					create_new_rrd($rrdcreate);
-					unset($rrdcreate);
-				}
-
-				/* enter UNKNOWN values in the RRD so it knows we rebooted. */
-				if(file_exists("/var/run/booting")) {
-					mwexec("$rrdtool update $concurrent_filename N:U");
-				}
-
-				/* the Captive Portal stats gathering function. */
-				$rrdupdatesh .= "\n";
-				$rrdupdatesh .= "# polling Captive Portal for number of concurrent users\n";
-				$rrdupdatesh .= "CP=`${php} -q ${captiveportal_gather} '${cpkey}' 'concurrent'`\n";
-				$rrdupdatesh .= "$rrdtool update $concurrent_filename \${CP}\n";
-
-				$loggedin_filename = $rrddbpath . $ifname . '-' . $cpkey . $captiveportalloggedin;
-				if (!file_exists("$loggedin_filename")) {
-					$rrdcreate = "$rrdtool create $loggedin_filename --step $rrdcaptiveportalinterval ";
-					$rrdcreate .= "DS:loggedinusers:GAUGE:$captiveportalvalid:0:10000 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:1:1200 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:5:720 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:60:1860 ";
-					$rrdcreate .= "RRA:AVERAGE:0.5:1440:2284 ";
-					$rrdcreate .= "RRA:MIN:0.5:1:1200 ";
-					$rrdcreate .= "RRA:MIN:0.5:5:720 ";
-					$rrdcreate .= "RRA:MIN:0.5:60:1860 ";
-					$rrdcreate .= "RRA:MIN:0.5:1440:2284 ";
-					$rrdcreate .= "RRA:MAX:0.5:1:1200 ";
-					$rrdcreate .= "RRA:MAX:0.5:5:720 ";
-					$rrdcreate .= "RRA:MAX:0.5:60:1860 ";
-					$rrdcreate .= "RRA:MAX:0.5:1440:2284 ";
-					$rrdcreate .= "RRA:LAST:0.5:1:1200 ";
-					$rrdcreate .= "RRA:LAST:0.5:5:720 ";
-					$rrdcreate .= "RRA:LAST:0.5:60:1860 ";
-					$rrdcreate .= "RRA:LAST:0.5:1440:2284 ";
-
-					create_new_rrd($rrdcreate);
-					unset($rrdcreate);
-				}
-
-				/* enter UNKNOWN values in the RRD so it knows we rebooted. */
-				if(file_exists("/var/run/booting")) {
-					mwexec("$rrdtool update $loggedin_filename N:U");
-				}
-
-				/* the Captive Portal stats gathering function. */
-				$rrdupdatesh .= "\n";
-				$rrdupdatesh .= "# polling Captive Portal for number of logged in users\n";
-				$rrdupdatesh .= "CP=`${php} -q ${captiveportal_gather} '${cpkey}' 'loggedin'`\n";
-				$rrdupdatesh .= "$rrdtool update $loggedin_filename \${CP}\n";
-
-			}
-		}
-		/* End Captive Portal statistics */
 
 		/* NTP, set up the ntpd rrd file */
 		if (isset($config['ntpd']['statsgraph'])) {

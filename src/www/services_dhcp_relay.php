@@ -1,8 +1,9 @@
 <?php
+
 /*
 	Copyright (C) 2014-2015 Deciso B.V.
-	Copyright (C) 2003-2004 Justin Ellison <justin@techadvise.com>.
-	Copyright (C) 2010	Ermal Luçi
+	Copyright (C) 2010 Ermal Luçi
+	Copyright (C) 2003-2004 Justin Ellison <justin@techadvise.com>
 	All rights reserved.
 
 	Redistribution and use in source and binary forms, with or without
@@ -28,13 +29,21 @@
 */
 
 require_once("guiconfig.inc");
+require_once("services.inc");
+require_once("pfsense-utils.inc");
+require_once("interfaces.inc");
 
 $pconfig['enable'] = isset($config['dhcrelay']['enable']);
-if (empty($config['dhcrelay']['interface']))
+if (empty($config['dhcrelay']['interface'])) {
 	$pconfig['interface'] = array();
-else
+} else {
 	$pconfig['interface'] = explode(",", $config['dhcrelay']['interface']);
-$pconfig['server'] = $config['dhcrelay']['server'];
+}
+if (!isset($config['dhcrelay']['server'])) {
+	$pconfig['server'] = array();
+} else {
+	$pconfig['server'] = $config['dhcrelay']['server'];
+}
 $pconfig['agentoption'] = isset($config['dhcrelay']['agentoption']);
 
 $iflist = get_configured_interface_with_descr();
@@ -81,16 +90,14 @@ if ($_POST) {
 
 		$retval = 0;
 		$retval = services_dhcrelay_configure();
-		$savemsg = get_std_save_message($retval);
+		$savemsg = get_std_save_message();
 
 	}
 }
 
-$closehead = false;
-$pgtitle = array(gettext("Services"),gettext("DHCP Relay"));
-$shortcut_section = "dhcp";
-include("head.inc");
+$service_hook = 'dhcrelay';
 
+include("head.inc");
 ?>
 
 <body>
@@ -129,8 +136,8 @@ function enable_change(enable_over) {
                         <form action="services_dhcp_relay.php" method="post" name="iform" id="iform">
 
 				<?php if ($dhcpd_enabled): ?>
-								<p>DHCP Server is currently enabled. Cannot enable the DHCP Relay service while the DHCP Server is enabled on any interface.</p>
-							<? else: ?>
+                <p><?= gettext('DHCP Server is currently enabled. Cannot enable the DHCP Relay service while the DHCP Server is enabled on any interface.') ?></p>
+							<?php else: ?>
 
 							<header class="content-box-head container-fluid">
 					        <h3><?=gettext("DHCP Relay configuration"); ?></h3>
@@ -140,14 +147,14 @@ function enable_change(enable_over) {
 						  <div class="table-responsive">
 					<table class="table table-striped table-sort">
 									<tr>
-							                        <td width="22%" valign="top" class="vncellreq">Enable</td>
+                                      <td width="22%" valign="top" class="vncellreq"><?= gettext('Enable') ?></td>
 							                        <td width="78%" class="vtable">
 										<input name="enable" type="checkbox" value="yes" <?php if ($pconfig['enable']) echo "checked=\"checked\""; ?> onclick="enable_change(false)" />
 							                          <strong><?php printf(gettext("Enable DHCP relay on interface"));?></strong>
 										</td>
 									</tr>
 									<tr>
-							                        <td width="22%" valign="top" class="vncellreq">Interface(s)</td>
+                                      <td width="22%" valign="top" class="vncellreq"><?= gettext('Interface(s)') ?></td>
 							                        <td width="78%" class="vtable">
 											<select id="interface" name="interface[]" multiple="multiple" class="formselect" size="3">
 										<?php
@@ -155,13 +162,13 @@ function enable_change(enable_over) {
 												if (!is_ipaddr(get_interface_ip($ifent)))
 													continue;
 												echo "<option value=\"{$ifent}\"";
-												if (in_array($ifent, $pconfig['interface']))
+												if (isset($pconfig['interface']) && in_array($ifent, $pconfig['interface']))
 													echo " selected=\"selected\"";
 												echo ">{$ifdesc}</option>\n";
 											}
 										?>
 							                                </select>
-											<br />Interfaces without an IP address will not be shown.
+                      <br /><?= gettext('Interfaces without an IP address will not be shown.') ?>
 										</td>
 									</tr>
 									<tr>
@@ -174,7 +181,7 @@ function enable_change(enable_over) {
 									<tr>
 							                        <td width="22%" valign="top" class="vncellreq"><?=gettext("Destination server");?></td>
 							                        <td width="78%" class="vtable">
-							                          <input name="server" type="text" class="formfld unknown" id="server" size="20" value="<?=htmlspecialchars($pconfig['server']);?>" />
+							                          <input name="server" type="text" class="formfld unknown" id="server" size="20" value="<?=!empty($pconfig['server'])?htmlspecialchars($pconfig['server']):"";?>" />
 							                          <br />
 										  <?=gettext("This is the IP address of the server to which DHCP requests are relayed. You can enter multiple server IP addresses, separated by commas. Select \"Proxy requests to DHCP server on WAN subnet\" to relay DHCP packets to the server that was used on the WAN interface.");?>
 							                        </td>
@@ -188,7 +195,7 @@ function enable_change(enable_over) {
 								</table>
 						  </div>
 					    </div>
-					    <? endif; ?>
+					    <?php endif; ?>
                         </form>
 				</div>
 			    </section>

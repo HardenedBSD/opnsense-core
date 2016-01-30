@@ -30,16 +30,23 @@
 /* parse the configuration and include all functions used below */
 require_once("config.inc");
 require_once("config.console.inc");
-require_once("functions.inc");
 require_once("filter.inc");
-require_once("ipsec.inc");
+require_once("util.inc");
 require_once("vpn.inc");
-require_once("captiveportal.inc");
 require_once("rrd.inc");
+require_once("system.inc");
+require_once("services.inc");
+require_once("interfaces.inc");
+require_once("openvpn.inc");
+require_once("pfsense-utils.inc");
+require_once("unbound.inc");
 
 if (set_networking_interfaces_ports()) {
-	echo "Reloading interfaces...";
-	reload_interfaces_sync();
-	echo "done.\n";
-	enable_rrd_graphing();
+    echo "Reloading interfaces...";
+    global $config;
+    $config = parse_config();
+    system_routing_enable();
+    interfaces_configure();
+    echo "done.\n";
+    enable_rrd_graphing();
 }

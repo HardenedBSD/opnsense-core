@@ -14,14 +14,28 @@
                     <default>1</default>
                     <Required>Y</Required>
                 </enabled>
+                <action type="OptionField">
+                    <Required>Y</Required>
+                    <default>alert</default>
+                    <OptionValues>
+                        <alert>Alert</alert>
+                        <drop>Drop</drop>
+                    </OptionValues>
+                </action>
             </rule>
         </rules>
         <files>
             <file type="ArrayField">
                 <filename type="TextField">
                     <Required>Y</Required>
-                    <Mask>/^(.){1,255}$/</Mask>
+                    <mask>/^([\t\n\v\f\r\- 0-9a-zA-Z.,_\x{00A0}-\x{FFFF}]){1,255}$/u</mask>
                 </filename>
+                <filter type="OptionField">
+                    <Required>N</Required>
+                    <OptionValues>
+                        <drop>Change all alerts to drop actions</drop>
+                    </OptionValues>
+                </filter>
                 <enabled type="BooleanField">
                     <default>0</default>
                     <Required>Y</Required>
@@ -33,6 +47,10 @@
                 <default>0</default>
                 <Required>Y</Required>
             </enabled>
+            <ips type="BooleanField">
+                <default>0</default>
+                <Required>Y</Required>
+            </ips>
             <interfaces type="InterfaceField">
                 <Required>Y</Required>
                 <default>wan</default>

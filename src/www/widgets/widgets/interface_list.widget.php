@@ -33,8 +33,8 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("pfsense-utils.inc");
-require_once("functions.inc");
 require_once("widgets/include/interfaces.inc");
+require_once("interfaces.inc");
 
         $i = 0;
 	$iswireless=false;
@@ -109,8 +109,13 @@ require_once("widgets/include/interfaces.inc");
 ?><?=htmlspecialchars($ifinfo['status']);
 }?>
 							<td class="listr">
-								<div id="<?php echo $ifname;
-?>" style="display:inline"><?=htmlspecialchars($ifinfo['media']);?></div>
+								<div id="<?php echo $ifname; ?>" style="display:inline"><?php
+									$media = $ifinfo['media'];
+									if (empty($media)) {
+										$media = $ifinfo['cell_mode'];
+									}
+									echo htmlspecialchars($media);
+								?></div>
 							</td>
 							<td class="vncellt">
 								<?php if ($ifinfo['ipaddr'] != "") {
