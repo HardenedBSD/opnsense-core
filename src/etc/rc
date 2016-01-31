@@ -191,7 +191,7 @@ echo -n "."
 
 if [ ${use_secadm} = "yes" ]; then
 	echo "Starting secadm"
-	/usr/local/sbin/secadm set
+	/usr/local/sbin/secadm load /usr/local/etc/secadm.rules
 fi
 
 # Launching kbdmux(4)
@@ -206,6 +206,8 @@ echo "done."
 
 # Recreate capabilities DB
 /usr/bin/cap_mkdb /etc/login.conf
+
+/bin/sh /etc/rc.d/casperd onestart
 
 # Set up the correct php.ini content
 /usr/local/etc/rc.php_ini_setup
@@ -223,6 +225,7 @@ touch /var/run/booting
 sleep 10
 /usr/local/etc/rc.bootup
 rm /var/run/booting
+
 
 # If a shell was selected from recovery
 # console then just drop to the shell now.
