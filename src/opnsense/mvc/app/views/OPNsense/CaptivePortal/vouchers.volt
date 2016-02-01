@@ -195,20 +195,26 @@ POSSIBILITY OF SUCH DAMAGE.
                         });
 
                         // generate download link and send data to the client
+                        if ($('#downloadFile').length) {
+                            // remove previous link
+                            $('#downloadFile').remove();
+                        }
+
                         $('<a></a>')
                                 .attr('id','downloadFile')
                                 .attr('href','data:text/csv;charset=utf8,' + encodeURIComponent(output_data))
-                                .attr('download','vouchers.csv')
+                                .attr('download',voucher_groupname.toLowerCase() + '.csv')
                                 .appendTo('body');
 
                         $('#downloadFile').ready(function() {
                             $('#downloadFile').get(0).click();
                         });
 
-                        $("#generateVouchers").modal('hide')
+                        $("#generateVouchers").modal('hide');
 
                         // reload grid after creating new vouchers
                         updateVoucherGroupList();
+
                     });
 
         });
