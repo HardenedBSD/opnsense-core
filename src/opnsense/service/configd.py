@@ -35,6 +35,7 @@ __author__ = 'Ad Schellevis'
 
 import os
 import sys
+import logging
 import modules.processhandler
 import modules.csconfigparser
 from modules.daemonize import Daemonize
@@ -102,8 +103,24 @@ if len(sys.argv) > 1 and 'console' in sys.argv[1:]:
     else:
         proc_handler.run()
 else:
+    syslog_socket = "/var/run/log"
+    if os.path.exists(syslog_socket):
+        # bind log handle to syslog to catch messages from Daemonize()
+        # (if syslog facility is active)
+        loghandle = logging.getLogger("configd.py")
+        loghandle.setLevel(logging.INFO)
+        handler = logging.handlers.SysLogHandler(address=syslog_socket,
+                                                 facility=logging.handlers.SysLogHandler.LOG_DAEMON)
+        handler.setFormatter(logging.Formatter("%(name)s %(message)s"))
+        loghandle.addHandler(handler)
+    else:
+        loghandle = None
     # daemonize process
-    daemon = Daemonize(app=__file__.split('/')[-1].split('.py')[0], pid=cnf.get('main','pid_filename'), action=proc_handler.run)
+    daemon = Daemonize(app=__file__.split('/')[-1].split('.py')[0],
+                       pid=cnf.get('main','pid_filename'),
+                       action=proc_handler.run,
+                       logger=loghandle
+                       )
     daemon.start()
 
 sys.exit(0)

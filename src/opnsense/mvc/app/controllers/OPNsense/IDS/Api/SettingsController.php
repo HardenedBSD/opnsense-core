@@ -34,6 +34,7 @@ use \OPNsense\Base\Filters\QueryFilter;
 use \OPNsense\Core\Backend;
 use \OPNsense\IDS\IDS;
 use \OPNsense\Core\Config;
+use \OPNsense\Base\UIModelGrid;
 
 /**
  * Class SettingsController Handles settings related API actions for the IDS module
@@ -483,6 +484,151 @@ class SettingsController extends ApiControllerBase
                 $mdlIDS->serializeToConfig();
                 Config::getInstance()->save();
                 $result["result"] = "saved";
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * search user defined rules
+     * @return array list of found user rules
+     */
+    public function searchUserRuleAction()
+    {
+        $this->sessionClose();
+        $mdlIDS = $this->getModel();
+        $grid = new UIModelGrid($mdlIDS->userDefinedRules->rule);
+        return $grid->fetchBindRequest(
+            $this->request,
+            array("enabled", "action", "description"),
+            "description"
+        );
+    }
+
+    /**
+     * update user defined rules
+     * @param string $uuid internal id
+     * @return array save result + validation output
+     * @throws \Phalcon\Validation\Exception
+     */
+    public function setUserRuleAction($uuid)
+    {
+        $result = array("result"=>"failed");
+        if ($this->request->isPost() && $this->request->hasPost("rule")) {
+            $mdlIDS = $this->getModel();
+            if ($uuid != null) {
+                $node = $mdlIDS->getNodeByReference('userDefinedRules.rule.'.$uuid);
+                if ($node != null) {
+                    $node->setNodes($this->request->getPost("rule"));
+                    $validations = $mdlIDS->validate($node->__reference, "rule");
+                    if (count($validations)) {
+                        $result['validations'] = $validations;
+                    } else {
+                        // serialize model to config and save
+                        $mdlIDS->serializeToConfig();
+                        Config::getInstance()->save();
+                        $result["result"] = "saved";
+                    }
+                }
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * add new user defined rule
+     * @return array save result + validation output
+     * @throws \Phalcon\Validation\Exception
+     */
+    public function addUserRuleAction()
+    {
+        $result = array("result"=>"failed");
+        if ($this->request->isPost() && $this->request->hasPost("rule")) {
+            $mdlIDS = $this->getModel();
+            $node = $mdlIDS->userDefinedRules->rule->Add();
+            $node->setNodes($this->request->getPost("rule"));
+            $validations = $mdlIDS->validate($node->__reference, "rule");
+            if (count($validations)) {
+                $result['validations'] = $validations;
+            } else {
+                // serialize model to config and save
+                $mdlIDS->serializeToConfig();
+                Config::getInstance()->save();
+                $result["result"] = "saved";
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * get properties of user defined rule
+     * @param null|string $uuid user rule internal id
+     * @return array user defined properties
+     */
+    public function getUserRuleAction($uuid = null)
+    {
+        $mdlIDS = $this->getModel();
+        if ($uuid != null) {
+            $node = $mdlIDS->getNodeByReference('userDefinedRules.rule.'.$uuid);
+            if ($node != null) {
+                // return node
+                return array("rule" => $node->getNodes());
+            }
+        } else {
+            // generate new node, but don't save to disc
+            $node = $mdlIDS->userDefinedRules->rule->add() ;
+            return array("rule" => $node->getNodes());
+        }
+        return array();
+    }
+
+    /**
+     * delete user rule item
+     * @param string $uuid user rule internal id
+     * @return array
+     * @throws \Phalcon\Validation\Exception
+     */
+    public function delUserRuleAction($uuid)
+    {
+        $result = array("result"=>"failed");
+        if ($this->request->isPost() && $uuid != null) {
+            $mdlIDS = $this->getModel();
+            if ($mdlIDS->userDefinedRules->rule->del($uuid)) {
+                // if item is removed, serialize to config and save
+                $mdlIDS->serializeToConfig();
+                Config::getInstance()->save();
+                $result['result'] = 'deleted';
+            } else {
+                $result['result'] = 'not found';
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * toggle user defined rule by uuid (enable/disable)
+     * @param $uuid user defined rule internal id
+     * @param $enabled desired state enabled(1)/disabled(1), leave empty for toggle
+     * @return array status
+     */
+    public function toggleUserRuleAction($uuid, $enabled = null)
+    {
+        $result = array("result" => "failed");
+        if ($this->request->isPost() && $uuid != null) {
+            $mdlIDS = $this->getModel();
+            $node = $mdlIDS->getNodeByReference('userDefinedRules.rule.' . $uuid);
+            if ($node != null) {
+                if ($enabled == "0" || $enabled == "1") {
+                    $node->enabled = (string)$enabled;
+                } elseif ($node->enabled->__toString() == "1") {
+                    $node->enabled = "0";
+                } else {
+                    $node->enabled = "1";
+                }
+                $result['result'] = $node->enabled;
+                // if item has toggled, serialize to config and save
+                $mdlIDS->serializeToConfig();
+                Config::getInstance()->save();
             }
         }
         return $result;

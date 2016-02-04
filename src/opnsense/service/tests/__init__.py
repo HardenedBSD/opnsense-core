@@ -1,5 +1,5 @@
 """
-    Copyright (c) 2014 Ad Schellevis
+    Copyright (c) 2016 Ad Schellevis
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -23,18 +23,3 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 """
-
-
-def singleton(cls, *args, **kwargs):
-    """ singleton pattern, use ad decorator
-    :param cls:
-    """
-    instances = {}
-
-    # noinspection PyShadowingNames
-    def getinstance(*args, **kwargs):
-        if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
-        return instances[cls]
-
-    return getinstance

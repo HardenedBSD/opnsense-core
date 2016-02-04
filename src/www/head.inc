@@ -98,7 +98,7 @@ $pagetitle .= sprintf(' | %s.%s', $config['system']['hostname'], $config['system
     <script>var theme = "<?= $themename ?>"; </script>
 
     <!-- JQuery -->
-    <script type="text/javascript" src="/ui/js/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="/ui/js/jquery-1.12.0.min.js"></script>
 
     <!-- Ticker used for notices-->
     <script type="text/javascript" src="/javascript/ticker.js"></script>
@@ -225,10 +225,26 @@ $pagetitle .= sprintf(' | %s.%s', $config['system']['hostname'], $config['system
                       return true;
                   },
                   afterSelect: function(item){
-                      window.location.href = item.id;
+                      // (re)load page
+                      if (window.location.href.split("#")[0].indexOf(item.id.split("#")[0]) > -1 ) {
+                          // same url, different hash marker
+                          window.location.href = item.id;
+                          window.location.reload();
+                      } else {
+                          window.location.href = item.id;
+                      }
                   }
               });
           }
+      });
+      // change search input size on focus() to fit results
+      $("#menu_search_box").focus(function(){
+          $("#menu_search_box").css('width', '450px');
+          $("#menu_messages").hide();
+      });
+      $("#menu_search_box").focusout(function(){
+          $("#menu_search_box").css('width', '250px');
+          $("#menu_messages").show();
       });
     });
     //]]>

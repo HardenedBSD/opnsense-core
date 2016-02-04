@@ -49,6 +49,11 @@ class ConfigdActionsField extends BaseField
     private static $internalOptionList = array();
 
     /**
+     * @var string default validation message string
+     */
+    protected $internalValidationMessage = "please specify a valid action";
+
+    /**
      * @var array filters to use on the configd selection
      */
     private $internalFilters = array();
@@ -128,7 +133,7 @@ class ConfigdActionsField extends BaseField
         $result = array();
         // if interface is not required, add empty option
         if (!$this->internalIsRequired) {
-            $result[""] = array("value"=>"none", "selected" => 0);
+            $result[""] = array("value" => gettext("none"), "selected" => 0);
         }
 
         foreach (self::$internalOptionList[$this->internalCacheKey] as $optKey => $optValue) {
@@ -137,7 +142,7 @@ class ConfigdActionsField extends BaseField
             } else {
                 $selected = 0;
             }
-            $result[$optKey] = array("value"=>$optValue, "selected" => $selected);
+            $result[$optKey] = array("value" => $optValue, "selected" => $selected);
         }
 
 
@@ -151,19 +156,11 @@ class ConfigdActionsField extends BaseField
      */
     public function getValidators()
     {
-
-        if ($this->internalValidationMessage == null) {
-            $msg = "please specify a valid action";
-        } else {
-            $msg = $this->internalValidationMessage;
+        $validators = parent::getValidators();
+        if ($this->internalValue != null) {
+            $validators[] = new InclusionIn(array('message' => $this->internalValidationMessage,
+                'domain'=>array_keys(self::$internalOptionList[$this->internalCacheKey])));
         }
-
-        if (($this->internalIsRequired == true || $this->internalValue != null)) {
-            return array(new InclusionIn(array('message' => $msg,
-                'domain'=>array_keys(self::$internalOptionList[$this->internalCacheKey]))));
-        } else {
-            // empty field and not required, skip this validation.
-            return array();
-        }
+        return $validators;
     }
 }

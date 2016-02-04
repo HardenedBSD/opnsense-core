@@ -202,13 +202,23 @@ $( document ).ready(function() {
   // link category select/search
   $("#fw_category").change(function(){
       var stripe_color = 'transparent';
-      var selected_value = $(this).val();
+      var selected_values = [];
+      $("#fw_category > option:selected").each(function(){
+          if ($(this).val() != "") {
+              selected_values.push($(this).val());
+          } else {
+              // select all when "Filter by category" is selected
+              selected_values = [];
+              return false;
+          }
+      })
       $(".rule").each(function(){
           // save zebra color
           if ( $(this).children(0).css("background-color") != 'transparent') {
               $("#fw_category").data('stripe_color', $(this).children(0).css("background-color"));
           }
-          if ($(this).data('category') != selected_value && selected_value != "") {
+
+          if (selected_values.indexOf($(this).data('category')) == -1 && selected_values.length > 0) {
               $(this).hide();
           } else {
               $(this).show();
@@ -415,12 +425,6 @@ $( document ).ready(function() {
                      (isset($filterent['floating']) && $selected_if == 'FloatingRules')):
                   $interface_has_rules = true;
 
-                  if (!isset($filterent['type'])) {
-                      // not very nice.... associated NAT rules don't have a type...
-                      // NAT rules shouldn't leak into the rules screen, breaks on edit
-                      continue;
-                  }
-
                   // select icon
                   if ($filterent['type'] == "block" && empty($filterent['disabled'])) {
                       $iconfn = "glyphicon-remove text-danger";
@@ -619,15 +623,26 @@ $( document ).ready(function() {
                       <a id="move_<?=$i;?>" name="move_<?=$i;?>_x" data-toggle="tooltip" title="<?=gettext("move selected rules before this rule");?>" class="act_move btn btn-default btn-xs">
                         <span class="glyphicon glyphicon-arrow-left"></span>
                       </a>
+<?php
+                      // not very nice.... associated NAT rules don't have a type...
+                      // if for some reason (broken config) a rule is in there which doesn't have a related nat rule
+                      // make sure we are able to delete it.
+                      if (isset($filterent['type'])):?>
                       <a href="firewall_rules_edit.php?id=<?=$i;?>" data-toggle="tooltip" title="<?=gettext("edit rule");?>" class="btn btn-default btn-xs">
                         <span class="glyphicon glyphicon-pencil"></span>
                       </a>
+<?php
+                      endif;?>
                       <a id="del_<?=$i;?>" title="<?=gettext("delete rule"); ?>" data-toggle="tooltip"  class="act_delete btn btn-default btn-xs">
                         <span class="fa fa-trash text-muted"></span>
                       </a>
+<?php
+                      if (isset($filterent['type'])):?>
                       <a href="firewall_rules_edit.php?dup=<?=$i;?>" class="btn btn-default btn-xs" data-toggle="tooltip" title="<?=gettext("clone rule");?>">
                         <span class="fa fa-clone text-muted"></span>
                       </a>
+<?php
+                      endif;?>
                     </td>
                   </tr>
 <?php
@@ -644,17 +659,15 @@ $( document ).ready(function() {
                       <?=gettext("No rules are currently defined for this interface"); ?><br />
                       <?=gettext("All incoming connections on this interface will be blocked until you add pass rules."); ?><br /><br />
                 <?php endif; ?>
-                      <?=gettext("Click the"); ?>
-                      <a href="firewall_rules_edit.php?if=<?=$selected_if;?>"  class="btn btn-default btn-xs">
-                        <span class="glyphicon glyphicon-plus"></span>
-                      </a>
-                      <?=gettext(" button to add a new rule.");?></span>
+                      <?= sprintf(gettext("Click the %s button to add a new rule."),
+                                  '<a href="firewall_rules_edit.php?if='.$selected_if.'" class="btn btn-default btn-xs"><span class="glyphicon glyphicon-plus"></span></a>')
+                      ?></span>
                     </td>
                   </tr>
               <?php else: ?>
                   <tr>
                     <td colspan="5">
-                      <select class="selectpicker" data-live-search="true" data-size="5"  placeholder="<?=gettext("select category");?>" id="fw_category">
+                      <select class="selectpicker" data-live-search="true" data-size="5"  multiple placeholder="<?=gettext("select category");?>" id="fw_category">
                         <option value=""><?=gettext("Filter by category");?></value>
 <?php
                         // collect unique list of categories and append to option list

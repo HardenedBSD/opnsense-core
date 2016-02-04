@@ -1,5 +1,6 @@
+#!/usr/bin/env python2.7
 """
-    Copyright (c) 2014 Ad Schellevis
+    Copyright (c) 2016 Ad Schellevis
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -22,19 +23,15 @@
     CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
+
+    --------------------------------------------------------------------------------------
+
+    package : configd
 """
+import unittest
+from tests.template import *
 
+__author__ = 'Ad Schellevis'
 
-def singleton(cls, *args, **kwargs):
-    """ singleton pattern, use ad decorator
-    :param cls:
-    """
-    instances = {}
-
-    # noinspection PyShadowingNames
-    def getinstance(*args, **kwargs):
-        if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
-        return instances[cls]
-
-    return getinstance
+if __name__ == '__main__':
+    unittest.main()

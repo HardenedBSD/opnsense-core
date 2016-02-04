@@ -50,6 +50,11 @@ class CertificateField extends BaseField
     private $certificateType = "cert";
 
     /**
+     * @var string default validation message string
+     */
+    protected $internalValidationMessage = "option not in list";
+
+    /**
      * @var array collected options
      */
     private static $internalOptionList = array();
@@ -90,7 +95,7 @@ class CertificateField extends BaseField
         $result = array ();
         // if certificate is not required, add empty option
         if (!$this->internalIsRequired) {
-            $result[""] = array("value"=>"none", "selected" => 0);
+            $result[""] = array("value" => gettext("none"), "selected" => 0);
         }
         foreach (self::$internalOptionList as $optKey => $optValue) {
             if ($optKey == $this->internalValue) {
@@ -98,7 +103,7 @@ class CertificateField extends BaseField
             } else {
                 $selected = 0;
             }
-            $result[$optKey] = array("value"=>$optValue, "selected" => $selected);
+            $result[$optKey] = array("value" => $optValue, "selected" => $selected);
         }
 
         return $result;
@@ -110,16 +115,11 @@ class CertificateField extends BaseField
      */
     public function getValidators()
     {
-        if ($this->internalValidationMessage == null) {
-            $msg = "option not in list" ;
-        } else {
-            $msg = $this->internalValidationMessage;
+        $validators = parent::getValidators();
+        if ($this->internalValue != null) {
+            $validators[] = new InclusionIn(array('message' => $this->internalValidationMessage,
+                'domain'=>array_keys(self::$internalOptionList)));
         }
-        if (($this->internalIsRequired == true || $this->internalValue != null)) {
-            return array(new InclusionIn(array('message' => $msg,'domain'=>array_keys(self::$internalOptionList))));
-        } else {
-            // empty field and not required, skip this validation.
-            return array();
-        }
+        return $validators;
     }
 }

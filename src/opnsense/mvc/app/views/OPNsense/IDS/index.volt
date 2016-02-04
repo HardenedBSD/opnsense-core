@@ -252,6 +252,18 @@ POSSIBILITY OF SUCH DAMAGE.
                                 },
                             }
                         });
+            } else if (e.target.id == 'userrules_tab') {
+                $('#grid-userrules').bootgrid('destroy'); // always destroy previous grid, so data is always fresh
+                $("#grid-userrules").UIBootgrid({
+                        search:'/api/ids/settings/searchUserRule',
+                        get:'/api/ids/settings/getUserRule/',
+                        set:'/api/ids/settings/setUserRule/',
+                        add:'/api/ids/settings/addUserRule/',
+                        del:'/api/ids/settings/delUserRule/',
+                        toggle:'/api/ids/settings/toggleUserRule/'
+                    }
+                );
+
             }
         })
 
@@ -376,6 +388,14 @@ POSSIBILITY OF SUCH DAMAGE.
         loadGeneralSettings();
         updateStatus();
 
+        // update history on tab state and implement navigation
+        if(window.location.hash != "") {
+            $('a[href="' + window.location.hash + '"]').click()
+        }
+        $('.nav-tabs a').on('shown.bs.tab', function (e) {
+            history.pushState(null, null, e.target.hash);
+        });
+
     });
 
 
@@ -384,6 +404,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <ul class="nav nav-tabs" data-tabs="tabs" id="maintabs">
     <li class="active"><a data-toggle="tab" href="#settings" id="settings_tab">{{ lang._('Settings') }}</a></li>
     <li><a data-toggle="tab" href="#rules" id="rule_tab">{{ lang._('Rules') }}</a></li>
+    <li><a data-toggle="tab" href="#userrules" id="userrules_tab">{{ lang._('User defined') }}</a></li>
     <li><a data-toggle="tab" href="#alerts" id="alert_tab">{{ lang._('Alerts') }}</a></li>
     <li><a href="" id="scheduled_updates" style="display:none">{{ lang._('Schedule') }}</a></li>
 </ul>
@@ -466,6 +487,31 @@ POSSIBILITY OF SUCH DAMAGE.
             </tfoot>
         </table>
     </div>
+    <div id="userrules" class="tab-pane fade in">
+        <!-- tab page "userrules" -->
+        <table id="grid-userrules" class="table table-condensed table-hover table-striped table-responsive" data-editDialog="DialogUserDefined">
+            <thead>
+                <tr>
+                    <th data-column-id="enabled" data-formatter="rowtoggle" data-sortable="false"  data-width="10em">{{ lang._('Enabled') }}</th>
+                    <th data-column-id="action" data-type="string" data-sortable="true">{{ lang._('Action') }}</th>
+                    <th data-column-id="description" data-type="string" data-sortable="true">{{ lang._('Description') }}</th>
+                    <th data-column-id="uuid" data-type="string" data-identifier="true"  data-visible="false">{{ lang._('ID') }}</th>
+                    <th data-column-id="commands" data-width="7em" data-formatter="commands" data-sortable="false">{{ lang._('Commands') }}</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            <tfoot>
+                <tr >
+                    <td></td>
+                    <td>
+                        <button data-action="add" type="button" class="btn btn-xs btn-default"><span class="fa fa-plus"></span></button>
+                        <button data-action="deleteSelected" type="button" class="btn btn-xs btn-default"><span class="fa fa-trash-o"></span></button>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
     <div id="alerts" class="tab-pane fade in">
         <div class="bootgrid-header container-fluid">
             <div class="row">
@@ -531,3 +577,4 @@ POSSIBILITY OF SUCH DAMAGE.
 {{ partial("layout_partials/base_dialog",['fields':formDialogRule,'id':'DialogRule','label':'Rule details','hasSaveBtn':'true','msgzone_width':1])}}
 {{ partial("layout_partials/base_dialog",['fields':formDialogAlert,'id':'DialogAlert','label':'Alert details','hasSaveBtn':'false','msgzone_width':1])}}
 {{ partial("layout_partials/base_dialog",['fields':formDialogRuleset,'id':'DialogRuleset','label':'Ruleset details','hasSaveBtn':'true','msgzone_width':1])}}
+{{ partial("layout_partials/base_dialog",['fields':formDialogUserDefined,'id':'DialogUserDefined','label':'Rule details','hasSaveBtn':'true'])}}
