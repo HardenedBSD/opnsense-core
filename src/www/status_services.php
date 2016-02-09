@@ -60,8 +60,9 @@ if (!empty($_GET['service'])) {
           break;
     }
     sleep(5);
-    // redirect after performing action, removing the action parameters from request.
-    header("Location: status_services.php");
+    // redirect to the previous page after performing action, removing the action parameters from request.
+    $referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/status_services.php');
+    header("Location: ".$referer);
     exit;
 }
 
@@ -124,6 +125,9 @@ function service_control_start($name, $extras) {
             break;
         case 'suricata':
             configd_run("ids start");
+            break;
+        case 'configd':
+            mwexec('/usr/local/etc/rc.d/configd start');
             break;
         default:
             log_error(sprintf(gettext("Could not start unknown service `%s'"), $name));
@@ -194,6 +198,9 @@ function service_control_stop($name, $extras) {
         case 'suricata':
             configd_run("ids stop");
             break;
+        case 'configd':
+            killbypid("/var/run/configd.pid");
+            break;
         default:
             log_error(sprintf(gettext("Could not stop unknown service `%s'"), $name));
             break;
@@ -262,6 +269,9 @@ function service_control_restart($name, $extras) {
             break;
         case 'suricata':
             configd_run("ids restart");
+            break;
+        case 'configd':
+            mwexec('/usr/local/etc/rc.d/configd restart');
             break;
         default:
             log_error(sprintf(gettext("Could not restart unknown service `%s'"), $name));

@@ -64,7 +64,8 @@
                 </allowedAddresses>
                 <allowedMACAddresses type="CSVListField">
                     <Required>N</Required>
-                    <mask>/^([0-9a-fA-F:,])*/u</mask>
+                    <ChangeCase>lower</ChangeCase>
+                    <mask>/^((([0-9a-fA-F]{2}:){5}([0-9a-fA-F]{2})([,]){0,1}))*/u</mask>
                     <ValidationMessage>Please enter valid mac addresses</ValidationMessage>
                 </allowedMACAddresses>
                 <template type="ModelRelationField">

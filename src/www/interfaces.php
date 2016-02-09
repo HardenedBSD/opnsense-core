@@ -612,7 +612,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 do_input_validation($pconfig, $reqdfields, $reqdfieldsn, $input_errors);
                 break;
             case "none":
-                if (is_array($config['virtualip']['vip'])) {
+                if (isset($config['virtualip']['vip'])) {
                     foreach ($config['virtualip']['vip'] as $vip) {
                         if (is_ipaddrv4($vip['subnet']) && $vip['interface'] == $if) {
                             $input_errors[] = gettext("This interface is referenced by IPv4 VIPs. Please delete those before setting the interface to 'none' configuration.");
@@ -1323,15 +1323,18 @@ if (isset($a_interfaces[$if]['wireless'])) {
 
 // Find all possible media options for the interface
 $mediaopts_list = array();
-exec("/sbin/ifconfig -m {$pconfig['if']} | grep \"media \"", $mediaopts);
-foreach ($mediaopts as $mediaopt){
-    preg_match("/media (.*)/", $mediaopt, $matches);
-    if (preg_match("/(.*) mediaopt (.*)/", $matches[1], $matches1)){
-        // there is media + mediaopt like "media 1000baseT mediaopt full-duplex"
-        array_push($mediaopts_list, $matches1[1] . " " . $matches1[2]);
-    } else {
-        // there is only media like "media 1000baseT"
-        array_push($mediaopts_list, $matches[1]);
+$optlist_intf = get_parent_interface($pconfig['if']);
+if (count($optlist_intf) > 0) {
+    exec("/sbin/ifconfig -m {$optlist_intf[0]} | grep \"media \"", $mediaopts);
+    foreach ($mediaopts as $mediaopt){
+        preg_match("/media (.*)/", $mediaopt, $matches);
+        if (preg_match("/(.*) mediaopt (.*)/", $matches[1], $matches1)){
+            // there is media + mediaopt like "media 1000baseT mediaopt full-duplex"
+            array_push($mediaopts_list, $matches1[1] . " " . $matches1[2]);
+        } else {
+            // there is only media like "media 1000baseT"
+            array_push($mediaopts_list, $matches[1]);
+        }
     }
 }
 
@@ -1376,9 +1379,19 @@ include("head.inc");
                 }
               });
               $('#trcountry').removeClass("hidden");
+              $("#mtu_calc").show();
               break;
             }
+            case "pppoe":
+            case "pptp":
+            case "ppp":
+              $("#mtu_calc").show();
+              break;
+            default:
+              // hide mtu calculation for non ppp types
+              $("#mtu_calc").hide();
           }
+
       });
       $("#type").change();
 
@@ -1632,6 +1645,17 @@ include("head.inc");
         }
       });
       $("#reset_type").change();
+      $("#mtu").change(function(){
+        // ppp uses an mtu
+        if (!isNaN($("#mtu").val()) && $("#mtu").val() > 8) {
+            // display mtu used for the ppp(oe) connection
+            $("#mtu_calc > label").html($("#mtu").val() - 8 );
+        } else {
+            // default ppp mtu is 1500 - 8 (header)
+            $("#mtu_calc > label").html("1492");
+        }
+      });
+      $("#mtu").change();
   });
 </script>
 
@@ -1774,7 +1798,12 @@ include("head.inc");
                         <tr>
                           <td><a id="help_for_mtu" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("MTU"); ?></td>
                           <td>
-                            <input name="mtu" type="text" value="<?=$pconfig['mtu'];?>" />
+                            <input name="mtu" id="mtu" type="text" value="<?=$pconfig['mtu'];?>" />
+                            <div id="mtu_calc" style="display:none" for="mtu">
+                              <i class="fa fa-info-circle"></i>
+                              <?=gettext("calculated ppp mtu :");?>
+                              <label></label>
+                            </div>
                             <div class="hidden" for="help_for_mtu">
                               <?= gettext("If you leave this field blank, the adapter's default MTU will " .
                                 "be used. This is typically 1500 bytes but can vary in some circumstances.");?>
