@@ -19,7 +19,7 @@
                 <workAround url="/system_crlmanager.php*" visibility="hidden"/>
             </Revocation>
         </Trust>
-        <Configuration order="80" cssClass="fa fa-book fa-fw">
+        <Configuration order="80" cssClass="fa fa-history fa-fw">
             <History url="/diag_confbak.php">
                 <none url="/diag_confbak.php*" visibility="hidden"/>
             </History>
@@ -222,6 +222,7 @@
         </DHCP>
         <DHCPv6 cssClass="fa fa-bullseye fa-fw">
             <Server order="100" url="/services_dhcpv6.php">
+                <Interface url="/services_dhcpv6.php?*" visibility="hidden"/>
                 <Edit url="/services_dhcpv6_edit.php?*" visibility="hidden"/>
                 <RA url="/services_router_advertisements.php?*" visibility="hidden"/>
             </Server>
@@ -246,32 +247,34 @@
             </ACL>
         </DNSResolver>
         <DNSTools VisibleName="DNS Tools" cssClass="fa fa-tags fa-fw">
-            <DynDNS url="/services_dyndns.php">
+            <DynDNS order="10" url="/services_dyndns.php">
                 <Edit url="/services_dyndns_edit.php*" visibility="hidden"/>
             </DynDNS>
-            <Filter url="/services_opendns.php"/>
-            <LogFile VisibleName="Log File" url="/diag_logs_resolver.php"/>
-            <RFC2136 VisibleName="RFC 2136" url="/services_rfc2136.php">
+            <Filter order="20" url="/services_opendns.php"/>
+            <RFC2136 order="30" VisibleName="RFC 2136" url="/services_rfc2136.php">
                 <Edit url="/services_rfc2136_edit.php*" visibility="hidden"/>
             </RFC2136>
+            <LogFile order="100" VisibleName="Log File" url="/diag_logs_resolver.php"/>
         </DNSTools>
         <IGMPProxy VisibleName="IGMP Proxy" url="/services_igmpproxy.php" cssClass="fa fa-map-signs fa-fw">
-            <IGMPProxyEdit url="/services_igmpproxy_edit.php" visibility="hidden"/>
+            <IGMPProxyEdit url="/services_igmpproxy_edit.php" visibility="hidden">
+                <Edit url="/services_igmpproxy_edit.php*"/>
+            </IGMPProxyEdit>
         </IGMPProxy>
         <LoadBalancer VisibleName="Load Balancer" cssClass="fa fa-truck fa-fw">
-            <Monitors url="/load_balancer_monitor.php">
+            <Monitors order="10" url="/load_balancer_monitor.php">
                 <Edit url="/load_balancer_monitor_edit.php*" visibility="hidden"/>
             </Monitors>
-            <PoolSetup VisibleName="Pool Setup" url="/load_balancer_pool.php">
-                <Edit url="/load_balancer_pool_edit.php" visibility="hidden"/>
+            <PoolSetup order="20" VisibleName="Pool Setup" url="/load_balancer_pool.php">
+                <Edit url="/load_balancer_pool_edit.php*" visibility="hidden"/>
             </PoolSetup>
-            <PoolStatus VisibleName="Pool Status" url="/status_lb_pool.php"/>
-            <Settings url="/load_balancer_setting.php"/>
-            <Log VisibleName="Log File" url="/diag_logs_relayd.php"/>
-            <VirtualServer VisibleName="Virtual Server Setup" url="/load_balancer_virtual_server.php">
-                <Edit url="/load_balancer_virtual_server_edit.php" visibility="hidden"/>
+            <VirtualServer order="30" VisibleName="Virtual Server Setup" url="/load_balancer_virtual_server.php">
+                <Edit url="/load_balancer_virtual_server_edit.php*" visibility="hidden"/>
             </VirtualServer>
-            <VirtualServerStatus VisibleName="Virtual Server Status" url="/status_lb_vs.php"/>
+            <Settings order="40" url="/load_balancer_setting.php"/>
+            <PoolStatus order="50" VisibleName="Pool Status" url="/status_lb_pool.php"/>
+            <VirtualServerStatus order="60" VisibleName="Virtual Server Status" url="/status_lb_vs.php"/>
+            <Log VisibleName="Log File" order="100" url="/diag_logs_relayd.php"/>
         </LoadBalancer>
         <NTP VisibleName="Network Time" cssClass="fa fa-clock-o fa-fw">
             <General url="/services_ntpd.php"/>
@@ -360,14 +363,8 @@
         </PPTP>
     </VPN>
     <Help order="6" cssClass="fa fa-support">
-        <AboutThisPage VisibleName="About this Page" url="/help.php" IsExternal="Y"/>
-        <DevelopersWiki VisibleName="Developers Wiki" url="https://wiki.opnsense.org/index.php/developers"
-                        IsExternal="Y"/>
-        <Documentation url="https://wiki.opnsense.org/" IsExternal="Y"/>
-        <FreeBSDHandbook VisibleName="FreeBSD Handbook" url="https://www.freebsd.org/doc/en/books/handbook/"
-                         IsExternal="Y"/>
-        <PaidSupport VisibleName="Paid Support" url="https://opnsense.org/support-overview/commercial-support/"
-                     IsExternal="Y"/>
-        <UserForum VisibleName="User Forum" url="https://forum.opnsense.org/" IsExternal="Y"/>
+        <OPNsense VisibleName="Documentation" order="10" url="https://docs.opnsense.org/" cssClass="fa fa-book" IsExternal="Y"/>
+        <UserForum VisibleName="User Forum" order="20" url="https://forum.opnsense.org/" cssClass="fa fa-ticket" IsExternal="Y"/>
+        <PaidSupport VisibleName="Paid Support" order="30" url="https://opnsense.org/support-overview/commercial-support/" cssClass="fa fa-phone" IsExternal="Y"/>
     </Help>
 </menu>

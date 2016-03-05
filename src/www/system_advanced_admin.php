@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['nohttpreferercheck'] = isset($config['system']['webgui']['nohttpreferercheck']);
     $pconfig['loginautocomplete'] = isset($config['system']['webgui']['loginautocomplete']);
     $pconfig['althostnames'] = $config['system']['webgui']['althostnames'];
-    $pconfig['enableserial'] = $config['system']['enableserial'];
+    $pconfig['enableserial'] = isset($config['system']['enableserial']);
     $pconfig['serialspeed'] = $config['system']['serialspeed'];
     $pconfig['primaryconsole'] = $config['system']['primaryconsole'];
     $pconfig['enablesshd'] = $config['system']['ssh']['enabled'];
@@ -317,7 +317,7 @@ include("head.inc");
                 <td width="22%"><strong><?=gettext("webConfigurator");?></strong></td>
                 <td  width="78%" align="right">
                   <small><?=gettext("full help"); ?> </small>
-                  <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i></a>
+                  <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
                 </td>
               </tr>
                 <tr>

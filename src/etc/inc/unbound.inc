@@ -57,9 +57,6 @@ function unbound_optimization() {
         $optimization['key_cache_slabs'] = "key-cache-slabs: 4";
     }
 
-    // Memory usage default of 4MB
-    $optimization['msg_cache_size'] = "msg-cache-size: 4m";
-    $optimization['rrset_cache_size'] = "rrset-cache-size: 8m";
 
     // More outgoing connections per thread otherwise assign a default of 4096 for a single thread
     if ($numprocs > 0) {
@@ -73,24 +70,25 @@ function unbound_optimization() {
      * Larger socket buffer for busy servers
      * Check that it is set to 4MB (by default the OS has it configured to 4MB)
      */
-    foreach ($config['sysctl']['item'] as $tunable) {
-        if ($tunable['tunable'] == 'kern.ipc.maxsockbuf') {
-            $so = floor(($tunable['value']/1024/1024)-1);
-            // Check to ensure that the number is not a negative
-            if ($so > 0) {
-                $optimization['so_rcvbuf'] = "so-rcvbuf: {$so}m";
-            } else {
-                unset($optimization['so_rcvbuf']);
+    if (isset($config['sysctl']['item'])) {
+        foreach ($config['sysctl']['item'] as $tunable) {
+            if ($tunable['tunable'] == 'kern.ipc.maxsockbuf') {
+                $so = floor(($tunable['value']/1024/1024)-1);
+                // Check to ensure that the number is not a negative
+                if ($so > 0) {
+                    $optimization['so_rcvbuf'] = "so-rcvbuf: {$so}m";
+                } else {
+                    unset($optimization['so_rcvbuf']);
+                }
             }
         }
-    }
-    // Safety check in case kern.ipc.maxsockbuf is not available.
-    if (!isset($optimization['so_rcvbuf'])) {
-        $optimization['so_rcvbuf'] = "#so-rcvbuf: 4m";
+        // Safety check in case kern.ipc.maxsockbuf is not available.
+        if (!isset($optimization['so_rcvbuf'])) {
+            $optimization['so_rcvbuf'] = "#so-rcvbuf: 4m";
+        }
     }
 
     return $optimization;
-
 }
 
 function bootstrap_unbound_root()
@@ -221,25 +219,33 @@ EOF;
     }
 
     // Server configuration variables
-    $port = (is_port($config['unbound']['port'])) ? $config['unbound']['port'] : "53";
-    $hide_id = ($config['unbound']['hide_id'] == "on") ? "yes" : "no";
-    $hide_version = ($config['unbound']['hide_version'] == "on") ? "yes" : "no";
-    $harden_glue = ($config['unbound']['harden_glue'] == "on") ? "yes" : "no";
-    $harden_dnssec_stripped = ($config['unbound']['harden_dnssec_stripped'] == "on") ? "yes" : "no";
-    $prefetch = ($config['unbound']['prefetch'] == "on") ? "yes" : "no";
-    $prefetch_key = ($config['unbound']['prefetch_key'] == "on") ? "yes" : "no";
-    $outgoing_num_tcp = (!empty($config['unbound']['outgoing_num_tcp'])) ? $config['unbound']['outgoing_num_tcp'] : "10";
-    $incoming_num_tcp = (!empty($config['unbound']['incoming_num_tcp'])) ? $config['unbound']['incoming_num_tcp'] : "10";
-    $edns_buffer_size = (!empty($config['unbound']['edns_buffer_size'])) ? $config['unbound']['edns_buffer_size'] : "4096";
-    $num_queries_per_thread = (!empty($config['unbound']['num_queries_per_thread'])) ? $config['unbound']['num_queries_per_thread'] : "4096";
-    $jostle_timeout = (!empty($config['unbound']['jostle_timeout'])) ? $config['unbound']['jostle_timeout'] : "200";
-    $cache_max_ttl = (!empty($config['unbound']['cache_max_ttl'])) ? $config['unbound']['cache_max_ttl'] : "86400";
-    $cache_min_ttl = (!empty($config['unbound']['cache_min_ttl'])) ? $config['unbound']['cache_min_ttl'] : "0";
-    $infra_host_ttl = (!empty($config['unbound']['infra_host_ttl'])) ? $config['unbound']['infra_host_ttl'] : "900";
-    $infra_lame_ttl = (!empty($config['unbound']['infra_lame_ttl'])) ? $config['unbound']['infra_lame_ttl'] : "900";
-    $infra_cache_numhosts = (!empty($config['unbound']['infra_cache_numhosts'])) ? $config['unbound']['infra_cache_numhosts'] : "10000";
-    $unwanted_reply_threshold = (!empty($config['unbound']['unwanted_reply_threshold'])) ? $config['unbound']['unwanted_reply_threshold'] : "0";
+    $port = is_port($config['unbound']['port']) ? $config['unbound']['port'] : "53";
+    $hide_id = !empty($config['unbound']['hideidentity']) ? "yes" : "no";
+    $hide_version = !empty($config['unbound']['hideversion']) ? "yes" : "no";
+    $prefetch = !empty($config['unbound']['prefetch']) ? "yes" : "no";
+    $prefetch_key = !empty($config['unbound']['prefetchkey']) ? "yes" : "no";
+    $outgoing_num_tcp = !empty($config['unbound']['outgoing_num_tcp']) ? $config['unbound']['outgoing_num_tcp'] : "10";
+    $incoming_num_tcp = !empty($config['unbound']['incoming_num_tcp']) ? $config['unbound']['incoming_num_tcp'] : "10";
+    $edns_buffer_size = !empty($config['unbound']['edns_buffer_size']) ? $config['unbound']['edns_buffer_size'] : "4096";
+    $num_queries_per_thread = !empty($config['unbound']['num_queries_per_thread']) ? $config['unbound']['num_queries_per_thread'] : "4096";
+    $jostle_timeout = !empty($config['unbound']['jostle_timeout']) ? $config['unbound']['jostle_timeout'] : "200";
+    $cache_max_ttl = !empty($config['unbound']['cache_max_ttl']) ? $config['unbound']['cache_max_ttl'] : "86400";
+    $cache_min_ttl = !empty($config['unbound']['cache_min_ttl']) ? $config['unbound']['cache_min_ttl'] : "0";
+    $infra_host_ttl = !empty($config['unbound']['infra_host_ttl']) ? $config['unbound']['infra_host_ttl'] : "900";
+    $infra_cache_numhosts = !empty($config['unbound']['infra_cache_numhosts']) ? $config['unbound']['infra_cache_numhosts'] : "10000";
+    $unwanted_reply_threshold = !empty($config['unbound']['unwanted_reply_threshold']) && is_numeric($config['unbound']['unwanted_reply_threshold']) ? $config['unbound']['unwanted_reply_threshold'] : "0";
     $verbosity = isset($config['unbound']['log_verbosity']) ? $config['unbound']['log_verbosity'] : 1;
+    $msgcachesize = !empty($config['unbound']['msgcachesize']) ? $config['unbound']['msgcachesize'] : 4;
+    $rrsetcachesize = $msgcachesize * 2;
+    $dnssecstripped = !empty($config['unbound']['dnssecstripped']) ? "yes" : "no";
+
+    if (isset($config['unbound']['regdhcp'])) {
+        // include dynamic leases
+        @touch("{$g['unbound_chroot_path']}/dhcpleases.conf");
+        $include_dhcpleases = "include: {$g['unbound_chroot_path']}/dhcpleases.conf";
+    } else {
+        $include_dhcpleases = "";
+    }
 
     // Set up forwarding if it configured
     if (isset($config['unbound']['forwarding'])) {
@@ -291,6 +297,8 @@ pidfile: "/var/run/unbound.pid"
 use-syslog: yes
 port: {$port}
 verbosity: {$verbosity}
+hide-identity: {$hide_id}
+hide-version: {$hide_version}
 harden-referral-path: no
 do-ip4: yes
 do-ip6: yes
@@ -298,25 +306,24 @@ do-udp: yes
 do-tcp: yes
 do-daemonize: yes
 module-config: "{$module_config}"
-unwanted-reply-threshold: 0
-num-queries-per-thread: 1024
-jostle-timeout: 200
-infra-host-ttl: 900
-infra-lame-ttl: 900
-infra-cache-numhosts: 10000
-outgoing-num-tcp: 10
-incoming-num-tcp: 10
-edns-buffer-size: 4096
 cache-max-ttl: {$cache_max_ttl}
 cache-min-ttl: {$cache_min_ttl}
-harden-dnssec-stripped: yes
+harden-dnssec-stripped: {$dnssecstripped}
+outgoing-num-tcp: {$outgoing_num_tcp}
+incoming-num-tcp: {$incoming_num_tcp}
+edns-buffer-size: {$edns_buffer_size}
+num-queries-per-thread: {$num_queries_per_thread}
+infra-host-ttl: {$infra_host_ttl}
+infra-cache-numhosts: {$infra_cache_numhosts}
+unwanted-reply-threshold: {$unwanted_reply_threshold}
+jostle-timeout: {$jostle_timeout}
+msg-cache-size: {$msgcachesize}m
+rrset-cache-size: {$rrsetcachesize}m
 {$optimization['number_threads']}
 {$optimization['msg_cache_slabs']}
 {$optimization['rrset_cache_slabs']}
 {$optimization['infra_cache_slabs']}
 {$optimization['key_cache_slabs']}
-{$optimization['msg_cache_size']}
-{$optimization['rrset_cache_size']}
 {$optimization['outgoing_range']}
 {$optimization['so_rcvbuf']}
 {$anchor_file}
@@ -337,6 +344,9 @@ include: {$g['unbound_chroot_path']}/access_lists.conf
 
 # Static host entries
 include: {$g['unbound_chroot_path']}/host_entries.conf
+
+# DHCP leases (if configured)
+{$include_dhcpleases}
 
 # Domain overrides
 include: {$g['unbound_chroot_path']}/domainoverrides.conf
@@ -376,7 +386,7 @@ EOF;
         file_put_contents("{$g['unbound_chroot_path']}/remotecontrol.conf", $remotcfg);
 
         // Generate our keys
-        do_as_unbound_user("unbound-control-setup");
+        unbound_execute("unbound-control-setup");
 
     }
 }
@@ -416,25 +426,31 @@ function sync_unbound_service()
     bootstrap_unbound_root();
 
     // Configure our Unbound service
-    do_as_unbound_user("unbound-anchor");
+    unbound_execute("unbound-anchor");
     unbound_remote_control_setup();
     unbound_generate_config();
-    do_as_unbound_user("start");
+    unbound_execute("start");
     if (is_process_running('unbound')) {
-        do_as_unbound_user("restore_cache");
+        unbound_execute("restore_cache");
     }
 }
 
 // Execute commands as the user unbound
-function do_as_unbound_user($cmd)
+function unbound_execute($cmd)
 {
-    global $g;
+    global $g, $config;
 
     switch ($cmd) {
         case 'start':
+            $local_domain = !empty($config['system']['domain']) ? $config['system']['domain'] : "local";
+            killbypid('/var/run/unbound_dhcpd.pid');
+            if (isset($config['unbound']['regdhcp'])) {
+                mwexec('/usr/local/opnsense/scripts/dns/unbound_dhcpd.py /domain "'.$local_domain.'"');
+            }
             mwexec("/usr/local/sbin/unbound -c {$g['unbound_chroot_path']}/unbound.conf");
             break;
         case 'stop':
+            killbypid('/var/run/unbound_dhcpd.pid');
             mwexec("chroot -u unbound -g unbound / /usr/local/sbin/unbound-control stop", true);
             break;
         case 'unbound-anchor':
@@ -577,23 +593,6 @@ function unbound_add_host_entries() {
         $unbound_entries .= $host_entries;
     }
 
-    // Handle DHCPLeases added host entries
-    if (isset($config['unbound']['regdhcp'])) {
-        $dhcplcfg = read_hosts();
-        $host_entries = "";
-        if (is_array($dhcplcfg)) {
-            foreach($dhcplcfg as $key=>$host) {
-                $host_entries .= "local-data-ptr: \"{$host['ipaddr']} {$host['fqdn']}\"\n";
-                $host_entries .= "local-data: \"{$host['fqdn']} IN A {$host['ipaddr']}\"\n";
-                if (!empty($host['name'])) {
-                    $host_entries .= "local-data-ptr: \"{$host['ipaddr']} {$host['name']}\"\n";
-                    $host_entries .= "local-data: \"{$host['name']} IN A {$host['ipaddr']}\"\n";
-                }
-            }
-            $unbound_entries .= $host_entries;
-        }
-    }
-
     // Write out entries
     bootstrap_unbound_root();
     file_put_contents("{$g['unbound_chroot_path']}/host_entries.conf", $unbound_entries);
@@ -609,31 +608,31 @@ function unbound_control($action) {
             // Start Unbound
             if ($config['unbound']['enable'] == "on") {
                 if (!is_process_running("unbound")) {
-                    do_as_unbound_user("start");
+                    unbound_execute("start");
                 }
             }
             break;
         case "stop":
             if ($config['unbound']['enable'] == "on") {
-                do_as_unbound_user("stop");
+                unbound_execute("stop");
             }
             break;
         case "reload":
             if ($config['unbound']['enable'] == "on") {
-                do_as_unbound_user("reload");
+                unbound_execute("reload");
             }
             break;
         case "dump_cache":
             // Dump Unbound's Cache
             if ($config['unbound']['dumpcache'] == "on") {
-                do_as_unbound_user("dump_cache");
+                unbound_execute("dump_cache");
             }
             break;
         case "restore_cache":
             // Restore Unbound's Cache
             if ((is_process_running("unbound")) && ($config['unbound']['dumpcache'] == "on")) {
                 if (file_exists($cache_dumpfile) && filesize($cache_dumpfile) > 0) {
-                    do_as_unbound_user("load_cache < /tmp/unbound_cache");
+                    unbound_execute("load_cache < /tmp/unbound_cache");
                 }
             }
             break;
@@ -701,7 +700,7 @@ function unbound_acls_config() {
     }
 
     // Configure the custom ACLs
-    if (is_array($config['unbound']['acls'])) {
+    if (isset($config['unbound']['acls'])) {
         foreach($config['unbound']['acls'] as $unbound_acl) {
             $aclcfg .= "#{$unbound_acl['aclname']}\n";
             foreach($unbound_acl['row'] as $network) {

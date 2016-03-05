@@ -143,6 +143,7 @@ $areas = array(
     'dhcrelay6' => gettext('DHCPv6 Relay'),
     'dnsmasq' => gettext('DNS Forwarder'),
     'dyndnses' => gettext('Dynamic DNS'),
+    'dnsupdates' => gettext('RFC 2136'),
     'filter' => gettext('Firewall Rules'),
     'gateways' => gettext('Gateways'),
     'gifs' => gettext('GIF Devices'),
@@ -583,7 +584,7 @@ $( document ).ready(function() {
                     <tbody>
                       <tr>
                         <td>
-                          <?=gettext("Open a"); ?> <?=$g['[product_name']?> <?=gettext("configuration XML file and click the button below to restore the configuration."); ?>
+                          <?=gettext("Open a configuration XML file and click the button below to restore the configuration."); ?>
                           <br /><br />
                           <?=gettext("Restore area:"); ?>
                           <select name="restorearea" id="restorearea">

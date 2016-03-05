@@ -157,6 +157,7 @@ function restore_config_section_xmlrpc($new_config)
 
     require_once("interfaces.inc");
     require_once("filter.inc");
+    require_once("ipsec.inc");
 
     // save old config
     $old_config = $config;
@@ -256,7 +257,7 @@ function restore_config_section_xmlrpc($new_config)
     }
 
     if (isset($old_config['ipsec']['enable']) !== isset($config['ipsec']['enable'])) {
-        vpn_ipsec_configure();
+        ipsec_configure();
     }
 
     unset($old_config);

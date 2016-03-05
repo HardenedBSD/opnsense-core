@@ -560,7 +560,7 @@ $( document ).ready(function() {
                   <td width="22%"><?=gettext("Edit gateway");?></td>
                   <td  width="78%" align="right">
                     <small><?=gettext("full help"); ?> </small>
-                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i></a>
+                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
                   </td>
                 </tr>
                 <tr>
@@ -780,7 +780,7 @@ $( document ).ready(function() {
                     <?=gettext("Use calculated value."); ?>
 
                     <div class="hidden" for="help_for_avg_loss_samples">
-                      <?=gettext(sprintf("How many probes should be useds to compute average packet loss?  Default is %d.", $apinger_default['avg_loss_samples']));?>
+                      <?=gettext(sprintf("How many probes should be used to compute average packet loss?  Default is %d.", $apinger_default['avg_loss_samples']));?>
                     </div>
                   </td>
                 </tr>

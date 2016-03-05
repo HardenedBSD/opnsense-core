@@ -172,13 +172,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
             write_config();
 
-            $retval = 0;
-            $retval = system_syslogd_start();
+            system_syslogd_start();
+
             if (($oldnologdefaultblock !== isset($config['syslog']['nologdefaultblock']))
               || ($oldnologdefaultpass !== isset($config['syslog']['nologdefaultpass']))
               || ($oldnologbogons !== isset($config['syslog']['nologbogons']))
-              || ($oldnologprivatenets !== isset($config['syslog']['nologprivatenets'])))
-              $retval |= filter_configure();
+              || ($oldnologprivatenets !== isset($config['syslog']['nologprivatenets']))) {
+              filter_configure();
+            }
 
             $savemsg = get_std_save_message();
 
@@ -367,7 +368,7 @@ $(document).ready(function() {
                     <td width="22%"><strong><?=gettext("Local Logging Options");?></strong></td>
                     <td  width="78%" align="right">
                       <small><?=gettext("full help"); ?> </small>
-                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i></a>
+                      <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
                     </td>
                   </tr>
                   <tr>
@@ -470,7 +471,7 @@ $(document).ready(function() {
                       <td width="22%"><strong><?=gettext("Remote Logging Options");?></strong></td>
                       <td  width="78%" align="right">
                         <small><?=gettext("full help"); ?> </small>
-                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i></a>
+                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
                       </td>
                     </tr>
                     <tr>
@@ -565,9 +566,9 @@ $(document).ready(function() {
                     </tr>
                     <tr>
                       <td  colspan="2"><strong><span class="text-danger"><?=gettext("Note:")?></span></strong><br />
-                      <?=gettext("syslog sends UDP datagrams to port 514 on the specified " .
+                      <?=gettext("Syslog sends UDP datagrams to port 514 on the specified " .
                       "remote syslog server, unless another port is specified. Be sure to set syslogd on the " .
-                      "remote server to accept syslog messages from");?> <?=$g['product_name']?>.
+                      "remote server to accept remote syslog messages.");?>
                       </td>
                     </tr>
                   </table>

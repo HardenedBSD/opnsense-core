@@ -1,8 +1,5 @@
 <?php
 
-
-/* MiniUPnPd */
-
 function upnp_notice ($msg) { log_error("miniupnpd: {$msg}"); }
 function upnp_warn ($msg) { log_error("miniupnpd: {$msg}"); }
 
@@ -11,6 +8,36 @@ function upnp_running () {
 		return true;
 	return false;
 }
+
+function upnp_start()
+{
+    if (file_exists('/var/etc/miniupnpd.conf')) {
+        @unlink('/var/run/miniupnpd.pid');
+        mwexec_bg('/usr/local/sbin/miniupnpd -f /var/etc/miniupnpd.conf -P /var/run/miniupnpd.pid');
+    }
+}
+
+function upnp_stop()
+{
+    killbypid('/var/run/miniupnpd.pid');
+    while((int)exec("/bin/pgrep -a miniupnpd | wc -l") > 0) {
+        mwexec('killall miniupnpd 2>/dev/null', true);
+    }
+    mwexec('/sbin/pfctl -aminiupnpd -Fr 2>&1 >/dev/null');
+    mwexec('/sbin/pfctl -aminiupnpd -Fn 2>&1 >/dev/null');
+}
+
+function upnp_configure()
+{
+       global $config;
+
+       if (!empty($config['installedpackages']['miniupnpd']['config'][0]['enable'])) {
+           echo gettext("Starting UPnP service... ");
+           sync_package_miniupnpd();
+           echo "done.\n";
+       }
+}
+
 
 function upnp_write_config($file, $text) {
 	$handle = fopen($file, 'w');
@@ -139,12 +166,13 @@ function sync_package_miniupnpd() {
 			/* if miniupnpd not running start it */
 			if(!upnp_running()) {
 				upnp_notice("Starting service on interface: {$ifaces_active}");
-				upnp_action('start');
+				upnp_start();
 			}
 			/* or restart miniupnpd if settings were changed */
 			else {
 				upnp_notice("Restarting service on interface: {$ifaces_active}");
-				upnp_action('restart');
+				upnp_stop();
+				upnp_start();
 			}
 		}
 	} else {
@@ -157,7 +185,7 @@ function sync_package_miniupnpd() {
 			else
 				upnp_notice('Stopping service: no interfaces selected');
 
-			upnp_action('stop');
+			upnp_stop();
 			@unlink($config_file);
 		}
 	}

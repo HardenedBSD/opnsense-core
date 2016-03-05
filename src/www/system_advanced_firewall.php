@@ -216,13 +216,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             killbypid('/var/run/filterdns.pid');
         }
 
-        $retval = 0;
-        $retval = filter_configure();
-        if (stristr($retval, "error") <> true) {
-            $savemsg = get_std_save_message();
-        } else {
-            $savemsg = $retval;
-        }
+        $savemsg = get_std_save_message();
+
+        filter_configure();
     }
 }
 
@@ -254,7 +250,7 @@ include("head.inc");
                   <td width="22%"><strong><?=gettext("Firewall Advanced");?></strong></td>
                   <td  width="78%" align="right">
                     <small><?=gettext("full help"); ?> </small>
-                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i></a>
+                    <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
                   </td>
                 </tr>
                 <tr>

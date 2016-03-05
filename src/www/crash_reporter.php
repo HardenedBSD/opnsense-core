@@ -1,31 +1,31 @@
 <?php
 
 /*
-	Copyright (C) 2015 Franco Fichtner <franco@opnsense.org>
-	Copyright (C) 2014 Deciso B.V.
-	Copyright (C) 2011 Scott Ullrich
-	All rights reserved.
+    Copyright (C) 2015-2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2014 Deciso B.V.
+    Copyright (C) 2011 Scott Ullrich
+    All rights reserved.
 
-	Redistribution and use in source and binary forms, with or without
-	modification, are permitted provided that the following conditions are met:
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
 
-	1. Redistributions of source code must retain the above copyright notice,
-	   this list of conditions and the following disclaimer.
+    1. Redistributions of source code must retain the above copyright notice,
+       this list of conditions and the following disclaimer.
 
-	2. Redistributions in binary form must reproduce the above copyright
-	   notice, this list of conditions and the following disclaimer in the
-	   documentation and/or other materials provided with the distribution.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
 
-	THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-	INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-	AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-	AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-	OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-	SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-	INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-	CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-	ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-	POSSIBILITY OF SUCH DAMAGE.
+    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
 */
 
 require_once("guiconfig.inc");
@@ -104,14 +104,18 @@ if (isset($_POST['Submit'])) {
             $crash_report_header .= "Description\n\n{$desc}";
         }
         file_put_contents('/var/crash/crashreport_header.txt', $crash_report_header);
-        @rename('/tmp/PHP_errors.log', '/var/crash/PHP_errors.log');
+        if (file_exists('/tmp/PHP_errors.log')) {
+            // limit PHP_errors to send to 1MB
+            exec('/usr/bin/tail -c 1048576 /tmp/PHP_errors.log > /var/crash/PHP_errors.log');
+            @unlink('/tmp/PHP_errors.log');
+        }
         @copy('/var/run/dmesg.boot', '/var/crash/dmesg.boot');
         exec('/usr/bin/gzip /var/crash/*');
         $files_to_upload = glob('/var/crash/*');
         upload_crash_report($files_to_upload, $user_agent);
         foreach ($files_to_upload as $file_to_upload) {
             @unlink($file_to_upload);
-	      }
+        }
     } elseif ($_POST['Submit'] == 'no') {
         $files_to_upload = glob('/var/crash/*');
         foreach ($files_to_upload as $file_to_upload) {
@@ -132,9 +136,25 @@ $email = isset($config['system']['contact_email']) ? $config['system']['contact_
 if ($has_crashed) {
     $crash_files = glob("/var/crash/*");
     $crash_reports['System Information'] = trim($crash_report_header);
-    $php_errors = @file_get_contents('/tmp/PHP_errors.log');
-    if (!empty($php_errors)) {
-        $crash_reports['PHP Errors'] = trim($php_errors);
+    if (file_exists('/tmp/PHP_errors.log')) {
+        $php_errors_size = @filesize('/tmp/PHP_errors.log');
+        $max_php_errors_size = 1048576; // 1MB
+        // limit reporting for PHP_errors.log to $max_php_errors_size characters
+        if ($php_errors_size > $max_php_errors_size) {
+            // if file is to large, only display last $max_php_errors_size characters
+            $php_errors .= @file_get_contents(
+                          '/tmp/PHP_errors.log',
+                          NULL,
+                          NULL,
+                          ($php_errors_size - $max_php_errors_size),
+                          $max_php_errors_size
+            );
+        } else {
+            $php_errors = @file_get_contents('/tmp/PHP_errors.log');
+        }
+        if (!empty($php_errors)) {
+            $crash_reports['PHP Errors'] = trim($php_errors);
+        }
     }
     $dmesg_boot = @file_get_contents('/var/run/dmesg.boot');
     if (!empty($dmesg_boot)) {

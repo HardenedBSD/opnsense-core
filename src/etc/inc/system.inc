@@ -1,29 +1,30 @@
 <?php
 
 /*
-  Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
-  All rights reserved.
+    Copyright (C) 2016 Franco Fichtner <franco@opnsense.org>
+    Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
+    All rights reserved.
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions are met:
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
 
-  1. Redistributions of source code must retain the above copyright notice,
-     this list of conditions and the following disclaimer.
+    1. Redistributions of source code must retain the above copyright notice,
+       this list of conditions and the following disclaimer.
 
-  2. Redistributions in binary form must reproduce the above copyright
-     notice, this list of conditions and the following disclaimer in the
-     documentation and/or other materials provided with the distribution.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
 
-  THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
-  INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
-  AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-  AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
-  OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-  POSSIBILITY OF SUCH DAMAGE.
+    THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES,
+    INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+    AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+    AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+    OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    POSSIBILITY OF SUCH DAMAGE.
 */
 
 function activate_powerd()
@@ -445,8 +446,7 @@ function system_dhcpleases_configure()
     global $config, $g;
 
     /* Start the monitoring process for dynamic dhcpclients. */
-    if ((isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcp']))
-      || (isset($config['unbound']['enable']) && isset($config['unbound']['regdhcp']))) {
+    if (isset($config['dnsmasq']['enable']) && isset($config['dnsmasq']['regdhcp'])) {
         /* Make sure we do not error out */
         mwexec("/bin/mkdir -p {$g['dhcpd_chroot_path']}/var/db");
         if (!file_exists("{$g['dhcpd_chroot_path']}/var/db/dhcpd.leases")) {
@@ -791,7 +791,6 @@ function system_syslogd_start()
     mwexec('/etc/rc.d/hostid start');
 
     $syslogcfg = $config['syslog'];
-
     if (file_exists('/var/run/booting')) {
         echo gettext('Starting syslog...');
     }
@@ -800,58 +799,45 @@ function system_syslogd_start()
     $syslogd_extra = '';
 
     if (isset($syslogcfg)) {
-        $separatelogfacilities = array(
-          'apinger',
-          'bgpd',
-          'charon',
-          'dhclient',
-          'dhcp6c',
-          'dhcpd',
-          'dhcrelay',
-          'dnsmasq',
-          'filterdns',
-          'filterlog',
-          'hostapd',
-          'l2tps',
-          'miniupnpd',
-          'ntp',
-          'ntpd',
-          'ntpdate',
-          'olsrd',
-          'openvpn',
-          'ospfd',
-          'poes',
-          'ppp',
-          'pptps',
-          'radvd',
-          'relayd',
-          'routed',
-          'unbound',
-          'zebra',
-          'captiveportal',
-        );
         $syslogconf = '';
 
         // create structure with log section definitions and config tags for remote usage
         $syslogconfs = array();
-        $syslogconfs['routing'] = array("conf" => "!radvd,routed,olsrd,zebra,ospfd,bgpd,miniupnpd" , "remote" => null);
-        $syslogconfs['ntpd'] = array("conf" => "!ntp,ntpd,ntpdate", "remote" => null);
-        $syslogconfs['ppps'] = array("conf" => "!ppp", "remote" => null);
-        $syslogconfs['pptps'] = array("conf" => "!pptps", "remote" => null);
-        $syslogconfs['poes'] = array("conf" => "!poes", "remote" => null);
-        $syslogconfs['l2tps'] = array("conf" => "!l2tps", "remote" => null);
-        $syslogconfs['ipsec'] = array("conf" => "!charon", "remote" => null);
-        $syslogconfs['openvpn'] = array("conf" => "!openvpn", "remote" => "vpn");
-        $syslogconfs['gateways'] = array("conf" => "!apinger", "remote" => "apinger");
-        $syslogconfs['resolver'] = array("conf" => "!dnsmasq,filterdns,unbound", "remote" => null);
-        $syslogconfs['dhcpd'] = array("conf" => "!dhcpd,dhcrelay,dhclient,dhcp6c", "remote" => "dhcp");
-        $syslogconfs['relayd'] = array("conf" => "!relayd", "remote" => "relayd");
-        $syslogconfs['wireless'] = array("conf" => "!hostapd", "remote" => "hostapd");
-        $syslogconfs['filter'] = array("conf" => "!filterlog", "remote" => "filter");
-        $syslogconfs['portalauth'] = array("conf" => "!captiveportal", "remote" => "portalauth");
+        $syslogconfs['routing'] = array("facility" => array('radvd', 'routed', 'olsrd', 'zebra', 'ospfd', 'bgpd', 'miniupnpd') , "remote" => null);
+        $syslogconfs['ntpd'] = array("facility" => array('ntp', 'ntpd', 'ntpdate'), "remote" => null);
+        $syslogconfs['ppps'] = array("facility" => array('ppp'), "remote" => null);
+        $syslogconfs['ipsec'] = array("facility" => array('charon'), "remote" => null);
+        $syslogconfs['openvpn'] = array("facility" => array('openvpn'), "remote" => "vpn");
+        $syslogconfs['gateways'] = array("facility" => array('apinger'), "remote" => "apinger");
+        $syslogconfs['resolver'] = array("facility" => array('dnsmasq','filterdns','unbound'), "remote" => null);
+        $syslogconfs['dhcpd'] = array("facility" => array('dhcpd','dhcrelay','dhclient','dhcp6c'), "remote" => "dhcp");
+        $syslogconfs['relayd'] = array("facility" => array('relayd'), "remote" => "relayd");
+        $syslogconfs['wireless'] = array("facility" => array('hostapd'), "remote" => "hostapd");
+        $syslogconfs['filter'] = array("facility" => array('filterlog'), "remote" => "filter");
+        $syslogconfs['portalauth'] = array("facility" => array('captiveportal'), "remote" => "portalauth");
 
+        // probe syslog facilities in plugins
+        foreach (plugin_scan() as $name => $path) {
+            require_once $path;
+            $func = sprintf('%s_syslog', $name);
+            if (function_exists($func)) {
+                $workers = $func();
+                foreach ($workers as $plugin_syslog => $plugin_details) {
+                    if (!array_key_exists($plugin_syslog, $syslogconfs)) {
+                        $syslogconfs[$plugin_syslog] = array();
+                        $syslogconfs[$plugin_syslog]['facility'] = array();
+                        $syslogconfs[$plugin_syslog]['remote'] = $plugin_details['remote'];
+                    }
+                    $tmp = array_merge($syslogconfs[$plugin_syslog]['facility'], $plugin_details['facility']);
+                    $syslogconfs[$plugin_syslog]['facility'] = $tmp;
+                }
+            }
+        }
+
+        $separatelogfacilities = array();
         foreach ($syslogconfs as $logTopic => $logConfig) {
-            $syslogconf .= "{$logConfig['conf']}\n";
+            $syslogconf .= "!".implode(',', $logConfig['facility'])."\n";
+            $separatelogfacilities = array_merge($logConfig['facility'], $separatelogfacilities);
             if (!isset($syslogcfg['disablelocallogging'])) {
                 $syslogconf .= "*.*                {$log_directive}/var/log/{$logTopic}.log\n";
             }
@@ -860,7 +846,7 @@ function system_syslogd_start()
             }
         }
 
-
+        asort($separatelogfacilities);
         $facilitylist = implode(',', array_unique($separatelogfacilities));
         $syslogconf .= "!-{$facilitylist}\n";
         if (!isset($syslogcfg['disablelocallogging'])) {
@@ -884,11 +870,9 @@ EOD;
             if (isset($syslogcfg['portalauth'])) {
                 $syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "local4.*");
             }
-
             if (isset($syslogcfg['dhcp'])) {
                 $syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "local7.*");
             }
-
             if (isset($syslogcfg['system'])) {
                 $syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "*.notice;kern.debug;lpr.info;mail.crit;");
                 $syslogconf .= system_syslogd_get_remote_servers($syslogcfg, "news.err;local0.none;local3.none;local7.none");
@@ -935,6 +919,17 @@ EOD;
         }
 
         $syslogd_extra = "-f /var/etc/syslog.conf {$sourceip}";
+        // setup log files for all facilities including default
+        $default_logfile_size = !empty($syslogcfg['logfilesize']) ? $syslogcfg['logfilesize'] : '511488';
+        $syslog_files = array_keys($syslogconfs);
+        $syslog_files = array_merge($syslog_files, array('system', 'vpn', 'lighttpd'));
+        foreach ($syslog_files as $syslog_fn) {
+            $filename = "/var/log/".basename($syslog_fn).".log";
+            if (!file_exists($filename)) {
+                mwexecf('/usr/local/sbin/clog -i -s %s %s', array($default_logfile_size, $filename));
+            }
+            mwexecf('chmod 0600 %s', array($filename));
+        }
     }
 
     if (isvalidpid('/var/run/syslog.pid')) {
@@ -1466,6 +1461,15 @@ function system_ntp_configure($start_ntpd = true)
 {
     global $config;
 
+    if ($start_ntpd) {
+        killbypid('/var/run/ntpd.pid', 'TERM', true);
+    }
+
+    if (!isset($config['system']['timeservers'])) {
+        /* use this field for on/off toggle */
+        return;
+    }
+
     $driftfile = '/var/db/ntpd.drift';
     $statsdir = '/var/log/ntp';
     $gps_device = '/dev/gps0';
@@ -1711,12 +1715,6 @@ function system_ntp_configure($start_ntpd = true)
         return;
     }
 
-    /* if ntpd is running, kill it */
-    while (isvalidpid('/var/run/ntpd.pid')) {
-        killbypid('/var/run/ntpd.pid');
-        usleep(200 * 1000);
-    }
-
     /* if /var/empty does not exist, create it */
     @mkdir('/var/empty', 0775, true);
 
@@ -1820,4 +1818,31 @@ function get_possible_traffic_source_addresses($include_ipv6_link_local=false) {
         }
     }
     return $sourceips;
+}
+
+/**
+ * scan plugins for legacy system
+ * @return array
+ */
+function plugin_scan()
+{
+    $path = '/usr/local/etc/inc/plugins.inc.d/';
+    $ext = '.inc';
+
+    $ret = array();
+
+    $plugins = glob($path . '*' . $ext);
+    if (!is_array($plugins)) {
+        return $ret;
+    }
+
+    sort($plugins);
+
+    foreach ($plugins as $plugin) {
+        $name = preg_replace('/' . preg_quote($path, '/') . '/', '', $plugin);
+        $name = preg_replace('/' . preg_quote($ext, '/') . '/', '', $name);
+        $ret[$name] = $plugin;
+    }
+
+    return $ret;
 }

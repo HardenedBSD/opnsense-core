@@ -33,11 +33,13 @@ $nocsrf = true;
 
 require_once("guiconfig.inc");
 require_once("services.inc");
-require_once("vpn.inc");
-require_once("widgets/include/services_status.inc");
+require_once("system.inc");
+require_once('plugins.inc');
+require_once("ipsec.inc");
 require_once("interfaces.inc");
+require_once("widgets/include/services_status.inc");
 
-$services = get_services();
+$services = services_get();
 
 if (isset($_POST['servicestatusfilter'])) {
     $config['widgets']['servicestatusfilter'] = htmlspecialchars($_POST['servicestatusfilter'], ENT_QUOTES | ENT_HTML401);

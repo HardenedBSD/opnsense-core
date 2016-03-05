@@ -67,8 +67,6 @@ function kill_client($port, $remipp)
     return $killed;
 }
 
-$service_hook = 'openvpn';
-
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   $vpnid = 0;
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -175,7 +173,7 @@ $( document ).ready(function() {
                 endforeach; ?>
                 <tr>
                   <td colspan="2">
-                    <?php $ssvc = find_service_by_openvpn_vpnid($server['vpnid']); ?>
+                    <?php $ssvc = find_service_by_name('openvpn', array('vpnid' => $server['vpnid'])); ?>
                     <?= get_service_status_icon($ssvc, true, true); ?>
                     <?= get_service_control_links($ssvc, true); ?>
                   </td>
@@ -254,7 +252,7 @@ $( document ).ready(function() {
                   <td><?=$sk_server['status'];?></td>
                   <td>
                     <div>
-                      <?php $ssvc = find_service_by_openvpn_vpnid($sk_server['vpnid']); ?>
+                      <?php $ssvc = find_service_by_name('openvpn', array('vpnid' => $sk_server['vpnid'])); ?>
                       <?= get_service_status_icon($ssvc, false, true); ?>
                       <?= get_service_control_links($ssvc, true); ?>
                     </div>
@@ -294,7 +292,7 @@ $( document ).ready(function() {
                   <td><?=$client['status'];?></td>
                   <td>
                     <div>
-                      <?php $ssvc = find_service_by_openvpn_vpnid($client['vpnid']); ?>
+                      <?php $ssvc = find_service_by_name('openvpn', array('vpnid' => $client['vpnid'])); ?>
                       <?= get_service_status_icon($ssvc, false, true); ?>
                       <?= get_service_control_links($ssvc, true); ?>
                     </div>

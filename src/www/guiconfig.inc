@@ -218,6 +218,17 @@ function print_alert_box($msg, $alert = 'warning', $button = '')
 EOFnp;
 }
 
+function print_content_box($msg)
+{
+	echo <<<EOFnp
+<div class="table-responsive">
+  <table class="table table-striped">
+     <tr><td>{$msg}</td></tr>
+  </table>
+</div>
+EOFnp;
+}
+
 function print_info_box_apply($msg)
 {
 	$iface = !empty($_POST['if']) ? $_POST['if'] : (!empty($_GET['if']) ? $_GET['if'] : '');
@@ -273,8 +284,8 @@ function print_service_banner($service)
 	}
 }
 
-function get_std_save_message() {
-	global $d_sysrebootreqd_path;
+function get_std_save_message()
+{
 	$filter_related = false;
 	$filter_pages = array("nat", "filter");
 	$to_return = gettext("The changes have been applied successfully.");

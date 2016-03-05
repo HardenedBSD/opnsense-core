@@ -30,7 +30,7 @@
 require_once("interfaces.inc");
 require_once("guiconfig.inc");
 require_once("filter.inc");
-require_once("vpn.inc");
+require_once("ipsec.inc");
 require_once("services.inc");
 require_once("pfsense-utils.inc");
 
@@ -89,14 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     } elseif (isset($_POST['apply'])) {
         // apply changes
-        $retval = 0;
-        $retval = vpn_ipsec_configure();
+        ipsec_configure();
         $savemsg = get_std_save_message();
-        if ($retval >= 0) {
-            if (is_subsystem_dirty('ipsec')) {
-                clear_subsystem_dirty('ipsec');
-            }
-        }
+        clear_subsystem_dirty('ipsec');
         header("Location: vpn_ipsec_mobile.php?savemsg=".$savemsg);
         exit;
     } elseif (isset($_POST['submit'])) {
@@ -369,7 +364,7 @@ if (isset($input_errors) && count($input_errors) > 0) {
                       <td width="22%"><b><?=gettext("IKE Extensions"); ?> </b></td>
                       <td width="78%" align="right">
                         <small><?=gettext("full help"); ?> </small>
-                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i></a>
+                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
                       </td>
                     </tr>
 									<tr>

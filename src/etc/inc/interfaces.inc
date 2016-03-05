@@ -110,20 +110,6 @@ function interfaces_bring_up($interface)
     legacy_interface_flags($interface, 'up');
 }
 
-function interface_override_flags()
-{
-    global $config;
-
-    return sprintf(
-        '%stxcsum %srxcsum %stso %slro %spolling',
-        isset($config['system']['disablechecksumoffloading']) ? '-' : '',
-        isset($config['system']['disablechecksumoffloading']) ? '-' : '',
-        isset($config['system']['disablesegmentationoffloading']) ? '-' : '',
-        isset($config['system']['disablelargereceiveoffloading']) ? '-' : '',
-        isset($config['system']['polling']) ? '' : '-'
-    );
-}
-
 function does_interface_exist($interface)
 {
     $ints = legacy_interface_listget();
@@ -134,81 +120,68 @@ function does_interface_exist($interface)
     }
 }
 
-
-function interface_netgraph_needed($interface = "wan")
+function interface_netgraph_needed($interface)
 {
     global $config;
 
-    $found = false;
-    if (!empty($config['pptpd']) &&
-        $config['pptpd']['mode'] == "server"
-    ) {
-        $found = true;
+    if (isset($config['pptpd']['mode']) && $config['pptpd']['mode'] == 'server') {
+        if ('wan' == $interface) {
+            return true;
+        }
     }
-    if (!$found && !empty($config['l2tp']) &&
-        $config['l2tp']['mode'] == "server"
-    ) {
-        $found = true;
+
+    if (isset($config['l2tp']['mode']) && $config['l2tp']['mode'] == 'server') {
+        if ($config['l2tp']['interface'] == $interface) {
+            return true;
+        }
     }
-    if (!$found && isset($config['pppoes']['pppoe']) && is_array($config['pppoes']['pppoe'])) {
+
+    if (isset($config['pppoes']['pppoe'])) {
         foreach ($config['pppoes']['pppoe'] as $pppoe) {
-            if ($pppoe['mode'] != "server") {
+            if ($pppoe['mode'] != 'server') {
                 continue;
             }
             if ($pppoe['interface'] == $interface) {
-                $found = true;
-            }
-            break;
-        }
-    }
-    if (!$found) {
-        if (!empty($config['interfaces'][$interface])) {
-            switch ($config['interfaces'][$interface]['ipaddr']) {
-                case "ppp":
-                case "pppoe":
-                case "l2tp":
-                case "pptp":
-                    $found = true;
-                    break;
-                default:
-                    $found = false;
-                    break;
+                return true;
             }
         }
     }
-    if (!$found) {
-        $realif = get_real_interface($interface);
-        if (isset($config['ppps']['ppp'])) {
-            foreach ($config['ppps']['ppp'] as $pppid => $ppp) {
-                $ports = explode(',', $ppp['ports']);
-                foreach ($ports as $pid => $port) {
-                    $port = get_real_interface($port);
-                    if ($realif == $port) {
-                        $found = true;
-                        break;
-                    }
-                    /* Find the parent interfaces of the vlans in the MLPPP configs
-                     * there should be only one element in the array here
-                     * -- this could be better . . . */
-                    $parent_if = get_parent_interface($port);
-                    if ($realif == $parent_if[0]) {
-                        $found = true;
-                        break;
-                    }
+
+    if (isset($config['interfaces'][$interface]['ipaddr'])) {
+        switch ($config['interfaces'][$interface]['ipaddr']) {
+            case 'ppp':
+            case 'pppoe':
+            case 'l2tp':
+            case 'pptp':
+		return true;
+            default:
+               break;
+        }
+    }
+
+    $realif = get_real_interface($interface);
+
+    if (isset($config['ppps']['ppp'])) {
+        foreach ($config['ppps']['ppp'] as $pppid => $ppp) {
+            $ports = explode(',', $ppp['ports']);
+            foreach ($ports as $pid => $port) {
+                $port = get_real_interface($port);
+                if ($realif == $port) {
+                    return true;
+                }
+                /*
+                 * Find the parent interfaces of the vlans in the MLPPP
+                 * configs there should be only one element in the array
+                 */
+                $parent_if = get_parent_interface($port);
+                if ($realif == $parent_if[0]) {
+                    return true;
                 }
             }
         }
     }
 
-    if (!$found) {
-        $realif = get_real_interface($interface);
-        pfSense_ngctl_detach("{$realif}:", $realif);
-    }
-    /* NOTE: We make sure for this on interface_ppps_configure()
-     *  no need to do it here agan.
-     *  else
-     *    pfSense_ngctl_attach(".", $realif);
-     */
+    return false;
 }
 
 function interfaces_loopback_configure()
@@ -264,7 +237,6 @@ function interface_vlan_configure(&$vlan)
     }
     $if = $vlan['if'];
     $vlanif = empty($vlan['vlanif']) ? "{$if}_vlan{$vlan['tag']}" : $vlan['vlanif'];
-    $tag = $vlan['tag'];
 
     if (empty($if)) {
         log_error(gettext("interface_vlan_configure called with if undefined."));
@@ -285,11 +257,17 @@ function interface_vlan_configure(&$vlan)
         }
     }
 
-    foreach ($members as $member) {
-        if (!isset($config['system']['disablevlanhwfilter'])) {
-            legacy_interface_flags($member, 'vlanmtu vlanhwtag vlanhwfilter vlanhwcsum vlanhwtso');
-        } else {
-            legacy_interface_flags($member, '-vlanmtu -vlanhwtag -vlanhwfilter -vlanhwcsum -vlanhwtso');
+    // disable/enable hardware vlan tags, will be skipped when "Leave default" (option 2) is selected
+    if (!isset($config['system']['disablevlanhwfilter']) || $config['system']['disablevlanhwfilter'] == 1) {
+        foreach ($members as $member) {
+            // set one tag at a time to avoid driver issues
+            foreach (array('vlanmtu', 'vlanhwtag', 'vlanhwfilter', 'vlanhwcsum', 'vlanhwtso')  as $tag) {
+                if (!isset($config['system']['disablevlanhwfilter'])) {
+                    legacy_interface_flags($member, $tag);
+                } else {
+                    legacy_interface_flags($member, '-'.$tag);
+                }
+            }
         }
     }
 
@@ -298,10 +276,10 @@ function interface_vlan_configure(&$vlan)
     } else {
         $tmpvlanif = legacy_interface_create('vlan');
         legacy_interface_rename($tmpvlanif, $vlanif);
-        pfSense_ngctl_name("{$tmpvlanif}:", $vlanif);
+        legacy_netgraph_rename($tmpvlanif, $vlanif);
     }
 
-    legacy_vlan_tag($vlanif, $if, $tag);
+    legacy_vlan_tag($vlanif, $if, $vlan['tag']);
 
     interfaces_bring_up($vlanif);
 
@@ -343,8 +321,8 @@ function interface_qinq_configure(&$vlan, $fd = null)
 
     /* make sure the parent is converted to ng_vlan(4) and is up */
     interfaces_bring_up($qinqif);
+    legacy_netgraph_attach($qinqif);
 
-    pfSense_ngctl_attach(".", $qinqif);
     if (!empty($vlanif) && does_interface_exist($vlanif)) {
         fwrite($fd, "shutdown {$qinqif}qinq:\n");
         exec("/usr/sbin/ngctl msg {$qinqif}qinq: gettable", $result);
@@ -571,8 +549,6 @@ function interface_bridge_configure(&$bridge, $checkmember = 0)
         return;
     }
 
-    $flags = interface_override_flags();
-
     if (file_exists("/var/run/booting") || !empty($bridge['bridgeif'])) {
         legacy_interface_destroy($bridge['bridgeif']);
         legacy_interface_create($bridge['bridgeif']);
@@ -596,7 +572,7 @@ function interface_bridge_configure(&$bridge, $checkmember = 0)
         }
         /* make sure the parent interface is up */
         legacy_interface_mtu($realif, $mtu);
-        legacy_interface_flags($realif, $flags);
+        configure_interface_hardware($realif);
         interfaces_bring_up($realif);
         legacy_bridge_member($bridge['bridgeif'], $realif);
     }
@@ -803,16 +779,14 @@ function interface_lagg_configure(&$lagg)
         }
     }
 
-    $flags = interface_override_flags();
     $checklist = get_interface_list();
-
     foreach ($members as $member) {
         if (!array_key_exists($member, $checklist)) {
             continue;
         }
 
         legacy_interface_mtu($member, $mtu);
-        legacy_interface_flags($member, $flags);
+        configure_interface_hardware($member);
         interfaces_bring_up($member);
         mwexec("/sbin/ifconfig {$laggif} laggport {$member}");
     }
@@ -1183,7 +1157,7 @@ function interfaces_configure()
         system_routing_configure();
 
         /* reload IPsec tunnels */
-        vpn_ipsec_configure();
+        ipsec_configure();
 
         /* reload dhcpd (interface enabled/disabled status may have changed) */
         services_dhcpd_configure();
@@ -1613,9 +1587,9 @@ function interface_ppps_configure($interface)
             case "pppoe":
                 /* Bring the parent interface up */
                 interfaces_bring_up($port);
-                pfSense_ngctl_attach(".", $port);
+                legacy_netgraph_attach($port);
                 /* Enable setautosrc to automatically change mac address if parent interface's changes */
-                mwexec("ngctl msg {$port}: setautosrc 1");
+                mwexecf('/usr/sbin/ngctl msg %s: setautosrc 1', array($port));
                 break;
             case "pptp":
             case "l2tp":
@@ -1636,7 +1610,7 @@ function interface_ppps_configure($interface)
                     log_error(sprintf(gettext('Could not get a PPTP/L2TP Remote IP address from %s for %s in interfaces_ppps_configure.'), $dhcp_gateway, $gway));
                     return 0;
                 }
-                pfSense_ngctl_attach(".", $port);
+                legacy_netgraph_attach($port);
                 break;
             case "ppp":
                 if (!file_exists("{$port}")) {
@@ -3037,12 +3011,8 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
         }
         mwexec($cmd);
     }
-    $options = pfSense_get_interface_addresses($realhwif);
-
-    /* skip vlans for checksumming and polling */
-    if (!stristr($realif, "_vlan") && is_array($options)) {
-        legacy_interface_flags($realhwif, interface_override_flags(), false);
-    }
+    // apply interface hardware settings (tso, lro, ..)
+    configure_interface_hardware($realhwif);
 
     $tunnelif = substr($realif, 0, 3);
     switch ($wancfg['ipaddr']) {
@@ -3124,7 +3094,9 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
         interfaces_bring_up($wancfg['if']);
     }
 
-    interface_netgraph_needed($interface);
+    if (!interface_netgraph_needed($interface)) {
+        legacy_netgraph_detach($realif);
+    }
 
     if (!file_exists("/var/run/booting")) {
         link_interface_to_vips($interface, "update");
@@ -3164,7 +3136,7 @@ function interface_configure($interface = 'wan', $reloadall = false, $linkupeven
             system_routing_configure($interface);
 
             /* reload ipsec tunnels */
-            vpn_ipsec_configure();
+            ipsec_configure();
 
             /* restart dnsmasq or unbound */
             if (isset($config['dnsmasq']['enable'])) {
