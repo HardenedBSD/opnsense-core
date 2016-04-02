@@ -233,14 +233,15 @@ $( document ).ready(function() {
                   <td width="22%"><i class="fa fa-info-circle text-muted"></i> <?=gettext("Enable");?></td>
                   <td width="78%">
                     <input name="enable" type="checkbox" id="enable" value="yes" <?=!empty($pconfig['enable']) ? "checked=\"checked\"" : "";?> />
+                     <strong><?=gettext("Enable DNS Forwarder");?></strong>
                   </td>
                 </tr>
                 <tr>
                   <td><a id="help_for_regdhcp" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("DHCP Registration");?></td>
                   <td>
                     <input name="regdhcp" type="checkbox" id="regdhcp" value="yes" <?=!empty($pconfig['regdhcp']) ? "checked=\"checked\"" : "";?> />
+                    <strong><?=gettext("Register DHCP leases in DNS forwarder");?></strong>
                     <div class="hidden" for="help_for_regdhcp">
-                      <strong><?=gettext("Register DHCP leases in DNS forwarder");?></strong><br/>
                       <?php printf(gettext("If this option is set, then machines that specify".
                       " their hostname when requesting a DHCP lease will be registered".
                       " in the DNS forwarder, so that their name can be resolved.".
@@ -253,8 +254,8 @@ $( document ).ready(function() {
                   <td><a id="help_for_regdhcpstatic" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Static DHCP");?></td>
                   <td>
                     <input name="regdhcpstatic" type="checkbox" id="regdhcpstatic" value="yes" <?=!empty($pconfig['regdhcpstatic']) ? "checked=\"checked\"" : "";?> />
+                    <strong><?=gettext("Register DHCP static mappings in DNS forwarder");?></strong>
                     <div class="hidden" for="help_for_regdhcpstatic">
-                      <strong><?=gettext("Register DHCP static mappings in DNS forwarder");?><br /></strong>
                       <?php printf(gettext("If this option is set, then DHCP static mappings will ".
                           "be registered in the DNS forwarder, so that their name can be ".
                           "resolved. You should also set the domain in %s".
@@ -266,8 +267,8 @@ $( document ).ready(function() {
                   <td><a id="help_for_dhcpfirst" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Prefer DHCP");?></td>
                   <td>
                     <input name="dhcpfirst" type="checkbox" id="dhcpfirst" value="yes" <?=!empty($pconfig['dhcpfirst']) ? "checked=\"checked\"" : "";?> />
+                    <strong><?=gettext("Resolve DHCP mappings first");?></strong>
                     <div class="hidden" for="help_for_dhcpfirst">
-                      <strong><?=gettext("Resolve DHCP mappings first");?><br /></strong>
                       <?php printf(gettext("If this option is set, then DHCP mappings will ".
                           "be resolved before the manual list of names below. This only ".
                           "affects the name given for a reverse lookup (PTR)."));?>
@@ -366,26 +367,27 @@ $( document ).ready(function() {
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="2">
+                  <td></td>
+                  <td>
                     <input name="submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
                   </td>
                 </tr>
+                <tr>
+                  <td colspan="2">
+                    <?= sprintf(gettext("If the DNS forwarder is enabled, the DHCP".
+                    " service (if enabled) will automatically serve the LAN IP".
+                    " address as a DNS server to DHCP clients so they will use".
+                    " the forwarder. The DNS forwarder will use the DNS servers".
+                    " entered in %sSystem: General setup%s".
+                    " or those obtained via DHCP or PPP on WAN if the &quot;Allow".
+                    " DNS server list to be overridden by DHCP/PPP on WAN&quot;".
+                    " is checked. If you don't use that option (or if you use".
+                    " a static IP address on WAN), you must manually specify at".
+                    " least one DNS server on the %sSystem: General setup%s page."),
+                    '<a href="system_general.php">','</a>','<a href="system_general.php">','</a>');?>
+                  </td>
+                </tr>
               </table>
-            </div>
-            <div class="container-fluid">
-              <p><span class="vexpl"><span class="text-danger"><strong><?=gettext("Note:");?><br />
-              </strong></span><?php printf(gettext("If the DNS forwarder is enabled, the DHCP".
-              " service (if enabled) will automatically serve the LAN IP".
-              " address as a DNS server to DHCP clients so they will use".
-              " the forwarder. The DNS forwarder will use the DNS servers".
-              " entered in %sSystem: General setup%s".
-              " or those obtained via DHCP or PPP on WAN if the &quot;Allow".
-              " DNS server list to be overridden by DHCP/PPP on WAN&quot;".
-              " is checked. If you don't use that option (or if you use".
-              " a static IP address on WAN), you must manually specify at".
-              " least one DNS server on the %sSystem: General setup%s page."),
-              '<a href="system_general.php">','</a>','<a href="system_general.php">','</a>');?><br />
-              </span></p>
             </div>
           </form>
         </div>

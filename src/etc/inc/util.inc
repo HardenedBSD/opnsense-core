@@ -72,15 +72,7 @@ function is_process_running($process)
 
 function is_subsystem_dirty($subsystem = '')
 {
-	if ($subsystem == '') {
-		return false;
-	}
-
-	if (file_exists("/tmp/{$subsystem}.dirty")) {
-		return true;
-	}
-
-	return false;
+	return file_exists("/tmp/{$subsystem}.dirty");
 }
 
 function mark_subsystem_dirty($subsystem = '')
@@ -122,16 +114,6 @@ function unlock($cfglckkey = null)
 		flock($cfglckkey, LOCK_UN);
 		fclose($cfglckkey);
 	}
-}
-
-function is_module_loaded($module_name) {
-	$module_name = str_replace(".ko", "", $module_name);
-	$running = 0;
-	$_gb = exec("/sbin/kldstat -qn {$module_name} 2>&1", $_gb, $running);
-	if (intval($running) == 0)
-		return true;
-	else
-		return false;
 }
 
 /* validate non-negative numeric string, or equivalent numeric variable */

@@ -1056,8 +1056,8 @@ function system_generate_lighty_config(
 # Phalcon ui and api routing
 alias.url += ( "/ui/" => "/usr/local/opnsense/www/" )
 alias.url += ( "/api/"  => "/usr/local/opnsense/www/" )
-url.rewrite-if-not-file = ( "^/ui/(.*)$" => "/ui/index.php?_url=/$1" ,
-                            "^/api/(.*)$" => "/api/api.php?_url=/$1"
+url.rewrite-if-not-file = ( "^/ui/([^\?]+)(\?(.*))?" => "/ui/index.php?_url=/$1&$3" ,
+                            "^/api/([^\?]+)(\?(.*))?" => "/api/api.php?_url=/$1&$3"
 )
 
 EOD;
@@ -1596,14 +1596,17 @@ function system_ntp_configure($start_ntpd = true)
     }
     /* End GPS configuration */
 
+    $noselect = isset($config['ntpd']['noselect']) ? explode(' ', $config['ntpd']['noselect']) : array();
+    $prefer = isset($config['ntpd']['prefer']) ? explode(' ', $config['ntpd']['prefer']) : array();
+
     $ntpcfg .= "\n\n# Upstream Servers\n";
     /* foreach through ntp servers and write out to ntpd.conf */
     foreach (explode(' ', $config['system']['timeservers']) as $ts) {
         $ntpcfg .= "server {$ts} iburst maxpoll 9";
-        if (isset($config['ntpd']['prefer']) && substr_count($config['ntpd']['prefer'], $ts)) {
+        if (in_array($ts, $prefer)) {
             $ntpcfg .= ' prefer';
         }
-        if (isset($config['ntpd']['noselect']) && substr_count($config['ntpd']['noselect'], $ts)) {
+        if (in_array($ts, $noselect)) {
             $ntpcfg .= ' noselect';
         }
         $ntpcfg .= "\n";

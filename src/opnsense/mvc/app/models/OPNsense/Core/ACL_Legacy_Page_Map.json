@@ -11,18 +11,6 @@
         "name": "User - VPN - IPsec xauth Dialin",
         "descr": "Indicates whether the user is allowed to dial in via IPsec xauth (Note: Does not allow shell access, but may allow the user to create ssh tunnels)"
     },
-    "user-l2tp-dialin": {
-        "name": "User - VPN - L2TP Dialin",
-        "descr": "Indicates whether the user is allowed to dial in via L2TP"
-    },
-    "user-pppoe-dialin": {
-        "name": "User - VPN - PPPOE Dialin",
-        "descr": "Indicates whether the user is allowed to dial in via PPPOE"
-    },
-    "user-pptp-dialin": {
-        "name": "User - VPN - PPTP Dialin",
-        "descr": "Indicates whether the user is allowed to dial in via PPTP"
-    },
     "user-proxy-auth": {
         "name": "User - Proxy - Login",
         "descr": "Indicates whether the user is allowed to use the proxy"
@@ -51,7 +39,7 @@
         ]
     },
     "page-diagnostics-crash-reporter": {
-        "name": "WebCfg - Crash reporter",
+        "name": "WebCfg - System: Crash Reporter",
         "descr": "Uploads crash reports to the developers.",
         "match": [
             "crash_reporter.php*"
@@ -160,46 +148,11 @@
             "diag_logs.php*"
         ]
     },
-    "page-diagnostics-logs-pptp": {
-        "name": "WebCfg - Diagnostics: Logs: PPTP page",
-        "descr": "Allow access to the 'Diagnostics: Logs: PPTP' page.",
-        "match": [
-            "diag_logs_pptp.php*"
-        ]
-    },
-    "page-diagnostics-logs-poes": {
-        "name": "WebCfg - Diagnostics: Logs: PPPoE page",
-        "descr": "Allow access to the 'Diagnostics: Logs: PPPoE' page.",
-        "match": [
-            "diag_logs_poes.php*"
-        ]
-    },
-    "page-diagnostics-logs-l2tp": {
-        "name": "WebCfg - Diagnostics: Logs: L2TP page",
-        "descr": "Allow access to the 'Diagnostics: Logs: L2TP' page.",
-        "match": [
-            "diag_logs_l2tp.php*"
-        ]
-    },
-    "page-diagnostics-nanobsd": {
-        "name": "WebCfg - Diagnostics: NanoBSD",
-        "descr": "Allow access to the 'Diagnostics: NanoBSD' page.",
-        "match": [
-            "diag_nanobsd.php*"
-        ]
-    },
     "page-diagnostics-packetcapture": {
         "name": "WebCfg - Diagnostics: Packet Capture page",
         "descr": "Allow access to the 'Diagnostics: Packet Capture' page.",
         "match": [
             "diag_packet_capture.php*"
-        ]
-    },
-    "page-diagnostics-patters": {
-        "name": "WebCfg - Diagnostics: Patterns page",
-        "descr": "Allow access to the 'Diagnostics: Patterns' page.",
-        "match": [
-            "patterns.php*"
         ]
     },
     "page-diagnostics-tables": {
@@ -242,20 +195,6 @@
         "descr": "Allow access to the 'Diagnostics: Reset state' page.",
         "match": [
             "diag_resetstate.php*"
-        ]
-    },
-    "page-diagnostics-restore-full-backup": {
-        "name": "WebCfg - Diagnostics: Restore full backup",
-        "descr": "Allow access to the 'Diagnostics: Restore Full Backup' page.",
-        "match": [
-            "system_firmware_restorefullbackup.php"
-        ]
-    },
-    "page-diagnostics-routingtables": {
-        "name": "WebCfg - Diagnostics: Routing tables page",
-        "descr": "Allow access to the 'Diagnostics: Routing tables' page.",
-        "match": [
-            "diag_routes.php*"
         ]
     },
     "page-diagnostics-showstates": {
@@ -417,20 +356,6 @@
         "descr": "Allow access to the 'Firewall: Virtual IP Addresses' page.",
         "match": [
             "firewall_virtual_ip.php*"
-        ]
-    },
-    "page-help-all": {
-        "name": "WebCfg - Help pages",
-        "descr": "Show all items on help menu",
-        "match": [
-            "*help.php"
-        ]
-    },
-    "page-hidden-detailedstatus": {
-        "name": "WebCfg - Hidden: Detailed Status page",
-        "descr": "Allow access to the 'Hidden: Detailed Status' page.",
-        "match": [
-            "status.php*"
         ]
     },
     "page-diagnostics-logs-firewall": {
@@ -811,20 +736,6 @@
             "services_ntpd.php*"
         ]
     },
-    "page-services-pppoeserver": {
-        "name": "WebCfg - Services: PPPoE Server page",
-        "descr": "Allow access to the 'Services: PPPoE Server' page.",
-        "match": [
-            "vpn_pppoe.php*"
-        ]
-    },
-    "page-services-pppoeserver-edit": {
-        "name": "WebCfg - Services: PPPoE Server: Edit page",
-        "descr": "Allow access to the 'Services: PPPoE Server: Edit' page.",
-        "match": [
-            "vpn_pppoe_edit.php*"
-        ]
-    },
     "page-services-rfc2136clients": {
         "name": "WebCfg - Services: RFC 2136 clients page",
         "descr": "Allow access to the 'Services: RFC 2136 clients' page.",
@@ -1154,21 +1065,8 @@
         "name": "WebCfg - System: Firmware: Manual Update page",
         "descr": "Allow access to the 'System: Firmware: Manual Update' page.",
         "match": [
-            "system_firmware.php*"
-        ]
-    },
-    "page-upload_progress": {
-        "name": "WebCfg - System: Firmware: Manual Update page (progress bar)",
-        "descr": "Allow access to the 'System: Firmware: Manual Update: Progress bar' page.",
-        "match": [
-            "upload_progress*"
-        ]
-    },
-    "page-system-firmware-settings": {
-        "name": "WebCfg - System: Firmware: Settings page",
-        "descr": "Allow access to the 'System: Firmware: Settings' page.",
-        "match": [
-            "system_firmware_settings.php*"
+            "ui/core/firmware/*",
+            "api/core/firmware/*"
         ]
     },
     "page-system-gatewaygroups": {
@@ -1325,27 +1223,6 @@
             "vpn_ipsec_keys.php*"
         ]
     },
-    "page-vpn-vpnl2tp": {
-        "name": "WebCfg - VPN: L2TP page",
-        "descr": "Allow access to the 'VPN: L2TP' page.",
-        "match": [
-            "vpn_l2tp.php*"
-        ]
-    },
-    "page-vpn-vpnl2tp-users-edit": {
-        "name": "WebCfg - VPN: L2TP: Users : Edit page",
-        "descr": "Allow access to the 'VPN: L2TP: Users : Edit' page.",
-        "match": [
-            "vpn_l2tp_users_edit.php*"
-        ]
-    },
-    "page-vpn-vpnl2tp-users": {
-        "name": "WebCfg - VPN: L2TP: Users page",
-        "descr": "Allow access to the 'VPN: L2TP : Users' page.",
-        "match": [
-            "vpn_l2tp_users.php*"
-        ]
-    },
     "page-openvpn-client-export": {
         "name": "WebCfg - VPN: OpenVPN: Client Export Utility",
         "descr": "Allow access to the 'VPN: OpenVPN: Client Export Utility' page.",
@@ -1372,27 +1249,6 @@
         "descr": "Allow access to the 'VPN: OpenVPN: Server' page.",
         "match": [
             "vpn_openvpn_server.php*"
-        ]
-    },
-    "page-vpn-vpnpptp": {
-        "name": "WebCfg - VPN: PPTP page",
-        "descr": "Allow access to the 'VPN: PPTP' page.",
-        "match": [
-            "vpn_pptp.php*"
-        ]
-    },
-    "page-vpn-vpnpptp-user-edit": {
-        "name": "WebCfg - VPN: PPTP: User: Edit page",
-        "descr": "Allow access to the 'VPN: PPTP: User: Edit' page.",
-        "match": [
-            "vpn_pptp_users_edit.php*"
-        ]
-    },
-    "page-vpn-vpnpptp-users": {
-        "name": "WebCfg - VPN: PPTP: Users page",
-        "descr": "Allow access to the 'VPN: PPTP: Users' page.",
-        "match": [
-            "vpn_pptp_users.php*"
         ]
     },
     "page-xmlrpcinterfacestats": {

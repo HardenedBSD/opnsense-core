@@ -69,6 +69,17 @@
                 <default>0</default>
                 <Required>N</Required>
             </suppressVersion>
+            <VisibleEmail type="EmailField">
+                <default>admin@localhost.local</default>
+                <Required>N</Required>
+                <ValidationMessage>Please enter a valid email address.</ValidationMessage>
+            </VisibleEmail>
+            <VisibleHostname type="TextField">
+                <default>localhost</default>
+                <Required>N</Required>
+                <mask>/^([0-9a-zA-Z\.,_\-:]){0,1024}$/u</mask>
+                <ValidationMessage>Please enter a valid servername, ip address or leave this option blank.</ValidationMessage>
+            </VisibleHostname>
             <cache>
                 <local>
                     <enabled type="BooleanField">
@@ -159,6 +170,41 @@
                 <ValidationMessage>Proxy port needs to be an integer value between 1 and 65535</ValidationMessage>
                 <Required>Y</Required>
             </port>
+            <sslbumpport type="IntegerField">
+                <default>3129</default>
+                <MinimumValue>1</MinimumValue>
+                <MaximumValue>65535</MaximumValue>
+                <ValidationMessage>SSL Proxy port needs to be an integer value between 1 and 65535</ValidationMessage>
+                <Required>Y</Required>
+            </sslbumpport>
+            <sslbump type="BooleanField">
+                <default>0</default>
+                <Required>Y</Required>
+            </sslbump>
+            <sslcertificate type="CertificateField">
+                <Required>N</Required>
+                <Type>ca</Type>
+                <ValidationMessage>Please select a valid certificate from the list</ValidationMessage>
+            </sslcertificate>
+            <sslnobumpsites type="CSVListField">
+              <Required>N</Required>
+              <mask>/^([a-zA-Z0-9.:,]){0,}/</mask>
+              <ValidationMessage>Please enter ip addresses or domain names here</ValidationMessage>
+            </sslnobumpsites>
+            <ssl_crtd_storage_max_size type="IntegerField">
+              <Required>Y</Required>
+              <default>4</default>
+              <MinimumValue>1</MinimumValue>
+              <MaximumValue>65535</MaximumValue>
+              <ValidationMessage>max size needs to be an integer value between 1 and 65535</ValidationMessage>
+            </ssl_crtd_storage_max_size>
+            <sslcrtd_children type="IntegerField">
+              <Required>Y</Required>
+              <default>5</default>
+              <MinimumValue>1</MinimumValue>
+              <MaximumValue>32</MaximumValue>
+              <ValidationMessage>the number of sslrtd children needs to be an integer value between 1 and 32</ValidationMessage>
+            </sslcrtd_children>
             <ftpInterfaces type="InterfaceField">
                 <Required>N</Required>
                 <multiple>Y</multiple>

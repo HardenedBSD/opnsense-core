@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-02-26 07:30+0000\n"
+"POT-Creation-Date: 2016-03-31 05:58+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -97,7 +97,7 @@ msgstr "Autoriser l'accès à la page 'Système: Gestionnaire d'utilisateurs'."
 msgid ""
 "Allow access to the 'Services: DHCPv6 Server : Edit static mapping' page."
 msgstr ""
-"Autoriser l'accès à la page 'Services: Serveur DHCP v6: Editer le mappage "
+"Autoriser l'accès à la page 'Services: Serveur DHCPv6: Editer le mappage "
 "statique'."
 
 # File: lang/dynamic/helpers/acl.php, line: 62
@@ -110,7 +110,7 @@ msgstr "Autoriser l'accès à la page 'VPN: L2TP: Utilisateurs; Editer'."
 
 # File: lang/dynamic/helpers/acl.php, line: 64
 msgid "Allow access to the 'Firewall: Schedules' page."
-msgstr "Autoriser l'accès à la page 'Pare-feu: planning'."
+msgstr "Autoriser l'accès à la page 'Pare-feu: planificateurs'."
 
 # File: lang/dynamic/helpers/acl.php, line: 65
 msgid "Allow access to the 'Diagnostics: Logs: Settings' page."
@@ -140,8 +140,8 @@ msgstr "Autoriser l'accès à la page 'Statut: IPsec : Baux'."
 msgid ""
 "Allow access to the 'Services: DNS Forwarder: Edit Domain Override' page."
 msgstr ""
-"Autoriser l'accès à la page 'Services : redirecteur DNS : Editer "
-"Substitution de Domaine'."
+"Autoriser l'accès à la page 'Services: redirecteur DNS: Editer Substitution "
+"de Domaine'."
 
 # File: lang/dynamic/helpers/acl.php, line: 74
 msgid "Allow access to the 'Interfaces: PPPs' page."
@@ -260,7 +260,7 @@ msgstr "Autoriser l'accès à la page 'Services: clients RFC 2136'."
 
 # File: lang/dynamic/helpers/acl.php, line: 105
 msgid "Uploads crash reports to the developers."
-msgstr "Télécharger les rapports de crash vers les développeurs."
+msgstr "Envoyer les rapports de crash vers les développeurs."
 
 # File: lang/dynamic/helpers/acl.php, line: 108
 msgid "Allow access to the 'Firewall: Alias: Edit' page."
@@ -361,7 +361,7 @@ msgstr "Autoriser l'accès à la page 'Statut: Interfaces'."
 
 # File: lang/dynamic/helpers/acl.php, line: 135
 msgid "Allow access to the 'Services: DNS Forwarder' page."
-msgstr "Autoriser l'accès à la page 'Services: Renvoi DNS'."
+msgstr "Autoriser l'accès à la page 'Services: Redirecteur DNS'."
 
 # File: lang/dynamic/helpers/acl.php, line: 136
 msgid "Allow access to the 'Status: Gateways' page."
@@ -673,7 +673,7 @@ msgstr "Autoriser l'accès à la page 'Interfaces'."
 
 # File: lang/dynamic/helpers/acl.php, line: 209
 msgid "Allow access to the 'Services: DNS Forwarder: Edit host' page."
-msgstr "Autoriser l'accès à la page 'Services : redirecteur DNS : Éditer hôte'."
+msgstr "Autoriser l'accès à la page 'Services: Redirecteur DNS: Éditer hôte'."
 
 # File: lang/dynamic/helpers/acl.php, line: 210
 msgid "Allow access to the 'Status: System logs: Captive portal' page."
@@ -733,7 +733,7 @@ msgstr "Autoriser l'accès à la page 'Interfaces: QinQ'."
 
 # File: lang/dynamic/helpers/acl.php, line: 225
 msgid "Allow access to the 'Interfaces: Bridge : Edit' page."
-msgstr "Autoriser l'accès à la page 'Interfaces: Pont: Éditer'."
+msgstr "Autoriser l'accès à la page 'Interfaces: Bridge: Éditer'."
 
 # File: lang/dynamic/helpers/acl.php, line: 226
 msgid "Allow access to the 'Interfaces: Wireless' page."
@@ -750,7 +750,7 @@ msgstr ""
 
 # File: lang/dynamic/helpers/acl.php, line: 229
 msgid "Allow access to the 'Firewall: Schedules: Edit' page."
-msgstr "Autoriser l'accès à la page 'Pare-feu: Planning: Éditer'."
+msgstr "Autoriser l'accès à la page 'Pare-feu: Planificateurs: Éditer'."
 
 # File: lang/dynamic/helpers/acl.php, line: 230
 msgid "Allow access to the 'Diagnostics: Ping' page."
@@ -859,7 +859,7 @@ msgstr "Autoriser l'accès à la page 'Statistiques de l'interface XMLRPC'."
 
 # File: lang/dynamic/helpers/acl.php, line: 224
 msgid "Allow access to the 'Interfaces: Bridge' page."
-msgstr "Autoriser l'accès à la page 'Interfaces: Pont'."
+msgstr "Autoriser l'accès à la page 'Interfaces: Bridge'."
 
 # File: lang/dynamic/helpers/acl.php, line: 262
 msgid "Allow access to the 'System: High Availability' page."
@@ -933,7 +933,7 @@ msgid ""
 "If provided, all traffic will be transmitted over an HTTPS connection to "
 "protect against eavesdroppers."
 msgstr ""
-"Si spécifié, tout le traffic sera transmis via une connexion HTTPS pour se "
+"Si spécifié, tout le trafic sera transmis via une connexion HTTPS pour se "
 "protéger des oreilles indiscrètes."
 
 # File: lang/dynamic/helpers/controllers.php, line: 103
@@ -1031,7 +1031,7 @@ msgstr "enregistrer l'action a réaliser ici, ne sera utilisée qu'en mode IPS"
 
 # File: lang/dynamic/helpers/controllers.php, line: 68
 msgid "enable IDS"
-msgstr "activer IDS"
+msgstr "activer l'IDS"
 
 # File: lang/dynamic/helpers/controllers.php, line: 69
 msgid "Select interface(s) to use."
@@ -1062,7 +1062,7 @@ msgstr ""
 
 # File: lang/dynamic/helpers/controllers.php, line: 39
 msgid "Enable access logging."
-msgstr "Activer la journalisation des accès "
+msgstr "Activer la journalisation des accès."
 
 # File: lang/dynamic/helpers/controllers.php, line: 40
 msgid "Enable store logging."
@@ -1894,7 +1894,7 @@ msgstr "Détails"
 
 # File: src/www/status_graph.php, line: 95
 msgid "Traffic Graph"
-msgstr "Graphique de traffic"
+msgstr "Graphique de trafic"
 
 # File: src/www/diag_backup.php, line: 145
 # File: src/www/diag_logs_filter_summary.php, line: 43
@@ -2228,7 +2228,7 @@ msgstr "Pare-feu"
 
 # File: lang/dynamic/helpers/models.php, line: 189
 msgid "Tab"
-msgstr ""
+msgstr "Tabulation"
 
 # File: src/www/diag_dns.php, line: 154
 # File: src/www/diag_dns.php, line: 231
@@ -2273,7 +2273,7 @@ msgstr "Serveur"
 # File: lang/dynamic/helpers/models.php, line: 192
 # File: lang/dynamic/helpers/models.php, line: 199
 msgid "Relay"
-msgstr "Relai"
+msgstr "Relais"
 
 # File: lang/dynamic/helpers/models.php, line: 194
 # File: lang/dynamic/helpers/models.php, line: 201
@@ -2767,7 +2767,7 @@ msgstr "Veuillez entrer des adresses valides"
 
 # File: lang/dynamic/helpers/models.php, line: 295
 msgid "Please enter valid mac addresses"
-msgstr "Veuillez entrer des adresses mac valides"
+msgstr "Veuillez entrer des adresses MAC valides"
 
 # File: lang/dynamic/helpers/models.php, line: 296
 msgid "Related template not found"
@@ -2893,7 +2893,7 @@ msgstr "Spécifier la taille maximal des téléchargements. (nombre de Ko)"
 
 # File: lang/dynamic/helpers/models.php, line: 277
 msgid "Specify the maximum upload size. (number of KBs)"
-msgstr "Spécifier la taille maximal des téléversements. (nombre de Ko)"
+msgstr "Spécifier la taille maximal des téléversements. (nombre de Ko/s)"
 
 # File: lang/dynamic/helpers/models.php, line: 218
 msgid "Specify the overall bandwidth for downloads in kilobits per second."
@@ -3644,6 +3644,8 @@ msgid ""
 "The INVALID MAC address (ff:ff:ff:ff:ff:ff) on interface %s has been "
 "automatically replaced with %s"
 msgstr ""
+"L'adresse MAC EST INVALIDE (ff:ff:ff:ff:ff:ff) sur l'interface %s qui a été "
+"automatiquement remplacée par %s"
 
 # File: src/etc/inc/interfaces.inc, line: 3853
 msgid ""
@@ -3711,7 +3713,7 @@ msgstr "Message envoyé à %s OK"
 
 # File: src/etc/inc/notices.inc, line: 296
 msgid "Could not send the message to %s -- Error: %s"
-msgstr ""
+msgstr "Impossible d'envoyer le message à %s -- Erreur: %s"
 
 # File: src/etc/inc/notices.smtp.inc, line: 83
 msgid ": data access time out"
@@ -3719,7 +3721,7 @@ msgstr ": accès aux données trop long"
 
 # File: src/etc/inc/notices.smtp.inc, line: 86
 msgid ": the server disconnected"
-msgstr ":serveur déconnecté"
+msgstr ": serveur déconnecté"
 
 # File: src/etc/inc/notices.smtp.inc, line: 98
 msgid "reached the end of data while reading from the SMTP server connection"
@@ -3781,17 +3783,19 @@ msgstr ""
 
 # File: src/etc/inc/notices.smtp.inc, line: 247
 msgid "could not connect to the host \"%s\": %s"
-msgstr ""
+msgstr "Impossible de se connecter à l'hôte \"%s\": %s"
 
 # File: src/etc/inc/notices.smtp.inc, line: 256
 msgid ""
 "it is not possible to authenticate using the specified mechanism because the "
 "SASL library class is not loaded"
 msgstr ""
+"Il est impossible de s'authentifier en utilisant le mécanisme spécifié car "
+"la classe de la bibliothèque SASL n'est pas chargée."
 
 # File: src/etc/inc/notices.smtp.inc, line: 280
 msgid "Authentication mechanism %s may not be used: %s"
-msgstr ""
+msgstr "Le mécanisme d'authentification %s ne peut pas être utilisé: %s"
 
 # File: src/etc/inc/notices.smtp.inc, line: 285
 msgid "Could not start the SASL authentication client:"
@@ -3908,7 +3912,7 @@ msgstr ""
 # File: src/etc/inc/openvpn-client-export.inc, line: 84
 # File: src/etc/inc/openvpn-client-export.inc, line: 686
 msgid "Could not locate server configuration."
-msgstr ""
+msgstr "Impossible de trouver la configuration du serveur."
 
 # File: src/etc/inc/openvpn-client-export.inc, line: 88
 # File: src/etc/inc/openvpn-client-export.inc, line: 690
@@ -3917,7 +3921,7 @@ msgstr ""
 
 # File: src/etc/inc/openvpn-client-export.inc, line: 96
 msgid "Could not locate server certificate."
-msgstr ""
+msgstr "Impossible de trouver le certificat serveur."
 
 # File: src/etc/inc/openvpn-client-export.inc, line: 100
 msgid "Could not locate the CA reference for the server certificate."
@@ -3925,21 +3929,23 @@ msgstr ""
 
 # File: src/etc/inc/openvpn-client-export.inc, line: 111
 msgid "Could not find user settings."
-msgstr ""
+msgstr "Impossible de trouver les paramètres utilisateurs."
 
 # File: src/etc/inc/openvpn-client-export.inc, line: 123
 # File: src/etc/inc/openvpn-client-export.inc, line: 132
 msgid "Could not find client certificate."
-msgstr ""
+msgstr "Impossible de trouver le certificat client."
 
 # File: src/etc/inc/openvpn-client-export.inc, line: 209
 # File: src/etc/inc/openvpn-client-export.inc, line: 754
 msgid "This server uses UDP protocol and cannot communicate with HTTP proxy."
 msgstr ""
+"Ce serveur utilise le protocole UDP et ne peut pas communiquer avec un proxy "
+"HTTP."
 
 # File: src/etc/inc/openvpn-client-export.inc, line: 502
 msgid "Could not create a config to export."
-msgstr ""
+msgstr "Impossible de créer une configuration pour l'exporter"
 
 # File: src/etc/inc/openvpn.inc, line: 34
 msgid "0 (none)"
@@ -4030,6 +4036,8 @@ msgstr ""
 # File: src/etc/inc/openvpn_wizard.inc, line: 315
 msgid "Please do not use special characters in Certificate field names."
 msgstr ""
+"Veuillez ne pas utiliser de caractères spéciaux dans les champs du "
+"certificat."
 
 # File: src/etc/inc/openvpn_wizard.inc, line: 401
 msgid "The specified 'Local port' is in use. Please select another value."
@@ -4128,7 +4136,7 @@ msgstr ""
 # File: src/etc/inc/pfsense-utils.inc, line: 1561
 # File: src/etc/inc/pfsense-utils.inc, line: 1593
 msgid "The following file could not be read %s from %s"
-msgstr ""
+msgstr "Le fichier suivant ne peut pas être lu %s à partir de %s"
 
 # File: src/etc/inc/pfsense-utils.inc, line: 1577
 msgid ""
@@ -4163,6 +4171,7 @@ msgstr ""
 # File: src/etc/inc/services.inc, line: 890
 msgid "Error: cannot open dhcpd.conf in services_dhcpdv4_configure().%s"
 msgstr ""
+"Erreur: impossible d'ouvrir dhcpd.conf dans services_dhcpdv4_configure().%s"
 
 # File: src/etc/inc/services.inc, line: 1359
 msgid "Could not write Igmpproxy configuration file!"
@@ -4174,11 +4183,11 @@ msgstr "Démarrage du service Proxy IGMP"
 
 # File: src/etc/inc/services.inc, line: 1386
 msgid "Starting DHCP relay service..."
-msgstr "Démarrage du service de relai DHCP"
+msgstr "Démarrage du service de relais DHCP"
 
 # File: src/etc/inc/services.inc, line: 1503
 msgid "Starting DHCPv6 relay service..."
-msgstr "Démarrage du service de relai DHCPv6"
+msgstr "Démarrage du service de relais DHCPv6"
 
 # File: src/etc/inc/services.inc, line: 1739
 msgid "Starting dynamic DNS clients..."
@@ -4240,12 +4249,12 @@ msgstr "Synchro horloge NTP"
 # File: src/etc/inc/service-utils.inc, line: 95
 # File: src/www/services_dhcp_relay.php, line: 90
 msgid "DHCP Relay"
-msgstr "Relai DHCP"
+msgstr "Relais DHCP"
 
 # File: src/etc/inc/service-utils.inc, line: 102
 # File: src/www/services_dhcpv6_relay.php, line: 91
 msgid "DHCPv6 Relay"
-msgstr "Relay DHCPv6"
+msgstr "Relais DHCPv6"
 
 # File: src/etc/inc/service-utils.inc, line: 109
 msgid "DHCP Service"
@@ -4323,7 +4332,7 @@ msgstr "Démarrage de syslog..."
 
 # File: src/etc/inc/system.inc, line: 745
 msgid "Error: cannot open syslog.conf in system_syslogd_start().%s"
-msgstr ""
+msgstr "Erreur: impossible d'ouvrir syslog.conf dans system_syslogd_start().%s"
 
 # File: src/etc/inc/system.inc, line: 816
 msgid "webConfigurator default"
@@ -4335,11 +4344,11 @@ msgstr "Importation du certificat HTTPS"
 
 # File: src/etc/inc/system.inc, line: 1146
 msgid "Error: cannot open cert.pem in system_webgui_start().%s"
-msgstr ""
+msgstr "Erreur: impossible d'ouvrir cert.pem dans system_webgui_start().%s"
 
 # File: src/etc/inc/system.inc, line: 1157
 msgid "Error: cannot open ca.pem in system_webgui_start().%s"
-msgstr ""
+msgstr "Erreur: impossible d'ouvrir ca.pem dans system_webgui_start().%s"
 
 # File: src/etc/inc/system.inc, line: 1165
 msgid "ssl configuration"
@@ -4347,7 +4356,7 @@ msgstr "Configuration ssl"
 
 # File: src/etc/inc/system.inc, line: 1198
 msgid "Error: cannot open %s in system_generate_lighty_config().%s"
-msgstr ""
+msgstr "Erreur: impossible d'ouvrir %s dans system_webgui_start().%s"
 
 # File: src/etc/inc/system.inc, line: 1215
 msgid "Setting timezone..."
@@ -4387,26 +4396,32 @@ msgid ""
 "%sWarning: traffic shaper rule removed (interface '%s' does not exist "
 "anymore)."
 msgstr ""
+"%sAvertissement: la règle de régulation de flux est supprimée (l'interface '%"
+"s' n'existe plus)."
 
 # File: src/etc/inc/upgrade_config.inc, line: 164
 msgid ""
 "%sWarning: traffic shaper rule removed (source network '%s' does not exist "
 "anymore)."
 msgstr ""
+"%sAvertissement: la règle de régulation de flux est supprimée (le réseau "
+"source '%s' n'existe plus)."
 
 # File: src/etc/inc/upgrade_config.inc, line: 177
 msgid ""
 "%sWarning: traffic shaper rule removed (destination network '%s' does not "
 "exist anymore)."
 msgstr ""
+"%sAvertissement: la règle de régulation de flux est supprimée (le réseau "
+"destination '%s' n'existe plus)."
 
 # File: src/etc/inc/upgrade_config.inc, line: 327
 msgid "CARP vhid %s"
-msgstr ""
+msgstr "CARP vhid %s"
 
 # File: src/etc/inc/upgrade_config.inc, line: 487
 msgid "Permit IPsec traffic."
-msgstr "Autoriser le traffic IPsec."
+msgstr "Autoriser le trafic IPsec."
 
 # File: src/etc/inc/upgrade_config.inc, line: 507
 msgid "System Administrators"
@@ -4711,7 +4726,7 @@ msgstr ""
 
 # File: src/etc/rc.initial.password, line: 75
 msgid "password changed from console menu"
-msgstr ""
+msgstr "mot de passe changé à partir du menu de la console"
 
 # File: src/etc/rc.initial.password, line: 78
 msgid "The password has been reset."
@@ -4723,7 +4738,7 @@ msgstr "Veuillez changer le mot de passe dès votre connexion !"
 
 # File: src/etc/rc.initial.setlanip, line: 105
 msgid "Do you want to enable the %s server on %s?"
-msgstr ""
+msgstr "Voulez-vous activer le serveur %s sur %s ?"
 
 # File: src/etc/rc.initial.setlanip, line: 248
 msgid "Configure %s address %s interface via %s?"
@@ -4735,7 +4750,7 @@ msgstr ""
 
 # File: src/etc/rc.initial.setlanip, line: 268
 msgid "This IP address conflicts with another interface or a VIP"
-msgstr ""
+msgstr "L'adresse IP est en conflit avec une autre interface ou une VIP"
 
 # File: src/etc/rc.initial.setlanip, line: 273
 msgid "Subnet masks are entered as bit counts (as in CIDR notation) in %s."
@@ -4785,7 +4800,7 @@ msgstr ""
 
 # File: src/etc/rc.initial.setlanip, line: 391
 msgid "The end address of the DHCP range must be >= the start address"
-msgstr ""
+msgstr "La dernière adresse de la plage DHCP doit être >= à la première"
 
 # File: src/etc/rc.initial.setlanip, line: 402
 msgid "Disabling %s DHCPD..."
@@ -4999,7 +5014,7 @@ msgstr ""
 
 # File: src/opnsense/mvc/app/views/OPNsense/CaptivePortal/clients.volt, line: 133
 msgid "macAddress"
-msgstr ""
+msgstr "AdresseMAC"
 
 # File: src/opnsense/mvc/app/views/OPNsense/CaptivePortal/clients.volt, line: 134
 msgid "ipAddress"
@@ -5007,11 +5022,11 @@ msgstr ""
 
 # File: src/opnsense/mvc/app/views/OPNsense/CaptivePortal/clients.volt, line: 135
 msgid "connected since"
-msgstr ""
+msgstr "connecté depuis"
 
 # File: src/opnsense/mvc/app/views/OPNsense/CaptivePortal/index.volt, line: 63
 msgid "Error reconfiguring captiveportal"
-msgstr ""
+msgstr "Erreur pendant la reconfiguration du portail captif"
 
 # File: src/opnsense/mvc/app/views/OPNsense/CaptivePortal/index.volt, line: 167
 msgid "Error uploading template"
@@ -5218,7 +5233,7 @@ msgstr "Appliquer"
 
 # File: src/opnsense/mvc/app/views/OPNsense/CaptivePortal/index.volt, line: 251
 msgid "Upload file"
-msgstr ""
+msgstr "Envoyer un fichier"
 
 # File: src/opnsense/mvc/app/views/OPNsense/CaptivePortal/index.volt, line: 257
 msgid "Template name"
@@ -5380,7 +5395,7 @@ msgstr ""
 
 # File: src/opnsense/mvc/app/views/OPNsense/Core/firmware.volt, line: 100
 msgid "Executing... (do not leave this page while execute is in progress)"
-msgstr ""
+msgstr "En cours ... (ne pas quitter cette page)"
 
 # File: src/opnsense/mvc/app/views/OPNsense/Core/firmware.volt, line: 146
 msgid "Upgrade done!"
@@ -5438,7 +5453,7 @@ msgstr "Paquets"
 
 # File: src/opnsense/mvc/app/views/OPNsense/Core/firmware.volt, line: 307
 msgid "Plugins"
-msgstr ""
+msgstr "Plugins"
 
 # File: src/www/widgets/widgets/system_information.widget.php, line: 108
 msgid "Updates"
@@ -5465,7 +5480,7 @@ msgstr "IP"
 # File: src/opnsense/mvc/app/views/OPNsense/Diagnostics/arp.volt, line: 79
 # File: src/opnsense/mvc/app/views/OPNsense/Diagnostics/ndp.volt, line: 79
 msgid "MAC"
-msgstr ""
+msgstr "MAC"
 
 # File: src/opnsense/mvc/app/views/OPNsense/Diagnostics/arp.volt, line: 80
 # File: src/opnsense/mvc/app/views/OPNsense/Diagnostics/ndp.volt, line: 80
@@ -5505,7 +5520,7 @@ msgstr ""
 # File: src/opnsense/mvc/app/views/OPNsense/Diagnostics/ndp.volt, line: 94
 # File: src/opnsense/mvc/app/views/OPNsense/Diagnostics/systemactivity.volt, line: 128
 msgid "Refresh"
-msgstr ""
+msgstr "Rafraichir"
 
 # File: src/www/diag_testport.php, line: 158
 msgid "IPv6"
@@ -5716,7 +5731,7 @@ msgstr "Planifier"
 
 # File: src/opnsense/mvc/app/views/OPNsense/IDS/index.volt, line: 399
 msgid "rulesets"
-msgstr ""
+msgstr "ensembles de règles"
 
 # File: src/opnsense/mvc/app/views/OPNsense/IDS/index.volt, line: 408
 msgid "Last updated"
@@ -5725,12 +5740,12 @@ msgstr "Dernière mise à jour"
 # File: src/opnsense/mvc/app/views/OPNsense/IDS/index.volt, line: 418
 # File: src/opnsense/mvc/app/views/OPNsense/IDS/index.volt, line: 455
 msgid "disable selected"
-msgstr ""
+msgstr "désactiver la sélection"
 
 # File: src/opnsense/mvc/app/views/OPNsense/IDS/index.volt, line: 419
 # File: src/opnsense/mvc/app/views/OPNsense/IDS/index.volt, line: 456
 msgid "enable selected"
-msgstr ""
+msgstr "activer la sélection"
 
 # File: src/opnsense/mvc/app/views/OPNsense/IDS/index.volt, line: 443
 msgid "sid"
@@ -5861,7 +5876,7 @@ msgstr ""
 
 # File: src/opnsense/mvc/app/views/OPNsense/TrafficShaper/index.volt, line: 88
 msgid "Error reconfiguring trafficshaper"
-msgstr ""
+msgstr "Erreur durant la reconfiguration de la régulation de flux"
 
 # File: src/opnsense/mvc/app/views/OPNsense/TrafficShaper/index.volt, line: 102
 msgid "Pipes"
@@ -6875,7 +6890,7 @@ msgstr "Êtes-vous sûr de vouloir arrêter le système ?"
 # File: src/www/diag_ipsec.php, line: 91
 # File: src/www/widgets/widgets/ipsec.widget.php, line: 127
 msgid "Connection"
-msgstr ""
+msgstr "Connexion"
 
 # File: src/www/diag_ipsec.php, line: 96
 msgid "Local ID"
@@ -7395,6 +7410,8 @@ msgstr "Le processus WebGUI en cours de redémarrage."
 msgid ""
 "Do you really want to reset the RRD graphs? This will erase all graph data."
 msgstr ""
+"Voulez-vous vraiment réinitialiser les graphiques RRD ? Ceci effacera les "
+"données de tous les graphiques."
 
 # File: src/www/diag_logs_settings.php, line: 342
 msgid ""
@@ -7402,7 +7419,7 @@ msgid ""
 "data."
 msgstr ""
 "Souhaitez vous vraiment réinitialiser les journaux d'évènements ? Ceci "
-"effacera toutes les données des journaux locales."
+"effacera toutes les données des journaux locaux."
 
 # File: src/www/diag_logs_settings.php, line: 339
 msgid "Reporting Database Options"
@@ -7452,7 +7469,7 @@ msgstr ""
 
 # File: src/www/diag_logs_settings.php, line: 321
 msgid "Log File Size (Bytes)"
-msgstr ""
+msgstr "Taille des fichiers journaux (Bytes)"
 
 # File: src/www/diag_logs_settings.php, line: 283
 msgid ""
@@ -7569,7 +7586,7 @@ msgstr ""
 
 # File: src/www/diag_logs_settings.php, line: 375
 msgid "Reset Logs"
-msgstr ""
+msgstr "Réinitialiser les journaux d'événements"
 
 # File: src/www/diag_logs_settings.php, line: 71
 # File: src/www/diag_logs_settings.php, line: 342
@@ -7826,15 +7843,15 @@ msgstr "ICMP"
 
 # File: src/www/diag_packet_capture.php, line: 276
 msgid "Exclude ICMP"
-msgstr ""
+msgstr "Exlure ICMP"
 
 # File: src/www/diag_packet_capture.php, line: 277
 msgid "ICMPv6"
-msgstr ""
+msgstr "ICMPv6"
 
 # File: src/www/diag_packet_capture.php, line: 278
 msgid "Exclude ICMPv6"
-msgstr ""
+msgstr "Exclure ICMPv6"
 
 # File: src/www/firewall_nat_edit.php, line: 533
 # File: src/www/load_balancer_monitor_edit.php, line: 186
@@ -7845,7 +7862,7 @@ msgstr "TCP"
 
 # File: src/www/diag_packet_capture.php, line: 280
 msgid "Exclude TCP"
-msgstr ""
+msgstr "Exclure TCP"
 
 # File: src/www/diag_packet_capture.php, line: 281
 # File: src/www/firewall_nat_out_edit.php, line: 450
@@ -7854,7 +7871,7 @@ msgstr "UDP"
 
 # File: src/www/diag_packet_capture.php, line: 282
 msgid "Exclude UDP"
-msgstr ""
+msgstr "Exclure UDP"
 
 # File: src/www/diag_packet_capture.php, line: 283
 msgid "ARP"
@@ -7862,20 +7879,20 @@ msgstr "ARP"
 
 # File: src/www/diag_packet_capture.php, line: 284
 msgid "Exclude ARP"
-msgstr ""
+msgstr "Exclure ARP"
 
 # File: src/www/diag_packet_capture.php, line: 285
 msgid "CARP (VRRP)"
-msgstr ""
+msgstr "CARP (VRRP)"
 
 # File: src/www/diag_packet_capture.php, line: 286
 msgid "Exclude CARP (VRRP)"
-msgstr ""
+msgstr "Exclure CARP (VRRP)"
 
 # File: src/www/diag_packet_capture.php, line: 287
 # File: src/www/firewall_nat_out_edit.php, line: 450
 msgid "ESP"
-msgstr ""
+msgstr "ESP"
 
 # File: src/www/diag_packet_capture.php, line: 287
 msgid "Select the protocol to capture, or Any."
@@ -7907,7 +7924,7 @@ msgstr ""
 # File: src/www/system_authservers.php, line: 669
 # File: src/www/system_authservers.php, line: 688
 msgid "Example:"
-msgstr ""
+msgstr "Exemple:"
 
 # File: src/www/diag_packet_capture.php, line: 301
 # File: src/www/diag_testport.php, line: 43
@@ -7961,7 +7978,7 @@ msgstr ""
 
 # File: src/www/diag_packet_capture.php, line: 418
 msgid "View settings"
-msgstr ""
+msgstr "Voir les paramètres"
 
 # File: src/www/diag_packet_capture.php, line: 324
 msgid "Level of Detail"
@@ -8027,11 +8044,11 @@ msgstr "Télécharger une Capture"
 
 # File: src/www/diag_packet_capture.php, line: 461
 msgid "Delete Capture"
-msgstr ""
+msgstr "Supprimer la capture"
 
 # File: src/www/diag_packet_capture.php, line: 479
 msgid "Capture output"
-msgstr ""
+msgstr "Sortie de la capture"
 
 # File: src/www/diag_pf_info.php, line: 87
 msgid "Gathering PF information, please wait..."
@@ -8045,11 +8062,13 @@ msgstr "Le nombre doit être compris entre 1 et %s"
 # File: src/www/diag_traceroute.php, line: 58
 msgid "When using IPv4, the target host must be an IPv4 address or hostname."
 msgstr ""
+"Quand IPv4 est utilisé, l'hôte cible doit être une adresse IPv4 ou un nom."
 
 # File: src/www/diag_ping.php, line: 55
 # File: src/www/diag_traceroute.php, line: 60
 msgid "When using IPv6, the target host must be an IPv6 address or hostname."
 msgstr ""
+"Quand IPv6 est utilisé, l'hôte cible doit être une adresse IPv6 ou un nom."
 
 # File: src/www/diag_system_pftop.php, line: 126
 # File: src/www/interfaces.php, line: 2925
@@ -8063,7 +8082,7 @@ msgstr "Défaut"
 
 # File: src/www/diag_ping.php, line: 155
 msgid "Ping output"
-msgstr ""
+msgstr "Sortie de Ping"
 
 # File: src/www/diag_resetstate.php, line: 40
 msgid "The state table has been flushed successfully."
@@ -8075,7 +8094,7 @@ msgstr ""
 
 # File: src/www/diag_resetstate.php, line: 88
 msgid "Firewall state table"
-msgstr ""
+msgstr "Table d'états du pare-feu"
 
 # File: src/www/diag_resetstate.php, line: 90
 msgid ""
@@ -8466,11 +8485,11 @@ msgstr "Tables"
 
 # File: src/www/diag_tables.php, line: 130
 msgid "Do you really want to flush this table?"
-msgstr ""
+msgstr "Voulez-vous vraiment vider cette table ?"
 
 # File: src/www/diag_tables.php, line: 164
 msgid "Flush"
-msgstr ""
+msgstr "Vider"
 
 # File: src/www/diag_tables.php, line: 166
 msgid "Update bogons"
@@ -8510,11 +8529,11 @@ msgstr ""
 
 # File: src/www/diag_testport.php, line: 59
 msgid "You cannot connect to an IPv4 address using IPv6."
-msgstr ""
+msgstr "Vous ne pouvez pas vous connecter à une adresse IPv4 en utilisant IPv6."
 
 # File: src/www/diag_testport.php, line: 62
 msgid "You cannot connect to an IPv6 address using IPv4."
-msgstr ""
+msgstr "Vous ne pouvez pas vous connecter à une adresse IPv6 en utilisant IPv4."
 
 # File: src/www/diag_testport.php, line: 92
 msgid ""
@@ -8616,7 +8635,7 @@ msgstr "Aide pour les éléments de cette page"
 
 # File: src/www/fbegin.inc, line: 216
 msgid "Save Settings"
-msgstr "Sauvegarder les paramêtres"
+msgstr "Sauvegarder les paramètres"
 
 # File: src/www/fbegin.inc, line: 258
 msgid "Add widget"
@@ -9023,7 +9042,7 @@ msgstr "Règle anti-Lockout"
 # File: src/www/firewall_nat_out.php, line: 368
 # File: src/www/firewall_rules.php, line: 427
 msgid "disable rule"
-msgstr ""
+msgstr "désactiver la règle"
 
 # File: src/www/firewall_nat.php, line: 306
 # File: src/www/firewall_nat_1to1.php, line: 216
@@ -9031,7 +9050,7 @@ msgstr ""
 # File: src/www/firewall_nat_out.php, line: 368
 # File: src/www/firewall_rules.php, line: 427
 msgid "enable rule"
-msgstr ""
+msgstr "activer la règle"
 
 # File: src/www/firewall_nat.php, line: 333
 # File: src/www/firewall_nat.php, line: 347
@@ -9067,7 +9086,7 @@ msgstr "déplacer les règles sélectionnées avant cette règle"
 # File: src/www/firewall_rules.php, line: 765
 # File: src/www/system_routes.php, line: 324
 msgid "edit rule"
-msgstr "Editer la règle"
+msgstr "éditer la règle"
 
 # File: src/www/firewall_nat.php, line: 423
 # File: src/www/firewall_nat_1to1.php, line: 269
@@ -9075,7 +9094,7 @@ msgstr "Editer la règle"
 # File: src/www/firewall_nat_out.php, line: 453
 # File: src/www/firewall_rules.php, line: 585
 msgid "delete rule"
-msgstr ""
+msgstr "supprimer la règle"
 
 # File: src/www/firewall_nat.php, line: 426
 # File: src/www/firewall_nat_1to1.php, line: 272
@@ -9083,7 +9102,7 @@ msgstr ""
 # File: src/www/firewall_nat_out.php, line: 456
 # File: src/www/firewall_rules.php, line: 588
 msgid "clone rule"
-msgstr ""
+msgstr "cloner la règle"
 
 # File: src/www/firewall_nat.php, line: 351
 # File: src/www/firewall_rules.php, line: 804
@@ -9163,7 +9182,7 @@ msgstr "IP de Destination"
 
 # File: src/www/firewall_nat_1to1.php, line: 266
 msgid "edit rule "
-msgstr ""
+msgstr "éditer la règle "
 
 # File: src/www/firewall_nat_1to1.php, line: 291
 msgid "Depending on the way your WAN connection is setup, you may also need a"
@@ -9171,7 +9190,7 @@ msgstr ""
 
 # File: src/www/firewall_nat_1to1.php, line: 292
 msgid "Virtual IP."
-msgstr ""
+msgstr "IP Virtuelle."
 
 # File: src/www/firewall_nat_1to1.php, line: 293
 msgid ""
@@ -9243,6 +9262,8 @@ msgid ""
 "Invalid characters detected (%s).  Please remove invalid characters and save "
 "again."
 msgstr ""
+"Des caractères invalides ont été détectés (%s).  Veuillez supprimer les "
+"caractères invalides et sauvegarder de nouveau."
 
 # File: src/www/firewall_nat_1to1_edit.php, line: 108
 # File: src/www/firewall_nat_edit.php, line: 193
@@ -9430,6 +9451,8 @@ msgid ""
 "Invalid characters detected %s. Please remove invalid characters and save "
 "again."
 msgstr ""
+"Des caractères invalides ont été détectés (%s). Veuillez supprimer les "
+"caractères invalides et sauvegarder de nouveau."
 
 # File: src/www/firewall_nat_edit.php, line: 181
 msgid "Destination port from"
@@ -9620,7 +9643,7 @@ msgstr ""
 # File: src/www/system_general.php, line: 322
 # File: src/www/system_general.php, line: 333
 msgid "e.g."
-msgstr "par exemple"
+msgstr "ex."
 
 # File: src/www/firewall_nat_edit.php, line: 772
 msgid "Redirect target port"
@@ -9722,7 +9745,7 @@ msgstr ""
 
 # File: src/www/firewall_nat_npt.php, line: 106
 msgid "Add rule"
-msgstr ""
+msgstr "Ajouter une règle"
 
 # File: src/www/firewall_nat_npt.php, line: 120
 # File: src/www/firewall_nat_npt.php, line: 139
@@ -9836,7 +9859,7 @@ msgstr ""
 
 # File: src/www/firewall_nat_out.php, line: 335
 msgid "Manual rules:"
-msgstr ""
+msgstr "Règles manuelles:"
 
 # File: src/www/firewall_nat_out.php, line: 310
 # File: src/www/firewall_nat_out.php, line: 497
@@ -9995,7 +10018,7 @@ msgstr ""
 
 # File: src/www/firewall_nat_out_edit.php, line: 572
 msgid "Interface address"
-msgstr ""
+msgstr "Adresse de l'interface"
 
 # File: src/www/firewall_nat_out_edit.php, line: 582
 msgid "Translation address"
@@ -10120,7 +10143,7 @@ msgstr "Passerelle"
 
 # File: src/www/firewall_rules.php, line: 291
 msgid "Block all IPv6 traffic"
-msgstr ""
+msgstr "Bloquer tout le trafic IPv6"
 
 # File: src/www/firewall_rules.php, line: 293
 # File: src/www/firewall_rules.php, line: 317
@@ -10136,7 +10159,7 @@ msgstr "Réseaux RFC 1918"
 # File: src/www/firewall_rules.php, line: 471
 # File: src/www/interfaces.php, line: 3301
 msgid "Block private networks"
-msgstr "Bloquer les réseaux privée"
+msgstr "Bloquer les réseaux privés"
 
 # File: src/www/firewall_rules.php, line: 487
 msgid "Reserved/not assigned by IANA"
@@ -10235,7 +10258,7 @@ msgstr ""
 # File: src/www/firewall_rules.php, line: 569
 # File: src/www/firewall_schedule.php, line: 235
 msgid "edit schedule"
-msgstr ""
+msgstr "éditer la tâche planifiée"
 
 # File: src/www/firewall_rules.php, line: 780
 msgid "No floating rules are currently defined."
@@ -10243,7 +10266,7 @@ msgstr ""
 
 # File: src/www/firewall_rules.php, line: 782
 msgid "No rules are currently defined for this interface"
-msgstr ""
+msgstr "Pas de règle actuellement définie pour cette interface"
 
 # File: src/www/firewall_rules.php, line: 783
 msgid ""
@@ -10257,7 +10280,7 @@ msgstr ""
 
 # File: src/www/firewall_rules.php, line: 785
 msgid " button to add a new rule."
-msgstr ""
+msgstr " bouton pour ajouter une nouvelle règle."
 
 # File: src/www/firewall_nat.php, line: 367
 # File: src/www/firewall_rules.php, line: 819
@@ -10278,7 +10301,7 @@ msgstr "rejeter"
 
 # File: src/www/firewall_rules.php, line: 831
 msgid "log"
-msgstr "enregistrer"
+msgstr "log"
 
 # File: src/www/firewall_rules.php, line: 835
 msgid "pass (disabled)"
@@ -10309,7 +10332,7 @@ msgstr ""
 # File: src/www/vpn_l2tp.php, line: 383
 # File: src/www/vpn_l2tp.php, line: 402
 msgid "Hint:"
-msgstr ""
+msgstr "Suggestion:"
 
 # File: src/www/firewall_rules.php, line: 857
 msgid ""
@@ -10552,7 +10575,7 @@ msgstr ""
 
 # File: src/www/firewall_rules_edit.php, line: 743
 msgid "Edit Firewall rule"
-msgstr "Éditer la règle de pare-feu"
+msgstr "Éditer la règle du pare-feu"
 
 # File: src/www/firewall_rules_edit.php, line: 667
 msgid "Block"
@@ -10634,7 +10657,7 @@ msgstr ""
 
 # File: src/www/firewall_rules_edit.php, line: 1151
 msgid "Log"
-msgstr "Événement"
+msgstr "Log"
 
 # File: src/www/firewall_rules_edit.php, line: 1154
 msgid "Log packets that are handled by this rule"
@@ -10664,7 +10687,7 @@ msgstr ""
 # File: src/www/firewall_rules_edit.php, line: 1186
 # File: src/www/pkg_edit.php, line: 457
 msgid "Advanced features"
-msgstr ""
+msgstr "Fonctionnalités avancées"
 
 # File: src/www/firewall_rules_edit.php, line: 1189
 msgid "Source OS"
@@ -11000,10 +11023,12 @@ msgstr "Septembre"
 # File: src/www/firewall_schedule.php, line: 63
 msgid "Cannot delete Schedule.  Currently in use by %s"
 msgstr ""
+"Impossible de supprimer la tâche planifiée. Actuellement en cours "
+"d'utilisation par %s"
 
 # File: src/www/firewall_schedule.php, line: 79
 msgid "Add a new schedule"
-msgstr ""
+msgstr "Ajouter une nouvelle tâche planifiée"
 
 # File: src/www/firewall_schedule.php, line: 226
 msgid "Do you really want to delete this schedule?"
@@ -11019,11 +11044,11 @@ msgstr ""
 
 # File: src/www/firewall_schedule.php, line: 238
 msgid "delete schedule"
-msgstr ""
+msgstr "supprimer la tâche planifiée"
 
 # File: src/www/firewall_schedule.php, line: 241
 msgid "clone schedule"
-msgstr ""
+msgstr "cloner la tâche planifiée"
 
 # File: src/www/firewall_schedule.php, line: 236
 msgid ""
@@ -11077,6 +11102,8 @@ msgstr "Nom de la tâche planifiée"
 # File: src/www/firewall_schedule_edit.php, line: 793
 msgid "NOTE: This schedule is in use so the name may not be modified!"
 msgstr ""
+"NOTE: Cette tâche planifiée est actuellement utilisée donc son nom ne peut "
+"pas être modifié !"
 
 # File: src/www/firewall_schedule_edit.php, line: 798
 msgid ""
@@ -11131,7 +11158,7 @@ msgstr ""
 
 # File: src/www/firewall_schedule_edit.php, line: 1004
 msgid "Schedule repeat"
-msgstr ""
+msgstr "Répétition de la tâche planifiée"
 
 # File: src/www/firewall_schedule_edit.php, line: 1009
 msgid "Configured Ranges"
@@ -11458,7 +11485,7 @@ msgstr "Go/s"
 
 # File: src/www/guiconfig.inc, line: 246
 msgid "The field %s contains invalid characters."
-msgstr ""
+msgstr "Le champs %s contient des caractères invalides."
 
 # File: src/www/guiconfig.inc, line: 252
 msgid "The field %s is required."
@@ -11779,11 +11806,11 @@ msgstr ""
 # File: src/www/interfaces.php, line: 683
 # File: src/www/system_routes_edit.php, line: 97
 msgid "A valid gateway must be specified."
-msgstr ""
+msgstr "Une passerelle valide doit être spécifiée"
 
 # File: src/www/interfaces.php, line: 687
 msgid "The service name contains invalid characters."
-msgstr ""
+msgstr "Le nom du service contient des caractères invalides."
 
 # File: src/www/interfaces.php, line: 689
 # File: src/www/interfaces.php, line: 705
@@ -11880,7 +11907,7 @@ msgstr ""
 
 # File: src/www/interfaces.php, line: 1566
 msgid "Don't forget to adjust the DHCP Server range if needed after applying."
-msgstr ""
+msgstr "Ne pas oublier d'ajuster la plage DHCP si besoin après validation."
 
 # File: src/www/interfaces.php, line: 1566
 msgid "The %s configuration has been changed."
@@ -11995,7 +12022,7 @@ msgstr "Adresse MAC"
 
 # File: src/www/interfaces.php, line: 1650
 msgid "Insert my local MAC address"
-msgstr ""
+msgstr "Insérer mon adresse MAC locale"
 
 # File: src/www/interfaces.php, line: 1653
 msgid ""
@@ -12053,11 +12080,11 @@ msgstr ""
 
 # File: src/www/interfaces.php, line: 1721
 msgid "Static IPv4 configuration"
-msgstr ""
+msgstr "Configuration adresse IPv4 statique"
 
 # File: src/www/interfaces.php, line: 1754
 msgid "IPv4 Upstream Gateway"
-msgstr ""
+msgstr "Passerelle IPv4"
 
 # File: src/www/interfaces.php, line: 1772
 # File: src/www/interfaces.php, line: 1881
@@ -12081,7 +12108,7 @@ msgstr "Nom de la passerelle"
 
 # File: src/www/interfaces.php, line: 1800
 msgid "Gateway IPv4:"
-msgstr "Passerelle IPv4"
+msgstr "Passerelle IPv4:"
 
 # File: src/www/interfaces.php, line: 1803
 # File: src/www/interfaces.php, line: 1913
@@ -12520,7 +12547,7 @@ msgstr "Configuration IPv6 statique"
 
 # File: src/www/interfaces.php, line: 1863
 msgid "IPv6 Upstream Gateway"
-msgstr ""
+msgstr "Passerelle IPv6"
 
 # File: src/www/interfaces.php, line: 1896
 msgid "Add new v6 gateway:"
@@ -12540,7 +12567,7 @@ msgstr "Passerelle IPv6 :"
 
 # File: src/www/interfaces.php, line: 2520
 msgid "DHCPv6 client configuration"
-msgstr ""
+msgstr "Configuration client DHCPv6"
 
 # File: src/www/interfaces.php, line: 2544
 msgid "Use IPv4 connectivity"
@@ -12893,7 +12920,7 @@ msgstr ""
 
 # File: src/www/interfaces.php, line: 2917
 msgid "Antenna settings"
-msgstr "Réglages d'antenne"
+msgstr "Paramètres de l'antenne"
 
 # File: src/www/interfaces.php, line: 2923
 msgid "Diversity"
@@ -13316,6 +13343,8 @@ msgid ""
 "The interface is part of a bridge. Please remove it from the bridge to "
 "continue"
 msgstr ""
+"L'interface fait parti d'un bridge. Veuillez l'enlever du bridge pour "
+"continuer"
 
 # File: src/www/interfaces_assign.php, line: 360
 msgid ""
@@ -13326,6 +13355,8 @@ msgstr ""
 msgid ""
 "The interface is part of a gif tunnel. Please delete the tunnel to continue"
 msgstr ""
+"Cette interface fait partie d'un tunnel gif. Veuillez supprimer ce tunnel "
+"avant de poursuivre"
 
 # File: src/www/interfaces_assign.php, line: 271
 msgid "Port %s was assigned to %d interfaces:"
@@ -13386,7 +13417,7 @@ msgstr "Membres"
 
 # File: src/www/interfaces_bridge.php, line: 155
 msgid "edit bridge"
-msgstr ""
+msgstr "éditer le bridge"
 
 # File: src/www/interfaces_bridge.php, line: 175
 msgid "Here you can configure bridging of interfaces."
@@ -13436,7 +13467,7 @@ msgstr ""
 
 # File: src/www/interfaces_bridge_edit.php, line: 146
 msgid "You must select at least 2 member interfaces for a bridge."
-msgstr ""
+msgstr "Vous devez sélectionner au moins 2 interfaces membres pour un bridge."
 
 # File: src/www/interfaces_bridge_edit.php, line: 151
 msgid "A member interface passed does not exist in configuration"
@@ -13484,7 +13515,7 @@ msgstr "RSTP/STP"
 
 # File: src/www/interfaces_bridge_edit.php, line: 298
 msgid "Spanning Tree Protocol"
-msgstr ""
+msgstr "Spanning Tree Protocol"
 
 # File: src/www/interfaces_bridge_edit.php, line: 315
 msgid "Enable spanning tree options for this bridge."
@@ -13496,7 +13527,7 @@ msgstr ""
 
 # File: src/www/interfaces_bridge_edit.php, line: 319
 msgid "STP"
-msgstr ""
+msgstr "STP"
 
 # File: src/www/interfaces_bridge_edit.php, line: 331
 msgid "Protocol used for spanning tree."
@@ -13590,7 +13621,7 @@ msgstr ""
 
 # File: src/www/interfaces_bridge_edit.php, line: 452
 msgid "Advanced options"
-msgstr ""
+msgstr "Options avancées"
 
 # File: src/www/interfaces_bridge_edit.php, line: 433
 msgid "Cache size"
@@ -13712,10 +13743,12 @@ msgid ""
 "This gif TUNNEL cannot be deleted because it is still being used as an "
 "interface."
 msgstr ""
+"Ce TUNNEL gif ne peut pas être supprimé car il est encore utilisé comme une "
+"interface."
 
 # File: src/www/interfaces_gif.php, line: 139
 msgid "Do you really want to delete this gif tunnel?"
-msgstr ""
+msgstr "Voulez-vous vraiment supprimer ce tunnel gif ?"
 
 # File: src/www/interfaces_gif.php, line: 115
 # File: src/www/interfaces_gre.php, line: 116
@@ -13727,11 +13760,11 @@ msgstr ""
 # File: src/www/interfaces_lagg.php, line: 144
 # File: src/www/interfaces_vlan.php, line: 136
 msgid "edit interface"
-msgstr ""
+msgstr "éditer l'interface"
 
 # File: src/www/interfaces_gif.php, line: 151
 msgid "GIF tunnels are configured here."
-msgstr ""
+msgstr "Les tunnels GIF sont configuré ici."
 
 # File: src/www/interfaces_gif.php, line: 158
 msgid ""
@@ -13762,11 +13795,11 @@ msgstr ""
 
 # File: src/www/interfaces_gif_edit.php, line: 85
 msgid "A gif with the network %s is already defined."
-msgstr ""
+msgstr "Un tunnel gif avec le réseau %s est actuellement utilisé."
 
 # File: src/www/interfaces_gif_edit.php, line: 146
 msgid "GIF configuration"
-msgstr ""
+msgstr "Configuration GIF"
 
 # File: src/www/interfaces_gif_edit.php, line: 154
 # File: src/www/interfaces_gre_edit.php, line: 64
@@ -14035,7 +14068,7 @@ msgstr ""
 
 # File: src/www/interfaces_lagg_edit.php, line: 92
 msgid "Protocol supplied is invalid"
-msgstr ""
+msgstr "Le protocole fourni est invalide"
 
 # File: src/www/interfaces_lagg_edit.php, line: 147
 msgid "LAGG configuration"
@@ -14071,7 +14104,6 @@ msgid ""
 "aggregation with the peer or exchange frames to monitor the link."
 msgstr ""
 
-# File: src/www/interfaces_lagg_edit.php, line: 198
 msgid "lacp"
 msgstr ""
 
@@ -14261,7 +14293,7 @@ msgstr ""
 
 # File: src/www/interfaces_ppps_edit.php, line: 587
 msgid "Connection Timeout"
-msgstr ""
+msgstr "Délai d'inactivité de la connexion"
 
 # File: src/www/interfaces_ppps_edit.php, line: 590
 msgid ""
@@ -14858,7 +14890,7 @@ msgstr ""
 
 # File: src/www/load_balancer_setting.php, line: 128
 msgid "timeout"
-msgstr ""
+msgstr "délai d'inactivité"
 
 # File: src/www/load_balancer_setting.php, line: 132
 msgid ""
@@ -15008,22 +15040,25 @@ msgstr "Êtes-vous sûr de vouloir redémarrer le système ?"
 # File: src/www/services_router_advertisements.php, line: 43
 msgid "Only interfaces configured with a static IP will be shown"
 msgstr ""
+"Seul les interfaces configurées avec une adresse IP statique sont affichées"
 
 # File: src/www/services_dhcp.php, line: 84
 msgid ""
 "The DHCP Server can only be enabled on interfaces configured with static IP "
 "addresses"
 msgstr ""
+"Le serveur DHCP ne peut être activé que sur des interfaces configurées avec "
+"une adresse IP statique"
 
 # File: src/www/services_dhcp.php, line: 213
 # File: src/www/services_dhcpv6.php, line: 146
 msgid "Range begin"
-msgstr ""
+msgstr "Début de la plage"
 
 # File: src/www/services_dhcp.php, line: 213
 # File: src/www/services_dhcpv6.php, line: 146
 msgid "Range end"
-msgstr ""
+msgstr "Fin de la plage"
 
 # File: src/www/services_dhcp.php, line: 218
 # File: src/www/services_dhcp.php, line: 220
@@ -15031,30 +15066,36 @@ msgstr ""
 # File: src/www/services_dhcpv6.php, line: 155
 # File: src/www/services_dhcpv6.php, line: 157
 msgid "A valid range must be specified."
-msgstr ""
+msgstr "Une plage valide doit être spécifiée."
 
 # File: src/www/services_dhcp.php, line: 222
 # File: src/www/services_dhcp_edit.php, line: 203
 msgid "A valid IP address must be specified for the gateway."
-msgstr ""
+msgstr "Une adresse IP valide doit être spécifiée comme passerelle."
 
 # File: src/www/services_dhcp.php, line: 224
 # File: src/www/services_dhcp_edit.php, line: 205
 msgid ""
 "A valid IP address must be specified for the primary/secondary WINS servers."
 msgstr ""
+"Une adresse IP valide doit être spécifiée pour les serveurs principaux/"
+"secondaires WINS."
 
 # File: src/www/services_dhcp.php, line: 229
 # File: src/www/services_dhcp_edit.php, line: 211
 msgid ""
 "The gateway address %s does not lie within the chosen interface's subnet."
 msgstr ""
+"L'adresse de passerelle %s ne se situe pas dans le sous-réseau de "
+"l'interface choisie."
 
 # File: src/www/services_dhcp.php, line: 232
 # File: src/www/services_dhcp_edit.php, line: 214
 msgid ""
 "A valid IP address must be specified for the primary/secondary DNS servers."
 msgstr ""
+"Une adresse IP valide doit être spécifiée pour les serveurs principaux/"
+"secondaires DNS."
 
 # File: src/www/services_dhcp.php, line: 235
 # File: src/www/services_dhcp_edit.php, line: 217
@@ -15069,12 +15110,16 @@ msgid ""
 "The maximum lease time must be at least 60 seconds and higher than the "
 "default lease time."
 msgstr ""
+"La durée maximale du bail doit être d'au moins 60 secondes et plus élevée "
+"que la durée du bail par défaut."
 
 # File: src/www/services_dhcp.php, line: 259
 # File: src/www/services_dhcp_edit.php, line: 221
 # File: src/www/services_dhcpv6.php, line: 168
 msgid "A valid domain name must be specified for the dynamic DNS registration."
 msgstr ""
+"Un nom de domaine valide doit être spécifiée pour l'enregistrement DNS "
+"dynamique."
 
 # File: src/www/services_dhcp.php, line: 261
 # File: src/www/services_dhcp_edit.php, line: 223
@@ -15113,21 +15158,27 @@ msgstr ""
 msgid ""
 "A valid IP address must be specified for the primary/secondary NTP servers."
 msgstr ""
+"Une adresse IP valide doit être spécifiée pour les serveurs principaux/"
+"secondaires NTP."
 
 # File: src/www/services_dhcp.php, line: 284
 # File: src/www/services_dhcpv6.php, line: 187
 msgid "A valid domain name must be specified for the DNS domain."
-msgstr ""
+msgstr "Un nom de domaine valide doit être spécifié pour le domaine DNS."
 
 # File: src/www/services_dhcp.php, line: 286
 # File: src/www/services_dhcp_edit.php, line: 240
 msgid "A valid IP address or hostname must be specified for the TFTP server."
 msgstr ""
+"Une adresse IP valide ou le nom d'hôte doit être spécifié pour le serveur "
+"TFTP."
 
 # File: src/www/services_dhcp.php, line: 288
 # File: src/www/services_dhcp_edit.php, line: 242
 msgid "A valid IP address must be specified for the network boot server."
 msgstr ""
+"Une adresse IP valide doit être spécifiée pour le serveur de démarrage "
+"réseau."
 
 # File: src/www/services_dhcp.php, line: 291
 msgid "You cannot use the network address in the starting subnet range."
@@ -15200,7 +15251,7 @@ msgstr ""
 # File: src/www/services_dhcp.php, line: 344
 # File: src/www/services_dhcpv6.php, line: 215
 msgid "The specified range lies outside of the current subnet."
-msgstr ""
+msgstr "La plage spécifiée est en dehors du sous-réseau actuel."
 
 # File: src/www/services_dhcp.php, line: 348
 # File: src/www/services_dhcpv6.php, line: 220
@@ -15211,12 +15262,16 @@ msgstr ""
 msgid ""
 "The specified range must not be within the DHCP range for this interface."
 msgstr ""
+"La plage spécifiée ne doit pas être dans la plage de DHCP pour cette "
+"interface."
 
 # File: src/www/services_dhcp.php, line: 364
 msgid ""
 "The specified range must not be within the range configured on a DHCP pool "
 "for this interface."
 msgstr ""
+"La plage spécifiée ne doit pas être dans la plage configurée sur un pool "
+"DHCP pour cette interface."
 
 # File: src/www/services_dhcp.php, line: 371
 # File: src/www/services_dhcpv6.php, line: 224
@@ -15224,6 +15279,8 @@ msgid ""
 "You must disable the DHCP relay on the %s interface before enabling the DHCP "
 "server."
 msgstr ""
+"Vous devez désactiver le relais DHCP sur l'interface %s avant d'activer le "
+"serveur DHCP."
 
 # File: src/www/services_dhcp.php, line: 381
 # File: src/www/services_dhcpv6.php, line: 239
@@ -15240,7 +15297,7 @@ msgstr "Chaîne"
 
 # File: src/www/services_dhcp.php, line: 567
 msgid "Text"
-msgstr ""
+msgstr "Texte"
 
 # File: src/www/services_dhcp.php, line: 568
 msgid "Unsigned 16-bit integer"
@@ -15273,13 +15330,15 @@ msgstr ""
 # File: src/www/services_dhcp.php, line: 685
 # File: src/www/services_dhcpv6.php, line: 448
 msgid "The static mapping configuration has been changed"
-msgstr ""
+msgstr "La configuration de mappage statique a été changé"
 
 # File: src/www/services_dhcp.php, line: 725
 msgid ""
 "DHCP Relay is currently enabled. Cannot enable the DHCP Server service while "
 "the DHCP Relay is enabled on any interface."
 msgstr ""
+"Le relais DHCP est actuellement activé. Impossible d'activer le serveur DHCP "
+"tant que le relais DHCP est activé sur des interfaces."
 
 # File: src/www/services_dhcp.php, line: 736
 msgid "Enable DHCP server on %s interface"
@@ -15300,6 +15359,8 @@ msgid ""
 "If this is checked, only the clients defined below will get DHCP leases from "
 "this server. "
 msgstr ""
+"Si cette option est cochée, seuls les clients définis ci-dessous recevront "
+"les baux DHCP de ce serveur. "
 
 # File: src/www/services_dhcp.php, line: 754
 msgid "Pool Description"
@@ -15419,7 +15480,7 @@ msgstr ""
 # File: src/www/services_dhcp_edit.php, line: 468
 # File: src/www/services_dhcpv6.php, line: 631
 msgid "The default is 7200 seconds."
-msgstr ""
+msgstr "La valeur par défaut est 7200 secondes."
 
 # File: src/www/services_dhcp.php, line: 902
 # File: src/www/services_dhcp_edit.php, line: 472
@@ -15441,7 +15502,7 @@ msgstr ""
 # File: src/www/services_dhcp_edit.php, line: 478
 # File: src/www/services_dhcpv6.php, line: 641
 msgid "The default is 86400 seconds."
-msgstr ""
+msgstr "La valeur par défaut est 86400 secondes."
 
 # File: src/www/services_dhcp.php, line: 913
 msgid "Failover peer IP:"
@@ -15599,7 +15660,7 @@ msgstr ""
 # File: src/www/services_dhcp.php, line: 1028
 # File: src/www/services_dhcpv6.php, line: 719
 msgid "LDAP URI"
-msgstr ""
+msgstr "LDAP URI"
 
 # File: src/www/services_dhcp.php, line: 1031
 # File: src/www/services_dhcpv6.php, line: 722
@@ -15616,37 +15677,37 @@ msgstr ""
 # File: src/www/services_dhcp.php, line: 1040
 # File: src/www/services_dhcpv6.php, line: 731
 msgid "Enable network booting"
-msgstr ""
+msgstr "Activer le démarrage réseau"
 
 # File: src/www/services_dhcp.php, line: 1043
 # File: src/www/services_dhcpv6.php, line: 734
 msgid "Show Network booting"
-msgstr ""
+msgstr "Voir la configuration du démarrage réseau"
 
 # File: src/www/services_dhcp.php, line: 1047
 # File: src/www/services_dhcpv6.php, line: 738
 msgid "Enables network booting."
-msgstr ""
+msgstr "Activer le démarrage réseau."
 
 # File: src/www/services_dhcp.php, line: 1049
 msgid "Enter the IP of the"
-msgstr ""
+msgstr "Entrez l'adresse IP du"
 
 # File: src/www/services_dhcp.php, line: 1049
 msgid "next-server"
-msgstr ""
+msgstr "next-server"
 
 # File: src/www/services_dhcp.php, line: 1051
 msgid "and the default bios filename"
-msgstr ""
+msgstr "et le nom de fichier du bios par défaut"
 
 # File: src/www/services_dhcp.php, line: 1053
 msgid "and the UEFI 32bit filename  "
-msgstr ""
+msgstr "et le nom de fichier de l'UEFI 32bit"
 
 # File: src/www/services_dhcp.php, line: 1055
 msgid "and the UEFI 64bit filename  "
-msgstr ""
+msgstr "et le nom de fichier de l'UEFI 64bit  "
 
 # File: src/www/services_dhcp.php, line: 1057
 msgid ""
@@ -15665,13 +15726,13 @@ msgstr ""
 # File: src/www/services_dhcp_edit.php, line: 408
 # File: src/www/services_dhcpv6_edit.php, line: 231
 msgid "Enter the"
-msgstr ""
+msgstr "Entrer le"
 
 # File: src/www/services_dhcp.php, line: 1059
 # File: src/www/services_dhcp_edit.php, line: 408
 # File: src/www/services_dhcpv6_edit.php, line: 231
 msgid "root-path"
-msgstr ""
+msgstr "root-path"
 
 # File: src/www/services_dhcp.php, line: 1059
 # File: src/www/services_dhcp_edit.php, line: 408
@@ -15687,12 +15748,12 @@ msgstr ""
 # File: src/www/services_dhcp.php, line: 1067
 # File: src/www/services_dhcpv6.php, line: 746
 msgid "Additional BOOTP/DHCP Options"
-msgstr ""
+msgstr "Options supplémentaires BOOTP/DHCP"
 
 # File: src/www/services_dhcp.php, line: 1070
 # File: src/www/services_dhcpv6.php, line: 749
 msgid "Show Additional BOOTP/DHCP Options"
-msgstr ""
+msgstr "Afficher les options supplémentaires BOOTP/DHCP"
 
 # File: src/www/services_dhcp.php, line: 1078
 # File: src/www/services_dhcpv6.php, line: 757
@@ -15724,7 +15785,7 @@ msgstr "Systeme : Configuration générale"
 # File: src/www/services_dhcp.php, line: 1153
 # File: src/www/services_dhcpv6.php, line: 814
 msgid "The DNS servers entered in"
-msgstr ""
+msgstr "Les serveurs DNS entrés dans"
 
 # File: src/www/services_dhcp.php, line: 1154
 # File: src/www/services_dhcpv6.php, line: 815
@@ -15737,7 +15798,7 @@ msgstr ""
 # File: src/www/services_dnsmasq_domainoverride_edit.php, line: 109
 # File: src/www/services_dnsmasq_edit.php, line: 156
 msgid "DNS forwarder"
-msgstr ""
+msgstr "Redirecteur DNS"
 
 # File: src/www/services_dhcp.php, line: 1155
 # File: src/www/services_dhcpv6.php, line: 816
@@ -15775,12 +15836,14 @@ msgstr ""
 
 # File: src/www/services_dhcp_edit.php, line: 140
 msgid "Either MAC address or Client identifier must be specified"
-msgstr ""
+msgstr "L'adresse MAC ou l'identifiant du client doit être spécifié"
 
 # File: src/www/services_dhcp_edit.php, line: 148
 # File: src/www/services_dhcpv6_edit.php, line: 102
 msgid "The hostname cannot end with a hyphen according to RFC952"
 msgstr ""
+"Le nom de machine ne peut pas se terminer par un trait d'union selon la "
+"RFC952"
 
 # File: src/www/services_dhcp_edit.php, line: 153
 # File: src/www/services_dhcpv6_edit.php, line: 107
@@ -15794,7 +15857,7 @@ msgstr ""
 
 # File: src/www/services_dhcp_edit.php, line: 173
 msgid "This Hostname, IP, MAC address or Client identifier already exists."
-msgstr ""
+msgstr "Le nom, l'IP, l'adresse MAC ou l'identifiant client existe déjà."
 
 # File: src/www/services_dhcp_edit.php, line: 184
 msgid "The IP address must not be within the DHCP range for this interface."
@@ -15825,7 +15888,7 @@ msgstr "Entrer une adresse MAC avec le format suivant: xx:xx:xx:xx:xx:xx"
 
 # File: src/www/services_dhcp_edit.php, line: 376
 msgid "Client identifier"
-msgstr ""
+msgstr "Identifiant client"
 
 # File: src/www/services_dhcp_edit.php, line: 386
 msgid "If an IPv4 address is entered, the address must be outside of the pool."
@@ -15887,27 +15950,30 @@ msgstr "Serveur de destination"
 
 # File: src/www/services_dhcp_relay.php, line: 69
 msgid "A valid Destination Server IP address must be specified."
-msgstr ""
+msgstr "Une adresse IP de serveur de destination valide doit être spécifiée."
 
 # File: src/www/services_dhcp_relay.php, line: 140
 msgid ""
 "DHCP Server is currently enabled. Cannot enable the DHCP Relay service while "
 "the DHCP Server is enabled on any interface."
 msgstr ""
+"Le server DHCP est actuellement activé. Vous ne pouvez pas activer le "
+"service de relais DHCP tans que le serveur DHCP est activé sur toutes les "
+"interfaces."
 
 # File: src/www/services_dhcp_relay.php, line: 136
 msgid "DHCP Relay configuration"
-msgstr "Configuration du relai DHCP"
+msgstr "Configuration du relais DHCP"
 
 # File: src/www/services_dhcp_relay.php, line: 146
 msgid "Enable DHCP relay on interface"
-msgstr "Activer le relai DHCP sur l'interface"
+msgstr "Activer le relais DHCP sur l'interface"
 
 # File: src/www/services_dhcp_relay.php, line: 158
 # File: src/www/services_dhcpv6_relay.php, line: 155
 # File: src/www/services_ntpd.php, line: 230
 msgid "Interface(s)"
-msgstr ""
+msgstr "Interface(s)"
 
 # File: src/www/services_ntpd.php, line: 263
 msgid "Interfaces without an IP address will not be shown."
@@ -15936,6 +16002,11 @@ msgid ""
 "requests to DHCP server on WAN subnet\" to relay DHCP packets to the server "
 "that was used on the WAN interface."
 msgstr ""
+"Ceci est l'adresse IP du serveur auquel les requêtes DHCP sont relayés. Vous "
+"pouvez entrer plusieurs adresses IP de serveur, séparés par des virgules. "
+"Sélectionnez \"demandes de proxy vers le serveur DHCP sur le sous-réseau "
+"WAN\" pour relayer les paquets DHCP au serveur qui a été utilisé sur "
+"l'interface WAN."
 
 # File: src/www/services_dhcpv6.php, line: 50
 msgid ""
@@ -16109,11 +16180,11 @@ msgstr ""
 
 # File: src/www/services_dhcpv6_relay.php, line: 137
 msgid "DHCPv6 Relay configuration"
-msgstr "Configuration du relai DHCPv6"
+msgstr "Configuration du relais DHCPv6"
 
 # File: src/www/services_dhcpv6_relay.php, line: 148
 msgid "Enable DHCPv6 relay on interface"
-msgstr "Activer le relai DHCPv6 sur l’interface"
+msgstr "Activer le relais DHCPv6 sur l’interface"
 
 # File: src/www/services_dhcpv6_relay.php, line: 166
 msgid "Interfaces without an IPv6 address will not be shown."
@@ -16142,12 +16213,12 @@ msgstr ""
 
 # File: src/www/services_dnsmasq.php, line: 178
 msgid "The DNS forwarder configuration has been changed."
-msgstr ""
+msgstr "La configuration du Redirecteur DNS a changée"
 
 # File: src/www/services_dnsmasq.php, line: 185
 # File: src/www/services_dnsmasq.php, line: 192
 msgid "General DNS Forwarder Options"
-msgstr ""
+msgstr "Options générales du Redirecteur DNS"
 
 # File: src/www/services_dnsmasq.php, line: 198
 msgid "Enable DNS forwarder"
@@ -16246,7 +16317,7 @@ msgstr ""
 # File: src/www/services_dnsmasq.php, line: 267
 # File: src/www/services_unbound.php, line: 224
 msgid "Listen Port"
-msgstr ""
+msgstr "Port d'écoute"
 
 # File: src/www/services_dnsmasq.php, line: 271
 # File: src/www/services_unbound.php, line: 229
@@ -16545,7 +16616,7 @@ msgstr ""
 
 # File: src/www/services_dyndns_edit.php, line: 111
 msgid "The Hostname contains invalid characters."
-msgstr "Le nom d'hôte configuration des caractères invalides."
+msgstr "Le nom d'hôte contient des caractères invalides."
 
 # File: src/www/services_dyndns_edit.php, line: 117
 msgid "The MX contains invalid characters."
@@ -16621,7 +16692,7 @@ msgstr ""
 
 # File: src/www/services_dyndns_edit.php, line: 348
 msgid "Verbose logging"
-msgstr ""
+msgstr "Rapport verbeux"
 
 # File: src/www/services_dyndns_edit.php, line: 351
 msgid "verbose logging"
@@ -16726,7 +16797,7 @@ msgstr ""
 # File: src/www/services_rfc2136_edit.php, line: 71
 # File: src/www/services_rfc2136_edit.php, line: 171
 msgid "TTL"
-msgstr ""
+msgstr "TTL"
 
 # File: src/www/services_dyndns_edit.php, line: 419
 msgid "Choose TTL for your dns record."
@@ -16833,7 +16904,7 @@ msgstr ""
 # File: src/www/services_ntpd.php, line: 197
 # File: src/www/services_ntpd.php, line: 293
 msgid "Add another Time server"
-msgstr ""
+msgstr "Ajouter un autre serveur de temps"
 
 # File: src/www/services_ntpd.php, line: 236
 msgid "NTP Server Configuration"
@@ -16857,11 +16928,11 @@ msgstr "Serveurs de temps"
 
 # File: src/www/services_ntpd.php, line: 280
 msgid "prefer this server"
-msgstr ""
+msgstr "Serveur préféré"
 
 # File: src/www/services_ntpd.php, line: 283
 msgid "do not use this server"
-msgstr ""
+msgstr "ne pas utiliser ce serveur"
 
 # File: src/www/services_ntpd.php, line: 296
 msgid "For best results three to five servers should be configured here."
@@ -17021,7 +17092,7 @@ msgstr "Ou"
 
 # File: src/www/services_ntpd.php, line: 390
 msgid "select a file to upload:"
-msgstr ""
+msgstr "sélectionner le fichier à envoyer:"
 
 # File: src/www/services_ntpd_gps.php, line: 374
 msgid "NTP Serial GPS Configuration"
@@ -17408,7 +17479,7 @@ msgstr "Utilisateur"
 
 # File: src/www/services_rfc2136_edit.php, line: 196
 msgid "Paste an HMAC-MD5 key here."
-msgstr ""
+msgstr "Copier une clé HMAC-MD5 ici."
 
 # File: src/www/services_rfc2136_edit.php, line: 208
 msgid "Use TCP instead of UDP"
@@ -17505,15 +17576,15 @@ msgstr ""
 
 # File: src/www/services_snmp.php, line: 79
 msgid "Invalid character '#' in system location"
-msgstr ""
+msgstr "Caractère '#' invalide dans l'emplacement du système"
 
 # File: src/www/services_snmp.php, line: 80
 msgid "Invalid character '#' in system contact"
-msgstr ""
+msgstr "Caractère '#' invalide dans le contact du système"
 
 # File: src/www/services_snmp.php, line: 81
 msgid "Invalid character '#' in read community string"
-msgstr ""
+msgstr "Caractère '#' invalide dans le nom de la communauté en lecture"
 
 # File: src/www/services_snmp.php, line: 84
 msgid "Community"
@@ -17525,21 +17596,21 @@ msgstr ""
 
 # File: src/www/services_snmp.php, line: 95
 msgid "Invalid character '#' in SNMP trap string"
-msgstr "Le caractère '#' est invalide dans le nom du SNMP trap"
+msgstr "Caractère '#' invalide dans le nom du SNMP trap"
 
 # File: src/www/services_snmp.php, line: 98
 # File: src/www/services_snmp.php, line: 380
 msgid "Trap server"
-msgstr ""
+msgstr "Serveur Trap"
 
 # File: src/www/services_snmp.php, line: 102
 msgid "Trap server port"
-msgstr ""
+msgstr "Port du serveur Trap"
 
 # File: src/www/services_snmp.php, line: 106
 # File: src/www/services_snmp.php, line: 399
 msgid "Trap string"
-msgstr ""
+msgstr "Nom du Trap"
 
 # File: src/www/services_snmp.php, line: 286
 msgid "SNMP Daemon"
@@ -17555,15 +17626,15 @@ msgstr ""
 
 # File: src/www/services_snmp.php, line: 311
 msgid "System location"
-msgstr ""
+msgstr "Emplacement du système"
 
 # File: src/www/services_snmp.php, line: 318
 msgid "System contact"
-msgstr ""
+msgstr "Contact du système"
 
 # File: src/www/services_snmp.php, line: 325
 msgid "Read Community String"
-msgstr ""
+msgstr "Nom de la communauté en lecture"
 
 # File: src/www/services_snmp.php, line: 328
 msgid ""
@@ -17582,19 +17653,19 @@ msgstr "Liste des Traps SNMP"
 
 # File: src/www/services_snmp.php, line: 383
 msgid "Enter trap server name"
-msgstr ""
+msgstr "Entrer le nom du serveur Trap"
 
 # File: src/www/services_snmp.php, line: 388
 msgid "Trap server port "
-msgstr ""
+msgstr "Port du serveur Trap"
 
 # File: src/www/services_snmp.php, line: 391
 msgid "Enter the port to send the traps to (default 162)"
-msgstr ""
+msgstr "Entrer le port pour envoyer les Traps (par défaut 162)"
 
 # File: src/www/services_snmp.php, line: 396
 msgid "Enter the SNMP trap string"
-msgstr "Entrer une valeur pour le trap SNMP"
+msgstr "Entrer une valeur pour le Trap SNMP"
 
 # File: src/www/services_snmp.php, line: 412
 msgid "Modules"
@@ -17696,11 +17767,11 @@ msgstr ""
 
 # File: src/www/services_unbound.php, line: 284
 msgid "DNSSEC"
-msgstr ""
+msgstr "DNSSEC"
 
 # File: src/www/services_unbound.php, line: 287
 msgid "Enable DNSSEC Support"
-msgstr ""
+msgstr "Activer le support DNSSEC"
 
 # File: src/www/services_unbound.php, line: 295
 msgid "Enable Forwarding Mode"
@@ -17708,7 +17779,7 @@ msgstr ""
 
 # File: src/www/services_unbound.php, line: 302
 msgid "Register DHCP leases in the DNS Resolver"
-msgstr "Enregistrer les baux DHCP dans le DNS Resolver"
+msgstr "Enregistrer les baux DHCP dans le Résolveur DNS"
 
 # File: src/www/services_unbound.php, line: 303
 msgid ""
@@ -18155,7 +18226,7 @@ msgstr ""
 
 # File: src/www/services_unbound_host_edit.php, line: 277
 msgid "A or AAAA (IPv4 or IPv6 address)"
-msgstr ""
+msgstr "A ou AAAA (adresse IPv4 ou IPv6)"
 
 # File: src/www/services_unbound_host_edit.php, line: 277
 msgid "MX (Mail server)"
@@ -18167,7 +18238,7 @@ msgstr ""
 
 # File: src/www/services_unbound_host_edit.php, line: 286
 msgid "for IPv4 or IPv6 addresses"
-msgstr ""
+msgstr "pour des adresses IPv4 ou IPv6"
 
 # File: src/www/services_unbound_host_edit.php, line: 301
 msgid "Priority of MX record"
@@ -18283,11 +18354,11 @@ msgstr ""
 
 # File: src/www/services_wol.php, line: 157
 msgid "Enter a MAC address %sin the following format: xx:xx:xx:xx:xx:xx%s"
-msgstr ""
+msgstr "Entrer une adresse MAC %s dans le format suivant: xx:xx:xx:xx:xx:xx%s"
 
 # File: src/www/services_wol.php, line: 165
 msgid "Or Click the MAC address to wake up an individual device:"
-msgstr ""
+msgstr "Ou cliquer sur l'adresse MAC pour réveiller un matériel à la fois: "
 
 # File: src/www/services_wol.php, line: 165
 msgid "Wake all clients at once: "
@@ -18363,7 +18434,7 @@ msgstr "Fin"
 
 # File: src/www/status_dhcp_leases.php, line: 346
 msgid "Lease type"
-msgstr ""
+msgstr "Type de bail"
 
 # File: src/www/status_dhcp_leases.php, line: 395
 msgid "send Wake on LAN packet to this MAC address"
@@ -18671,7 +18742,7 @@ msgstr "Collisions"
 
 # File: src/www/status_interfaces.php, line: 425
 msgid "Bridge (%s)"
-msgstr "Pont (%s)"
+msgstr "Brdige (%s)"
 
 # File: src/www/status_interfaces.php, line: 449
 msgid "Interrupts/Second"
@@ -18840,7 +18911,7 @@ msgstr ""
 
 # File: src/www/status_openvpn.php, line: 401
 msgid "No OpenVPN instance defined"
-msgstr ""
+msgstr "Aucune instance OpenVPN définie"
 
 # File: src/etc/inc/service-utils.inc, line: 404
 msgid "Could not start unknown service `%s'"
@@ -19125,7 +19196,7 @@ msgstr ""
 
 # File: src/www/system_advanced_admin.php, line: 479
 msgid "Alternate Hostnames"
-msgstr ""
+msgstr "Noms d'hôtes alternatifs"
 
 # File: src/www/system_advanced_admin.php, line: 483
 msgid "Alternate Hostnames for DNS Rebinding and HTTP_REFERER Checks"
@@ -19254,10 +19325,14 @@ msgid ""
 "keyboard. A <b>null modem</b> serial cable or adapter is required to use the "
 "serial console."
 msgstr ""
+"Note:  Ceci redirigera la sortie console et les messages sur le port série. "
+"Vous pouvez toujours accéder au menu de la console à partir de la carte "
+"vidéo interne/clavier. Un câble série <b>null modem</v> ou un adaptateur est "
+"nécessaire pour utiliser la console série."
 
 # File: src/www/system_advanced_admin.php, line: 580
 msgid "Serial Speed"
-msgstr ""
+msgstr "Vitesse du port série"
 
 # File: src/www/system_advanced_admin.php, line: 549
 msgid "bps"
@@ -19269,11 +19344,11 @@ msgstr ""
 
 # File: src/www/system_advanced_admin.php, line: 606
 msgid "Primary Console"
-msgstr ""
+msgstr "Console principale"
 
 # File: src/www/system_advanced_admin.php, line: 560
 msgid "Serial Console"
-msgstr ""
+msgstr "Console série"
 
 # File: src/www/system_advanced_admin.php, line: 563
 msgid "VGA Console"
@@ -19288,15 +19363,15 @@ msgstr ""
 
 # File: src/www/system_advanced_admin.php, line: 620
 msgid "Console Options"
-msgstr ""
+msgstr "Options de la console"
 
 # File: src/www/system_advanced_admin.php, line: 624
 msgid "Console menu"
-msgstr ""
+msgstr "Menu de la console"
 
 # File: src/www/system_advanced_admin.php, line: 629
 msgid "Password protect the console menu"
-msgstr ""
+msgstr "Protéger le menu de la console avec un mot de passe"
 
 # File: src/www/system_advanced_admin.php, line: 631
 msgid "Changes to this option will take effect after a reboot."
@@ -19750,7 +19825,7 @@ msgstr ""
 
 # File: src/www/system_advanced_misc.php, line: 280
 msgid "Proxy support"
-msgstr ""
+msgstr "Support proxy"
 
 # File: src/www/system_advanced_misc.php, line: 286
 msgid "Proxy URL"
@@ -20202,11 +20277,11 @@ msgstr ""
 # File: src/www/system_advanced_notifications.php, line: 160
 # File: src/www/system_advanced_notifications.php, line: 321
 msgid "Test SMTP"
-msgstr ""
+msgstr "Tester SMTP"
 
 # File: src/www/system_advanced_notifications.php, line: 201
 msgid "Growl"
-msgstr ""
+msgstr "Growl"
 
 # File: src/www/system_advanced_notifications.php, line: 205
 msgid "Disable Growl Notifications"
@@ -20249,7 +20324,7 @@ msgstr ""
 
 # File: src/www/system_advanced_notifications.php, line: 255
 msgid "Disable SMTP Notifications"
-msgstr ""
+msgstr "Désactiver les Notifications SMTP"
 
 # File: src/www/system_advanced_notifications.php, line: 260
 msgid ""
@@ -20260,7 +20335,7 @@ msgstr ""
 
 # File: src/www/system_advanced_notifications.php, line: 264
 msgid "E-Mail server"
-msgstr ""
+msgstr "Serveur de courriel"
 
 # File: src/www/system_advanced_notifications.php, line: 267
 msgid ""
@@ -20270,13 +20345,15 @@ msgstr ""
 
 # File: src/www/system_advanced_notifications.php, line: 271
 msgid "SMTP Port of E-Mail server"
-msgstr ""
+msgstr "Port SMTP du serveur de courriel"
 
 # File: src/www/system_advanced_notifications.php, line: 274
 msgid ""
 "This is the port of the SMTP E-Mail server, typically 25, 587 (submission) "
 "or 465 (smtps)"
 msgstr ""
+"Le port du serveur mail SMTP, généralement 25, 587 (avec authentification) "
+"ou 465 (smtps)"
 
 # File: src/www/system_advanced_notifications.php, line: 278
 msgid "Secure SMTP Connection"
@@ -20284,7 +20361,7 @@ msgstr "Connexion SMTP sécurisée"
 
 # File: src/www/system_advanced_notifications.php, line: 283
 msgid "Enable SMTP over SSL/TLS"
-msgstr ""
+msgstr "Activer SMTP avec SSL/TLS"
 
 # File: src/www/system_advanced_notifications.php, line: 287
 msgid "Enable STARTTLS"
@@ -20300,12 +20377,12 @@ msgstr ""
 
 # File: src/www/system_advanced_notifications.php, line: 257
 msgid "E-Mail address"
-msgstr ""
+msgstr "Adresse courriel"
 
 # File: src/www/system_advanced_notifications.php, line: 299
 msgid ""
 "Enter the e-mail address that you would like email notifications sent to."
-msgstr ""
+msgstr "Entrer l'adresse de courriel où les notifications seront envoyées"
 
 # File: src/www/system_advanced_notifications.php, line: 266
 msgid "E-Mail auth username"
@@ -20448,7 +20525,7 @@ msgstr ""
 
 # File: src/www/system_authservers.php, line: 210
 msgid "The host name contains invalid characters."
-msgstr ""
+msgstr "Le nom d'hôte contient des caractères invalides."
 
 # File: src/www/system_authservers.php, line: 214
 msgid "An authentication server with the same name already exists."
@@ -20477,7 +20554,7 @@ msgstr ""
 
 # File: src/www/system_authservers.php, line: 927
 msgid "Do you really want to delete this Server?"
-msgstr ""
+msgstr "Voulez-vous vraiment supprimer ce Serveur ?"
 
 # File: src/www/system_authservers.php, line: 539
 # File: src/www/system_authservers.php, line: 813
@@ -20543,7 +20620,7 @@ msgstr ""
 # File: src/www/vpn_openvpn_server.php.orig, line: 991
 # File: src/www/vpn_openvpn_server.php.orig, line: 1031
 msgid "System: Certificates"
-msgstr ""
+msgstr "Système: Certificats"
 
 # File: src/www/system_authservers.php, line: 695
 msgid "Bind credentials"
@@ -20631,7 +20708,7 @@ msgstr ""
 
 # File: src/www/system_authservers.php, line: 856
 msgid "Authentication Timeout"
-msgstr ""
+msgstr "Délai d'inactivité de l'authentification"
 
 # File: src/www/system_authservers.php, line: 859
 msgid ""
@@ -20652,7 +20729,7 @@ msgstr ""
 
 # File: src/www/system_authservers.php, line: 889
 msgid "Server Name"
-msgstr ""
+msgstr "Nom du serveur"
 
 # File: src/www/system_authservers.php, line: 900
 msgid "Additional authentication servers can be added here."
@@ -20672,7 +20749,7 @@ msgstr ""
 # File: src/www/system_camanager.php, line: 169
 # File: src/www/system_certmanager.php, line: 204
 msgid "This certificate does not appear to be valid."
-msgstr ""
+msgstr "Le certificat ne semble pas être valide."
 
 # File: src/www/system_camanager.php, line: 172
 msgid "Encrypted private keys are not yet supported."
@@ -20764,7 +20841,7 @@ msgstr ""
 # File: src/www/system_camanager.php, line: 322
 # File: src/www/system_certmanager.php, line: 369
 msgid "The field '%s' contains invalid characters."
-msgstr ""
+msgstr "Le champ '%s' contient des caractères invalides."
 
 # File: src/www/system_camanager.php, line: 228
 # File: src/www/system_certmanager.php, line: 318
@@ -21182,7 +21259,7 @@ msgstr ""
 # File: src/www/system_certmanager.php, line: 1272
 # File: src/www/system_usermanager.php, line: 842
 msgid "Revoked"
-msgstr ""
+msgstr "Revoqué"
 
 # File: src/www/system_certmanager.php, line: 1282
 msgid "User Cert"
@@ -21238,15 +21315,15 @@ msgstr ""
 # File: src/www/system_crlmanager.php, line: 177
 # File: src/www/system_crlmanager.php, line: 179
 msgid "Deleted Certificate %s from CRL %s"
-msgstr ""
+msgstr "Supprimer le certificat %s de la CRL %s"
 
 # File: src/www/system_crlmanager.php, line: 181
 msgid "Failed to delete Certificate %s from CRL %s"
-msgstr ""
+msgstr "Échec lors de la suppression du Certificat %s de la CRL %s"
 
 # File: src/www/system_crlmanager.php, line: 138
 msgid "Both the Certificate and CRL must be specified."
-msgstr ""
+msgstr "Le Certificat et la CRL doivent être spécifiés."
 
 # File: src/www/system_crlmanager.php, line: 142
 msgid "CA mismatch between the Certificate and CRL. Unable to Revoke."
@@ -21266,7 +21343,7 @@ msgstr ""
 
 # File: src/www/system_crlmanager.php, line: 510
 msgid "Delete this certificate from the CRL "
-msgstr ""
+msgstr "Supprimer le certificat de la CRL"
 
 # File: src/www/system_crlmanager.php, line: 38
 msgid "Create an internal Certificate Revocation List"
@@ -21329,7 +21406,7 @@ msgstr ""
 
 # File: src/www/system_crlmanager.php, line: 490
 msgid "No Certificates Found for this CRL."
-msgstr ""
+msgstr "Aucun Certificat trouvé dans la CRL."
 
 # File: src/www/system_crlmanager.php, line: 532
 msgid "No Certificates Found for this CA."
@@ -21337,11 +21414,11 @@ msgstr ""
 
 # File: src/www/system_crlmanager.php, line: 540
 msgid "Revoke a Certificate"
-msgstr ""
+msgstr "Révoquer un certificat"
 
 # File: src/www/system_crlmanager.php, line: 545
 msgid "Choose a Certificate to Revoke"
-msgstr ""
+msgstr "Sélectionner un Certificat à révoquer"
 
 # File: src/www/system_crlmanager.php, line: 563
 msgid "Reason"
@@ -21353,11 +21430,11 @@ msgstr ""
 
 # File: src/www/system_crlmanager.php, line: 642
 msgid "Add or Import CRL for %s"
-msgstr ""
+msgstr "Ajouter ou Importer la CRL pour %s"
 
 # File: src/www/system_crlmanager.php, line: 646
 msgid "Import CRL for %s"
-msgstr ""
+msgstr "Importer la CRL pour %s"
 
 # File: src/www/system_crlmanager.php, line: 719
 msgid "Unknown (imported)"
@@ -21365,16 +21442,16 @@ msgstr ""
 
 # File: src/www/system_crlmanager.php, line: 666
 msgid "Export CRL"
-msgstr ""
+msgstr "Export la CRL"
 
 # File: src/www/system_crlmanager.php, line: 671
 # File: src/www/system_crlmanager.php, line: 677
 msgid "Edit CRL"
-msgstr ""
+msgstr "Éditer la CRL"
 
 # File: src/www/system_crlmanager.php, line: 685
 msgid "Delete CRL"
-msgstr ""
+msgstr "Supprimer la CRL"
 
 # File: src/www/system_gateway_groups.php, line: 135
 msgid "Add group"
@@ -21819,7 +21896,7 @@ msgstr ""
 # File: src/www/system_gateways_edit.php, line: 792
 # File: src/www/system_gateways_edit.php, line: 797
 msgid "Mark Gateway as Down"
-msgstr "Marquez cette passerelle comme hors-service"
+msgstr "Marquer cette passerelle comme hors-service"
 
 # File: src/www/system_gateways_edit.php, line: 798
 msgid "This will force this gateway to be considered Down"
@@ -21967,13 +22044,13 @@ msgid ""
 "Do not use 'local' as a domain name. It will cause local hosts running mDNS ("
 "avahi, bonjour, etc.) to be unable to resolve local hosts not running mDNS."
 msgstr ""
-"Ne pas utiliser «local» comme un nom de domaine. Il provoquera des "
+"Ne pas utiliser «local» comme nom de domaine. Il provoquera des "
 "dysfonctionnements avec les hôtes locaux utilisant mDNS (avahi, bonjour, "
 "etc.)."
 
 # File: src/www/system_general.php, line: 341
 msgid "e.g. %smycorp.com, home, office, private, etc.%s"
-msgstr ""
+msgstr "ex. %smycorp.com, home, office, private, etc.%s"
 
 # File: src/www/system_general.php, line: 344
 msgid "DNS Server"
@@ -21989,8 +22066,8 @@ msgid ""
 "also used for the DHCP service, DNS forwarder and for PPTP VPN clients."
 msgstr ""
 "Entrez les adresse IP utilisées par le système pour la résolution DNS. Elles "
-"sont également utilisées pour le service DHCP, DNS et pour les clients VPN "
-"PPTP."
+"sont également utilisées pour le service DHCP, Redirecteur DNS et pour les "
+"clients VPN PPTP."
 
 # File: src/www/system_general.php, line: 401
 msgid ""
@@ -22004,7 +22081,7 @@ msgstr ""
 
 # File: src/www/system_general.php, line: 401
 msgid "DNS server options"
-msgstr ""
+msgstr "Options du serveur DNS"
 
 # File: src/www/system_general.php, line: 408
 msgid "Allow DNS server list to be overridden by DHCP/PPP on WAN"
@@ -22019,13 +22096,13 @@ msgid ""
 "will not be assigned to DHCP and PPTP VPN clients."
 msgstr ""
 "Si cette option est activée, %s va utiliser les serveurs DNS assignées par "
-"de serveur DHCP/PPP sur WAN pour ses propres fins (y compris la résolution "
+"de serveur DHCP/PPP sur WAN pour ses propres fins (y compris le Redirecteur "
 "DNS). Toutefois, le serveur DHCP et les clients VPN PPTP ne seront pas "
 "affectés."
 
 # File: src/www/system_general.php, line: 420
 msgid "Do not use the DNS Forwarder as a DNS server for the firewall"
-msgstr "Ne pas utiliser le résolveur DNS comme serveur DNS pour le pare-feu"
+msgstr "Ne pas utiliser le Redirecteur DNS comme serveur DNS pour le pare-feu"
 
 # File: src/www/system_general.php, line: 423
 msgid ""
@@ -22090,7 +22167,7 @@ msgstr "Sélectionnez un firmware alternatif pour la cryptographie."
 
 # File: src/www/system_groupmanager.php, line: 108
 msgid "The group name contains invalid characters."
-msgstr ""
+msgstr "Le nom de groupe contient des caractères invalides."
 
 # File: src/www/system_groupmanager.php, line: 112
 msgid "The group name is longer than 16 characters."
@@ -22111,7 +22188,7 @@ msgstr "Voulez-vous vraiment supprimer ce privilège ?"
 
 # File: src/www/system_groupmanager.php, line: 537
 msgid "Do you really want to delete this group?"
-msgstr ""
+msgstr "Voulez-vous vraiment supprimer ce groupe ?"
 
 # File: src/www/system_groupmanager.php, line: 283
 # File: src/www/system_usermanager.php, line: 468
@@ -22444,11 +22521,11 @@ msgstr "Ajouter une route"
 # File: src/www/system_routes.php, line: 165
 # File: src/www/system_routes.php, line: 187
 msgid "Route"
-msgstr ""
+msgstr "Route"
 
 # File: src/www/system_routes.php, line: 166
 msgid "Do you really want to delete this route?"
-msgstr ""
+msgstr "Voulez-vous vraiment supprimer cette route ?"
 
 # File: src/www/system_routes.php, line: 384
 msgid "Do you really want to delete the selected routes?"
@@ -22464,27 +22541,27 @@ msgstr ""
 
 # File: src/www/system_routes.php, line: 258
 msgid "disable route"
-msgstr ""
+msgstr "désactiver la route"
 
 # File: src/www/system_routes.php, line: 258
 msgid "enable route"
-msgstr ""
+msgstr "activer la route"
 
 # File: src/www/system_routes.php, line: 275
 msgid "move selected routes before this route"
-msgstr ""
+msgstr "déplacer les routes sélectionnées avant cette route"
 
 # File: src/www/system_routes.php, line: 279
 msgid "edit route"
-msgstr ""
+msgstr "éditer la route"
 
 # File: src/www/system_routes.php, line: 283
 msgid "delete route"
-msgstr ""
+msgstr "supprimer la route"
 
 # File: src/www/system_routes.php, line: 287
 msgid "clone route"
-msgstr ""
+msgstr "cloner la route"
 
 # File: src/www/system_routes.php, line: 357
 # File: src/www/system_routes.php, line: 362
@@ -22497,7 +22574,7 @@ msgstr "supprimer les routes sélectionnées"
 
 # File: src/www/system_routes.php, line: 321
 msgid "add route"
-msgstr ""
+msgstr "ajouter une route"
 
 # File: src/www/system_routes.php, line: 396
 msgid ""
@@ -22513,7 +22590,7 @@ msgstr ""
 # File: src/www/system_routes_edit.php, line: 82
 # File: src/www/system_routes_edit.php, line: 256
 msgid "Destination network"
-msgstr ""
+msgstr "Réseau de destination"
 
 # File: src/www/system_routes_edit.php, line: 83
 msgid "Destination network bit count"
@@ -22522,6 +22599,7 @@ msgstr ""
 # File: src/www/system_routes_edit.php, line: 90
 msgid "A valid IPv4 or IPv6 destination network must be specified."
 msgstr ""
+"Une adresse IPv4 ou IPv6 valide de réseau destination doit être spécifiée."
 
 # File: src/www/system_routes_edit.php, line: 93
 msgid "A valid destination network bit count must be specified."
@@ -22533,7 +22611,7 @@ msgstr ""
 
 # File: src/www/system_routes_edit.php, line: 162
 msgid "A route to these destination networks already exists"
-msgstr ""
+msgstr "Une route pour ce réseau destination existe déjà."
 
 # File: src/www/system_routes_edit.php, line: 172
 # File: src/www/system_routes_edit.php, line: 178
@@ -22576,15 +22654,15 @@ msgstr "association retiré."
 
 # File: src/www/system_usermanager.php, line: 227
 msgid "API key"
-msgstr ""
+msgstr "Clé API"
 
 # File: src/www/system_usermanager.php, line: 228
 msgid "removed."
-msgstr ""
+msgstr "supprimé."
 
 # File: src/www/system_usermanager.php, line: 230
 msgid "No API key found"
-msgstr ""
+msgstr "Aucune clé API trouvée"
 
 # File: src/www/system_usermanager.php, line: 183
 msgid "The username is longer than 16 characters."
@@ -22632,7 +22710,7 @@ msgstr "Voulez-vous vraiment supprimer cet utilisateur ?"
 
 # File: src/www/system_usermanager.php, line: 611
 msgid "Do you really want to delete this API key?"
-msgstr ""
+msgstr "Voulez-vous vraiment supprimer cette clé API ?"
 
 # File: src/etc/inc/ipsec.inc, line: 43
 # File: src/etc/inc/ipsec.inc, line: 52
@@ -22667,11 +22745,11 @@ msgstr ""
 
 # File: src/www/system_usermanager.php, line: 704
 msgid "add groups"
-msgstr ""
+msgstr "ajouter un groupe"
 
 # File: src/www/system_usermanager.php, line: 708
 msgid "remove groups"
-msgstr ""
+msgstr "supprimer un groupe"
 
 # File: src/www/system_usermanager.php, line: 611
 msgid "Effective Privileges"
@@ -22683,11 +22761,11 @@ msgstr "Hérité de"
 
 # File: src/www/system_usermanager.php, line: 761
 msgid "revoke privilege"
-msgstr ""
+msgstr "révoquer le privilège"
 
 # File: src/www/system_usermanager.php, line: 774
 msgid "assign privileges"
-msgstr ""
+msgstr "assigner les privilèges"
 
 # File: src/www/system_usermanager.php, line: 678
 msgid "User Certificates"
@@ -22703,31 +22781,31 @@ msgstr "exporter la clé privée"
 
 # File: src/www/system_usermanager.php, line: 811
 msgid "export certificate"
-msgstr ""
+msgstr "exporter le certificat"
 
 # File: src/www/system_usermanager.php, line: 815
 msgid "unlink certificate"
-msgstr ""
+msgstr "dissocier le certificat"
 
 # File: src/www/system_usermanager.php, line: 828
 msgid "create or link user certificate"
-msgstr ""
+msgstr "créer ou associer un certificat utilisateur"
 
 # File: src/www/system_usermanager.php, line: 880
 msgid "API keys"
-msgstr ""
+msgstr "Clés API"
 
 # File: src/www/system_usermanager.php, line: 887
 msgid "key"
-msgstr ""
+msgstr "clé"
 
 # File: src/www/system_usermanager.php, line: 907
 msgid "delete API key"
-msgstr ""
+msgstr "supprimer la clé API"
 
 # File: src/www/system_usermanager.php, line: 921
 msgid "create API key"
-msgstr ""
+msgstr "créer une clé API"
 
 # File: src/www/system_usermanager.php, line: 930
 msgid ""
@@ -22830,7 +22908,7 @@ msgstr "Confirmation"
 
 # File: src/www/system_usermanager_settings.php, line: 47
 msgid "Session timeout must be an integer value."
-msgstr "Le délai d'expiration de la session doit être un entier"
+msgstr "Le délai d'inactivité de la session doit être un entier"
 
 # File: src/www/system_usermanager_settings.php, line: 59
 msgid ""
@@ -22840,7 +22918,7 @@ msgstr ""
 
 # File: src/www/system_usermanager_settings.php, line: 133
 msgid "Session Timeout"
-msgstr "Délai d'expiration de la session"
+msgstr "Délai d'inactivité de la session"
 
 # File: src/www/system_usermanager_settings.php, line: 137
 msgid ""
@@ -22862,11 +22940,12 @@ msgstr ""
 
 # File: src/www/system_usermanager_settings_test.php, line: 47
 msgid "Could not find settings for %s%s"
-msgstr ""
+msgstr "Impossible de trouver les paramètres pour %s%s"
 
 # File: src/www/system_usermanager_settings_test.php, line: 51
 msgid "Testing %s LDAP settings... One moment please..."
 msgstr ""
+"Test des paramètres %s LDAP en cours... Veuillez patienter s'il vous plait..."
 
 # File: src/www/system_usermanager_settings_test.php, line: 52
 msgid "Attempting connection to"
@@ -22916,7 +22995,7 @@ msgstr ""
 
 # File: src/www/vpn_ipsec.php, line: 270
 msgid "IKE"
-msgstr ""
+msgstr "IKE"
 
 # File: src/www/vpn_ipsec.php, line: 271
 msgid "Remote Gateway"
@@ -23084,7 +23163,7 @@ msgstr ""
 
 # File: src/www/vpn_ipsec_keys_edit.php, line: 72
 msgid "The identifier contains invalid characters."
-msgstr ""
+msgstr "L'identifiant contient des caractères invalides."
 
 # File: src/www/vpn_ipsec_keys_edit.php, line: 84
 msgid "Another entry with the same identifier already exists."
@@ -23432,7 +23511,7 @@ msgstr ""
 # File: src/www/vpn_openvpn_csc.php, line: 372
 # File: src/www/vpn_openvpn_server.php, line: 834
 msgid "General information"
-msgstr ""
+msgstr "Information générale"
 
 # File: src/www/vpn_ipsec_phase1.php, line: 612
 msgid "Disable this phase1 entry"
@@ -23842,7 +23921,7 @@ msgstr ""
 
 # File: src/www/vpn_ipsec_settings.php, line: 163
 msgid "IPSec Advanced Settings"
-msgstr ""
+msgstr "Paramètres avancés IPSec"
 
 # File: src/www/vpn_ipsec_settings.php, line: 162
 msgid "LAN security associations"
@@ -23969,7 +24048,7 @@ msgstr ""
 # File: src/www/vpn_pppoe_edit.php, line: 127
 # File: src/www/vpn_pptp.php, line: 95
 msgid "A valid RADIUS server address must be specified."
-msgstr ""
+msgstr "Une adresse valide de serveur RADIUS doit être spécifiée."
 
 # File: src/www/vpn_l2tp.php, line: 102
 # File: src/www/vpn_pppoe_edit.php, line: 135
@@ -24108,7 +24187,7 @@ msgstr "Entrer l'adresse IP du serveur RADIUS."
 
 # File: src/www/vpn_l2tp.php, line: 471
 msgid "RADIUS Shared Secret"
-msgstr ""
+msgstr "Secret partagé RADIUS"
 
 # File: src/www/vpn_l2tp.php, line: 475
 msgid ""
@@ -24228,11 +24307,14 @@ msgid ""
 "The field Proxy host or address must contain a valid IP address or domain "
 "name."
 msgstr ""
+"Le champ nom d'hôte ou adresse du Proxy doit contenir une adresse IP ou un "
+"nom de domaine valide."
 
 # File: src/www/vpn_openvpn_client.php, line: 198
 msgid ""
 "The field Proxy port must contain a valid port, ranging from 0 to 65535."
 msgstr ""
+"Le champ port du Proxy doit contenir un port valide, allant de 0 à 65535."
 
 # File: src/www/vpn_openvpn_client.php, line: 228
 msgid "User name and password are required for proxy with authentication."
@@ -24348,7 +24430,7 @@ msgstr ""
 
 # File: src/www/vpn_openvpn_client.php, line: 744
 msgid "User Authentication Settings"
-msgstr ""
+msgstr "Paramètres de l'authentification des utilisateurs"
 
 # File: src/www/vpn_openvpn_client.php, line: 747
 msgid "User name/pass"
@@ -24361,7 +24443,7 @@ msgstr ""
 # File: src/www/vpn_openvpn_client.php, line: 776
 # File: src/www/vpn_openvpn_server.php, line: 1001
 msgid "Cryptographic Settings"
-msgstr "Paramètre cryptographiques"
+msgstr "Paramètres cryptographiques"
 
 # File: src/www/vpn_openvpn_client.php, line: 779
 # File: src/www/vpn_openvpn_server.php, line: 1004
@@ -24546,7 +24628,7 @@ msgstr ""
 # File: src/www/vpn_openvpn_client.php, line: 1148
 # File: src/www/vpn_openvpn_server.php, line: 1919
 msgid "Advanced configuration"
-msgstr ""
+msgstr "Configuration avancées"
 
 # File: src/www/vpn_openvpn_client.php, line: 1157
 msgid ""
@@ -24643,6 +24725,9 @@ msgid ""
 "Don't use this option to permanently disable a client due to a compromised "
 "key or password. Use a CRL (certificate revocation list) instead"
 msgstr ""
+"Ne pas utiliser cette option pour désactiver un client à cause d'une clé ou "
+"un mot de passe compromis. Utilisez une CRL (liste de révocation de "
+"certificats) à la place."
 
 # File: src/www/vpn_openvpn_csc.php, line: 436
 # File: src/www/vpn_openvpn_server.php, line: 1988
@@ -24822,7 +24907,7 @@ msgstr ""
 # File: src/www/vpn_openvpn_export.php, line: 139
 # File: src/www/vpn_openvpn_export_shared.php, line: 79
 msgid "You need to specify an IP or hostname."
-msgstr ""
+msgstr "Vous devez spécifier une adresse IP ou nom d'hôte"
 
 # File: src/www/vpn_openvpn_export.php, line: 149
 msgid ""
@@ -24863,7 +24948,7 @@ msgstr ""
 # File: src/www/vpn_openvpn_export.php, line: 338
 # File: src/www/vpn_openvpn_export_shared.php, line: 177
 msgid "Please specify an IP address or hostname."
-msgstr ""
+msgstr "Veuillez spécifier une adresse IP ou un nom d'hôte."
 
 # File: src/www/vpn_openvpn_export.php, line: 367
 msgid "The password or confirm field is empty"
@@ -24881,7 +24966,7 @@ msgstr ""
 # File: src/www/vpn_openvpn_export.php, line: 400
 # File: src/www/vpn_openvpn_export_shared.php, line: 208
 msgid "Please fill the proxy username and password."
-msgstr ""
+msgstr "Veuillez insérer le nom d'utilisateur et le mot de passe du proxy."
 
 # File: src/www/vpn_openvpn_export.php, line: 404
 # File: src/www/vpn_openvpn_export_shared.php, line: 212
@@ -24936,6 +25021,8 @@ msgid ""
 "Enter the hostname or IP address the client will use to connect to this "
 "server."
 msgstr ""
+"Entrer un nom d'hôte ou une adresse IP que le client utilisera pour se "
+"connecter sur le serveur."
 
 # File: src/www/vpn_openvpn_export.php, line: 686
 # File: src/www/vpn_openvpn_export.php.orig, line: 686
@@ -25130,7 +25217,7 @@ msgstr ""
 
 # File: src/www/vpn_openvpn_export.php, line: 957
 msgid "OpenVPN For Android"
-msgstr ""
+msgstr "OpenVPN pour Android"
 
 # File: src/www/vpn_openvpn_export.php, line: 957
 msgid "Recommended client for Android"
@@ -25162,7 +25249,7 @@ msgstr ""
 
 # File: src/www/vpn_openvpn_export.php, line: 960
 msgid "Recommended client for Mac OSX"
-msgstr ""
+msgstr "Client recommandé pour Mac OSX"
 
 # File: src/www/vpn_openvpn_export.php, line: 960
 msgid "Viscosity"
@@ -25222,6 +25309,8 @@ msgstr ""
 msgid ""
 "Using a tunnel network and server bridge settings together is not allowed."
 msgstr ""
+"Utilisé les paramètres tunnel réseau et serveur bridge en même temps n'est "
+"autorisé."
 
 # File: src/www/vpn_openvpn_server.php, line: 388
 msgid "Server Bridge DHCP Start and End must both be empty, or defined."
@@ -25238,6 +25327,8 @@ msgstr ""
 # File: src/www/vpn_openvpn_server.php, line: 397
 msgid "The Server Bridge DHCP range is invalid (start higher than end)."
 msgstr ""
+"La plage du serveur bridge DHCP est invalide (le début est plus grand que la "
+"fin)"
 
 # File: src/www/vpn_openvpn_server.php, line: 539
 msgid "add server"
@@ -25279,7 +25370,7 @@ msgstr ""
 # File: src/www/vpn_openvpn_server.php, line: 991
 # File: src/www/vpn_openvpn_server.php.orig, line: 991
 msgid "No Certificate Revocation Lists (CRLs) defined."
-msgstr ""
+msgstr "Aucune Liste de Révocation de Certificats (CRL) définie."
 
 # File: src/www/vpn_openvpn_server.php, line: 1148
 msgid "DH Parameters Length"
@@ -25356,7 +25447,7 @@ msgstr ""
 
 # File: src/www/vpn_openvpn_server.php, line: 1339
 msgid "Bridge DHCP"
-msgstr ""
+msgstr "Bridge DHCP"
 
 # File: src/www/vpn_openvpn_server.php, line: 1349
 msgid "Allow clients on the bridge to obtain DHCP."
@@ -25620,7 +25711,7 @@ msgstr "Masque de sous-réseau"
 
 # File: src/www/vpn_pppoe_edit.php, line: 450
 msgid "Hint"
-msgstr ""
+msgstr "Suggestion"
 
 # File: src/www/vpn_pppoe_edit.php, line: 455
 msgid "No. PPPoE users"
@@ -25849,7 +25940,7 @@ msgstr ""
 # File: src/www/services_captiveportal.php, line: 759
 # File: src/www/vpn_pptp.php, line: 482
 msgid "Secondary RADIUS server"
-msgstr ""
+msgstr "Serveur secondaire RADIUS"
 
 # File: src/www/vpn_pptp.php, line: 491
 msgid "Secondary RADIUS shared secret"

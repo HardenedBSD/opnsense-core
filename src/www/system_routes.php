@@ -206,13 +206,16 @@ $( document ).ready(function() {
     });
 
     // link move buttons
-    $(".act_move").click(function(){
+    $(".act_move").click(function(event){
+      event.preventDefault();
       var id = $(this).data("id");
       $("#id").val(id);
       $("#act").val("move");
       $("#iform").submit();
     });
 
+    // watch scroll position and set to last known on page load
+    watchScrollPosition();
 });
 </script>
 <body>
@@ -321,7 +324,6 @@ endif; ?>
                   </tr>
                   <tr>
                     <td colspan="7">
-                      <strong><?= gettext('Note:') ?></strong><br/>
                       <?=gettext("Do not enter static routes for networks assigned on any interface of this firewall.  Static routes are only used for networks reachable via a different router, and not reachable via your default gateway.");?>
                     </td>
                   </tr>

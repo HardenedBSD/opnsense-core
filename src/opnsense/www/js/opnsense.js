@@ -217,3 +217,28 @@ function ajaxGet(url,sendData,callback) {
         data:sendData
     });
 }
+
+/**
+ * watch scroll position and set to last known on page load
+ */
+function watchScrollPosition() {
+    function current_location() {
+        // concat url pieces to indentify this page and parameters
+        return window.location.href.replace(/\/|\:|\.|\?|\#/gi, '');
+    }
+
+    // link on scroll event handler
+    $(window).scroll(function(){
+        sessionStorage.setItem('scrollpos', current_location()+"|"+$(window).scrollTop());
+    });
+
+    // move to last known position on page load
+    $( document ).ready(function() {
+        var scrollpos = sessionStorage.getItem('scrollpos');
+        if (scrollpos != null) {
+            if (scrollpos.split('|')[0] == current_location()) {
+                $(window).scrollTop(scrollpos.split('|')[1]);
+            }
+        }
+    });
+}

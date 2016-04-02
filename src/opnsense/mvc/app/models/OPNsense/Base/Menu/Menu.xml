@@ -32,11 +32,10 @@
             <CARPStatus order="100" VisibleName="CARP Status" url="/carp_status.php"/>
         </HighAvailability>
         <Routes order="40" cssClass="fa fa-map-signs fa-fw">
-            <All url="/system_routes.php">
+            <All order="10" url="/system_routes.php">
                 <Edit url="/system_routes_edit.php*" visibility="hidden"/>
             </All>
-            <Status url="/diag_routes.php"/>
-            <Log VisibleName="Log File" url="/diag_logs_routing.php"/>
+            <Log order="100" VisibleName="Log File" url="/diag_logs_routing.php"/>
         </Routes>
         <Gateways order="30" cssClass="fa fa-location-arrow fa-fw">
             <All url="/system_gateways.php">
@@ -52,9 +51,6 @@
         </Gateways>
         <Settings order="20" cssClass="fa fa-cogs fa-fw">
             <General order="100" url="/system_general.php"/>
-            <AdminAccess VisibleName="Admin Access" order="200" url="/system_advanced_admin.php"/>
-            <Networking order="300" url="/system_advanced_network.php"/>
-            <FirewallNAT VisibleName="Firewall/NAT" order="400" url="/system_advanced_firewall.php"/>
             <Notifications order="500" url="/system_advanced_notifications.php"/>
             <LogFiles VisibleName="Logs/Reports" order="600" url="/diag_logs_settings.php"/>
             <Miscellaneous order="700" url="/system_advanced_misc.php"/>
@@ -67,6 +63,7 @@
             <Step url="/wizard.php*" visibility="hidden"/>
         </Wizard>
         <Access order="10" cssClass="fa fa-users fa-fw">
+            <Administration order="0" url="/system_advanced_admin.php"/>
             <Users order="10" url="/system_usermanager.php">
                 <All url="/system_usermanager.php*" visibility="hidden"/>
                 <Privileges url="/system_usermanager_addprivs.php*" visibility="hidden"/>
@@ -91,7 +88,7 @@
     <Interfaces order="2" cssClass="fa fa-sitemap">
         <Overview order="900" url="/status_interfaces.php" cssClass="fa fa-tasks fa-fw"/>
         <Assignments order="910" url="/interfaces_assign.php" cssClass="fa fa-pencil fa-fw"/>
-        <Types VisibleName="Other Types" order="929" cssClass="fa fa-cog fa-fw">
+        <Types VisibleName="Other Types" order="929" cssClass="fa fa-archive fa-fw">
             <Bridge url="/interfaces_bridge.php">
                 <Edit url="/interfaces_bridge_edit.php*" visibility="hidden"/>
             </Bridge>
@@ -129,6 +126,7 @@
                 <Status url="/status_wireless.php*" visibility="hidden"/>
             </Status>
         </Wireless>
+        <Settings order="930" url="/system_advanced_network.php" cssClass="fa fa-cogs fa-fw"/>
         <Diagnostics order="940" cssClass="fa fa-medkit fa-fw">
             <DNSLookup order="20" VisibleName="DNS Lookup" url="/diag_dns.php"/>
             <PacketCapture order="40" VisibleName="Packet Capture" url="/diag_packet_capture.php"/>
@@ -142,22 +140,10 @@
     </Interfaces>
     <Firewall order="3" cssClass="glyphicon glyphicon-fire">
         <Aliases order="10" cssClass="fa fa-list-alt fa-fw">
-            <All order="100"  url="/firewall_aliases.php?tab=all">
-                <Edit url="/firewall_aliases_edit.php?tab=all" visibility="hidden"/>
-                <Network url="/firewall_aliases.php?tab=network" visibility="hidden"/>
-                <NoneEdit url="/firewall_aliases_edit.php?id=*" visibility="hidden"/>
-                <None url="/firewall_aliases.php" visibility="hidden"/>
-            </All>
-            <IPs order="200" url="/firewall_aliases.php?tab=ip">
-                <Edit url="/firewall_aliases_edit.php?tab=ip" visibility="hidden"/>
-            </IPs>
-            <Ports order="300" url="/firewall_aliases.php?tab=port">
-                <Edit url="/firewall_aliases_edit.php?tab=port" visibility="hidden"/>
-            </Ports>
-            <URLs order="400"  url="/firewall_aliases.php?tab=url">
-                <Edit url="/firewall_aliases_edit.php?tab=url" visibility="hidden"/>
-            </URLs>
-            <Import order="500" url="/firewall_aliases_import.php"/>
+            <View order="100"  url="/firewall_aliases.php">
+                <Edit url="/firewall_aliases_edit.php*" visibility="hidden"/>
+            </View>
+            <Import order="200" url="/firewall_aliases_import.php"/>
         </Aliases>
         <Rules order="20" url="/firewall_rules.php" cssClass="fa fa-check fa-fw">
             <RulesEdit url="/firewall_rules_edit.php*" visibility="hidden"/>
@@ -184,6 +170,7 @@
         <Schedules order="100" url="/firewall_schedule.php" cssClass="fa fa-calendar fa-fw">
             <SchedulesEdit url="/firewall_schedule_edit.php*" visibility="hidden"/>
         </Schedules>
+        <Settings order="200" url="/system_advanced_firewall.php" cssClass="fa fa-cogs fa-fw"/>
         <Diagnostics order="500" cssClass="fa fa-medkit fa-fw">
             <FilterReload order="20"  VisibleName="Filter Reload" url="/status_filter_reload.php"/>
             <pfInfo order="30" url="/diag_pf_info.php" VisibleName="pfInfo"/>
@@ -197,9 +184,6 @@
             <StatesDump order="70" VisibleName="States Dump" url="/diag_dump_states.php"/>
             <StatesReset order="80" VisibleName="States Reset" url="/diag_resetstate.php"/>
             <StatesSummary order="90" VisibleName="States Summary" url="/diag_states_summary.php"/>
-            <StatesTrackSource order="100" VisibleName="Source Tracking" url="/diag_dump_states_sources.php">
-                <Filter url="/diag_dump_states_sources.php*" visibility="hidden"/>
-            </StatesTrackSource>
         </Diagnostics>
         <LogFiles order="400" VisibleName="Log Files" cssClass="fa fa-eye fa-fw">
             <Normal VisibleName="Normal View" order="100" url="/diag_logs_filter.php"/>
@@ -277,20 +261,12 @@
             <Log VisibleName="Log File" order="100" url="/diag_logs_relayd.php"/>
         </LoadBalancer>
         <NTP VisibleName="Network Time" cssClass="fa fa-clock-o fa-fw">
-            <General url="/services_ntpd.php"/>
-            <GPS url="/services_ntpd_gps.php"/>
-            <PPS url="/services_ntpd_pps.php"/>
-            <Status url="/status_ntpd.php"/>
-            <Log VisibleName="Log File" url="/diag_logs_ntpd.php"/>
+            <General order="10" url="/services_ntpd.php"/>
+            <GPS order="20" url="/services_ntpd_gps.php"/>
+            <PPS order="30" url="/services_ntpd_pps.php"/>
+            <Status order="40" url="/status_ntpd.php"/>
+            <Log order="50" VisibleName="Log File" url="/diag_logs_ntpd.php"/>
         </NTP>
-        <PPPoEServer VisibleName="PPPoE Server" cssClass="fa fa-tty fa-fw">
-            <Settings order="10" url="/vpn_pppoe.php">
-                <Edit url="/vpn_pppoe_edit.php*" visibility="hidden"/>
-            </Settings>
-            <LogFile order="20" VisibleName="Log File" url="/diag_logs_poes.php">
-                <Type url="/diag_logs_poes.php*" visibility="hidden"/>
-            </LogFile>
-        </PPPoEServer>
         <SNMP VisibleName="SNMP" url="/services_snmp.php" cssClass="fa fa-database fa-fw"/>
         <UPnP VisibleName="Universal Plug and Play" cssClass="fa fa-plug fa-fw">
             <Settings url="/services_upnp.php">
@@ -300,6 +276,7 @@
         </UPnP>
         <WoL VisibleName="Wake on LAN" url="/services_wol.php" cssClass="fa fa-power-off fa-fw">
             <WoLEdit url="/services_wol_edit.php*" visibility="hidden"/>
+            <Wol url="/services_wol.php*" visibility="hidden"/>
         </WoL>
         <Diagnostics order="900" cssClass="fa fa-medkit fa-fw" url="/status_services.php">
           <All url="/status_services.php?*" visibility="hidden"/>
@@ -326,15 +303,6 @@
             <SPD order="80" VisibleName="Security Policy Database" url="/diag_ipsec_spd.php"/>
             <Log order="90" VisibleName="Log File" url="/diag_logs_ipsec.php"/>
         </IPsec>
-        <L2TP cssClass="fa fa-unlock fa-fw" order="30">
-            <Settings order="10" url="/vpn_l2tp.php"/>
-            <Users order="20" url="/vpn_l2tp_users.php">
-                <Edit url="/vpn_l2tp_users_edit.php*" visibility="hidden"/>
-            </Users>
-            <LogFile order="30" VisibleName="Log File" url="/diag_logs_l2tp.php">
-                <Type url="/diag_logs_l2tp.php*" visibility="hidden"/>
-            </LogFile>
-        </L2TP>
         <OpenVPN cssClass="fa fa-lock fa-fw" order="20">
             <Servers order="10" url="/vpn_openvpn_server.php">
                 <Edit url="/vpn_openvpn_server.php?*" visibility="hidden"/>
@@ -352,15 +320,6 @@
             <Status order="60" VisibleName="Connection Status" url="/status_openvpn.php"/>
             <Log order="70" VisibleName="Log File" url="/diag_logs_openvpn.php"/>
         </OpenVPN>
-        <PPTP cssClass="fa fa-unlock fa-fw" order="40">
-            <Settings order="10" url="/vpn_pptp.php"/>
-            <Users order="20" url="/vpn_pptp_users.php">
-                <Edit url="/vpn_pptp_users_edit.php*" visibility="hidden"/>
-            </Users>
-            <LogFile order="30" VisibleName="Log File" url="/diag_logs_pptp.php">
-                <Type url="/diag_logs_pptp.php*" visibility="hidden"/>
-            </LogFile>
-        </PPTP>
     </VPN>
     <Help order="6" cssClass="fa fa-support">
         <OPNsense VisibleName="Documentation" order="10" url="https://docs.opnsense.org/" cssClass="fa fa-book" IsExternal="Y"/>

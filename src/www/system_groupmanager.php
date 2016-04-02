@@ -512,19 +512,17 @@ $( document ).ready(function() {
                   <td class="hidden-xs"> </td>
                   <td class="list">
                     <a href="system_groupmanager.php?act=new" class="btn btn-default btn-xs"
-                       title="<?=gettext("add user");?>" data-toggle="tooltip">
+                       title="<?=gettext("add group");?>" data-toggle="tooltip">
                       <span class="glyphicon glyphicon-plus"></span>
                     </a>
                   </td>
                 </tr>
                 <tr  class="hidden-xs">
                   <td colspan="4">
-                    <p class="col-xs-12 col-sm-10">
                       <?=gettext('Additional webConfigurator groups can be added here. ' .
                       'Group permissions can be assigned which are inherited by users who are members of the group. ' .
                       'An icon that appears grey indicates that it is a system defined object. ' .
                       'Some system object properties can be modified but they cannot be deleted.');?>
-                    </p>
                   </td>
                 </tr>
               </tfoot>

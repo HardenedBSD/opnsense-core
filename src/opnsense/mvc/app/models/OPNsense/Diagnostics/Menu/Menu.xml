@@ -4,6 +4,12 @@
         <Diagnostics>
             <Activity order="10" VisibleName="Activity Monitor" url="/ui/diagnostics/activity/"/>
         </Diagnostics>
+        <Routes>
+            <Status order="20" url="/ui/diagnostics/interface/routes/"/>
+        </Routes>
+        <Settings>
+          <Netflow order="1000" VisibleName="NetFlow" url="/ui/diagnostics/netflow/"/>
+        </Settings>
     </System>
     <Interfaces>
         <Diagnostics>

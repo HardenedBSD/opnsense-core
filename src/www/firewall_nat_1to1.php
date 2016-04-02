@@ -153,7 +153,8 @@ $main_buttons = array(
     });
 
     // link move buttons
-    $(".act_move").click(function(){
+    $(".act_move").click(function(event){
+        event.preventDefault();
         var id = $(this).attr("id").split('_').pop(-1);
         $("#id").val(id);
         $("#action").val("move");
@@ -161,12 +162,15 @@ $main_buttons = array(
     });
 
     // link toggle buttons
-    $(".act_toggle").click(function(){
+    $(".act_toggle").click(function(event){
+        event.preventDefault();
         var id = $(this).attr("id").split('_').pop(-1);
         $("#id").val(id);
         $("#action").val("toggle");
         $("#iform").submit();
     });
+    // watch scroll position and set to last known on page load
+    watchScrollPosition();
 
   });
   </script>
@@ -328,18 +332,10 @@ $main_buttons = array(
                   </tr>
                   <tr>
                     <td colspan="9">
-                      <p>
-                        <span class="text-danger">
-                          <strong><?=gettext("Note:"); ?><br />
-                          </strong>
-                        </span>
-                        <?=gettext("Depending on the way your WAN connection is setup, you may also need a"); ?>
-                        <a href="firewall_virtual_ip.php"><?=gettext("Virtual IP."); ?></a><br />
-                        <?=gettext("If you add a 1:1 NAT entry for any of the interface IPs on this system, " .
-                          "it will make this system inaccessible on that IP address. i.e. if " .
-                          "you use your WAN IP address, any services on this system (IPsec, OpenVPN server, etc.) " .
-                          "using the WAN IP address will no longer function."); ?>
-                      </p>
+                      <?=gettext("If you add a 1:1 NAT entry for any of the interface IPs on this system, " .
+                        "it will make this system inaccessible on that IP address. i.e. if " .
+                        "you use your WAN IP address, any services on this system (IPsec, OpenVPN server, etc.) " .
+                        "using the WAN IP address will no longer function."); ?>
                     </td>
                   </tr>
                 </tfoot>

@@ -7,17 +7,30 @@ all:
 
 force:
 
+WRKDIR?=${.CURDIR}/work
+WRKSRC=	${WRKDIR}/src
+PKGDIR=	${WRKDIR}/pkg
+
 mount: force
-	@${.CURDIR}/scripts/version.sh > \
-	    ${.CURDIR}/src/opnsense/version/opnsense
-	mount_unionfs ${.CURDIR}/src /usr/local
-	@service configd restart
+	@if [ ! -f ${WRKDIR}/.mount_done ]; then \
+	    echo -n "Enabling core.git live mount..."; \
+	    ${.CURDIR}/scripts/version.sh > \
+	        ${.CURDIR}/src/opnsense/version/opnsense; \
+	    mount_unionfs ${.CURDIR}/src /usr/local; \
+	    touch ${WRKDIR}/.mount_done; \
+	    echo "done"; \
+	    service configd restart; \
+	fi
 
 umount: force
-	umount -f "<above>:${.CURDIR}/src"
-	@service configd restart
-
-remount: umount mount
+	@if [ -f ${WRKDIR}/.mount_done ]; then \
+	    echo -n "Disabling core.git live mount..."; \
+	    umount -f "<above>:${.CURDIR}/src"; \
+	    rm ${.CURDIR}/src/opnsense/version/opnsense; \
+	    rm ${WRKDIR}/.mount_done; \
+	    echo "done"; \
+	    service configd restart; \
+	fi
 
 .if ${GIT} != true
 CORE_COMMIT!=	${.CURDIR}/scripts/version.sh
@@ -36,8 +49,9 @@ CORE_REPOSITORY?=	${FLAVOUR}
 CORE_PACKAGESITE?=	http://pkg.opnsense.org
 
 CORE_NAME?=		opnsense-devel
+CORE_FAMILY?=		development
 CORE_ORIGIN?=		opnsense/${CORE_NAME}
-CORE_COMMENT?=		OPNsense development package
+CORE_COMMENT?=		OPNsense ${CORE_FAMILY} package
 CORE_MAINTAINER?=	franco@opnsense.org
 CORE_WWW?=		https://opnsense.org/
 CORE_MESSAGE?=		ACME delivery for the crafty coyote!
@@ -65,7 +79,6 @@ CORE_DEPENDS?=		apinger \
 			lighttpd \
 			minicron \
 			miniupnpd \
-			mpd4 \
 			mpd5 \
 			ngattach \
 			ntp \
@@ -107,6 +120,7 @@ CORE_DEPENDS?=		apinger \
 			rate \
 			relayd \
 			rrdtool12 \
+			samplicator \
 			secadm \
 			secadm-rules \
 			smartmontools \
@@ -170,9 +184,32 @@ plist: force
 	@${MAKE} -C ${.CURDIR}/lang plist
 	@${MAKE} -C ${.CURDIR}/src plist
 
+package: force
+	@if [ -f ${WRKDIR}/.mount_done ]; then \
+	    echo "Cannot continue with live mount"; exit 1; \
+	fi
+	@${PKG} info gettext-tools > /dev/null
+	@${PKG} info git > /dev/null
+	@rm -rf ${WRKSRC} ${PKGDIR}
+	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
+	@${MAKE} DESTDIR=${WRKSRC} scripts
+	@${MAKE} DESTDIR=${WRKSRC} manifest > ${WRKSRC}/+MANIFEST
+	@${MAKE} DESTDIR=${WRKSRC} plist > ${WRKSRC}/plist
+	@${PKG} create -v -m ${WRKSRC} -r ${WRKSRC} \
+	    -p ${WRKSRC}/plist -o ${PKGDIR}
+	@echo -n "Sucessfully built "
+	@cd ${PKGDIR}; find . -name "*.txz" | cut -c3-
+
+upgrade: package
+	${PKG} delete -y ${CORE_NAME}
+	@${PKG} add ${PKGDIR}/*.txz
+	@/usr/local/etc/rc.restart_webgui
+
 lint: force
 	find ${.CURDIR}/src ${.CURDIR}/scripts \
 	    -name "*.sh" -type f -print0 | xargs -0 -n1 sh -n
+	find ${.CURDIR}/src ${.CURDIR}/src \
+	    -name "*.xml" -type f -print0 | xargs -0 -n1 xmllint --noout
 	find ${.CURDIR}/src ${.CURDIR}/lang/dynamic/helpers \
 	    ! -name "*.xml" ! -name "*.xml.sample" ! -name "*.eot" \
 	    ! -name "*.svg" ! -name "*.woff" ! -name "*.woff2" \

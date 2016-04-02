@@ -111,31 +111,11 @@ $pagetitle .= sprintf(' | %s.%s', $config['system']['hostname'], $config['system
 
     <!-- append some helper functions to integrate into the legacy code -->
     <script type="text/javascript" src="/javascript/opnsense_legacy.js"></script>
+    <!-- opnsense non legacy helper functions -->
+    <script type="text/javascript" src="/ui/js/opnsense.js"></script>
 
     <!-- Bootstrap type ahead -->
     <script type="text/javascript" src="/ui/js/bootstrap3-typeahead.min.js"></script>
-
-    <?php
-    /*
-     *  Find all javascript files that need to be included
-     *  for this page ... from the arrays ... :)
-     *  Coded by: Erik Kristensen
-     */
-
-    $dir  = trim(basename($_SERVER['SCRIPT_FILENAME'], '.php'));
-    $path = '/usr/local/www/javascript/' . $dir . '/';
-    if (is_dir($path)) {
-      if ($dh = opendir($path)) {
-        while (($file = readdir($dh)) !== false) {
-          if (is_dir($file))
-            continue;
-          echo "\t<script type=\"text/javascript\" src=\"/javascript/{$dir}/{$file}\"></script>\n";
-        }
-        closedir($dh);
-      }
-    }
-
-    ?>
 
     <script type="text/javascript">
     //<![CDATA[

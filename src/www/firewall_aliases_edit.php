@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } else {
         $pconfig['address'] = implode(' ',$pconfig['host_url']);
     }
-    unset($pconfig['host_url']);
+
     foreach ($pconfig['detail'] as &$detailDescr) {
         if (empty($detailDescr)) {
             $detailDescr = sprintf(gettext("Entry added %s"), date('r'));
@@ -108,6 +108,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($pconfig['submit'])) {
         $input_errors = array();
         // validate data
+        foreach ($pconfig['host_url'] as $detail_entry) {
+            if ($pconfig['type'] == 'host') {
+                if (!is_domain($detail_entry) && !is_ipaddr($detail_entry)) {
+                    $input_errors[] = sprintf(gettext("%s doesn't appear to be a valid hostname or ip address"), $detail_entry) ;
+                }
+            } elseif ($pconfig['type'] == 'port') {
+                if (!is_port($detail_entry) && !is_portrange($detail_entry)) {
+                    $input_errors[] = sprintf(gettext("%s doesn't appear to be a valid port number"), $detail_entry) ;
+                }
+            }
+
+        }
 
         /* Check for reserved keyword names */
         // Keywords not allowed in names
@@ -120,18 +132,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $reserved_ifs = get_configured_interface_list(false, true);
         $reserved_keywords = array_merge($reserved_keywords, $reserved_ifs, $reserved_table_names);
-        foreach($reserved_keywords as $rk)
-            if($rk == $pconfig['name'])
+        foreach ($reserved_keywords as $rk)
+            if ($rk == $pconfig['name'])
                 $input_errors[] = sprintf(gettext("Cannot use a reserved keyword as alias name %s"), $rk);
 
         /* check for name interface description conflicts */
-        foreach($config['interfaces'] as $interface) {
-            if($interface['descr'] == $pconfig['name']) {
+        foreach ($config['interfaces'] as $interface) {
+            if ($interface['descr'] == $pconfig['name']) {
                 $input_errors[] = gettext("An interface description with this name already exists.");
                 break;
             }
         }
-        if ( is_validaliasname($pconfig['name']) !== true) {
+        if (is_validaliasname($pconfig['name']) !== true) {
             $input_errors[] = gettext("The alias name must be less than 32 characters long and may only consist of the characters") . " a-z, A-Z, 0-9, _.";
         }
 
@@ -174,29 +186,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
              *   renamed on referenced rules and such
              */
             if (isset($id) && $pconfig['name'] <> $pconfig['origname']) {
-              // Firewall rules
-              $origname = $pconfig['origname'];
-              update_alias_names_upon_change(array('filter', 'rule'), array('source', 'address'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('filter', 'rule'), array('destination', 'address'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('filter', 'rule'), array('source', 'port'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('filter', 'rule'), array('destination', 'port'), $pconfig['name'], $origname);
-              // NAT Rules
-              update_alias_names_upon_change(array('nat', 'rule'), array('source', 'address'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'rule'), array('source', 'port'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'rule'), array('destination', 'address'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'rule'), array('destination', 'port'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'rule'), array('target'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'rule'), array('local-port'), $pconfig['name'], $origname);
-              // NAT 1:1 Rules
-              update_alias_names_upon_change(array('nat', 'onetoone'), array('destination', 'address'), $pconfig['name'], $origname);
-              // NAT Outbound Rules
-              update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('source', 'network'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('sourceport'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('destination', 'address'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('dstport'), $pconfig['name'], $origname);
-              update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('target'), $pconfig['name'], $origname);
-              // Alias in an alias
-              update_alias_names_upon_change(array('aliases', 'alias'), array('address'), $pconfig['name'], $origname);
+                // Firewall rules
+                $origname = $pconfig['origname'];
+                update_alias_names_upon_change(array('filter', 'rule'), array('source', 'address'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('filter', 'rule'), array('destination', 'address'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('filter', 'rule'), array('source', 'port'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('filter', 'rule'), array('destination', 'port'), $pconfig['name'], $origname);
+                // NAT Rules
+                update_alias_names_upon_change(array('nat', 'rule'), array('source', 'address'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'rule'), array('source', 'port'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'rule'), array('destination', 'address'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'rule'), array('destination', 'port'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'rule'), array('target'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'rule'), array('local-port'), $pconfig['name'], $origname);
+                // NAT 1:1 Rules
+                update_alias_names_upon_change(array('nat', 'onetoone'), array('destination', 'address'), $pconfig['name'], $origname);
+                // NAT Outbound Rules
+                update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('source', 'network'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('sourceport'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('destination', 'address'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('dstport'), $pconfig['name'], $origname);
+                update_alias_names_upon_change(array('nat', 'advancedoutbound', 'rule'), array('target'), $pconfig['name'], $origname);
+                // Alias in an alias
+                update_alias_names_upon_change(array('aliases', 'alias'), array('address'), $pconfig['name'], $origname);
             }
 
 
@@ -218,20 +230,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
               }
             }
 
-            if($pconfig['type'] == 'host') {
-                header("Location: firewall_aliases.php?tab=ip");
-            } elseif (strpos($pconfig['type'],'url') !== false) {
-                header("Location: firewall_aliases.php?tab=url");
-            } else {
-                header("Location: firewall_aliases.php?tab=".$pconfig['type']);
-            }
+            header('Location: firewall_aliases.php');
             exit;
-
         }
     }
 }
 
-$referer = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/firewall_aliases.php');
+$referer = (isset($_SERVER['HTTP_REFERER']) ? html_safe($_SERVER['HTTP_REFERER']) : '/firewall_aliases.php');
 
 legacy_html_escape_form_data($pconfig);
 
@@ -345,174 +350,168 @@ include("head.inc");
       <div class="row">
 <?php  if (isset($input_errors) && count($input_errors) > 0) print_input_errors($input_errors); ?>
         <section class="col-xs-12">
-          <div class="content-box">
-            <header class="content-box-head container-fluid">
-              <h3><?=gettext("Alias Edit");?></h3>
-            </header>
-            <div class="content-box-main">
-              <form action="firewall_aliases_edit.php" method="post" name="iform" id="iform">
-                <div class="table-responsive">
-                  <table class="table table-striped">
-                    <tr>
-                      <td colspan="2" align="right">
-                        <small><?=gettext("full help"); ?> </small>
-                        <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td width="22%"><a id="help_for_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Name"); ?></td>
-                      <td width="78%">
-                        <input name="origname" type="hidden" id="origname" class="form-control unknown" size="40" value="<?=$pconfig['name'];?>" />
-                        <?php if (isset($id)): ?>
-                          <input name="id" type="hidden" value="<?=$id;?>" />
-                        <?php endif; ?>
-                        <input name="name" type="text" id="name" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
-                        <div class="hidden" for="help_for_name">
-                          <?=gettext("The name of the alias may only consist of the characters \"a-z, A-Z, 0-9 and _\"."); ?>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
-                      <td>
-                        <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
-                        <div class="hidden" for="help_for_description">
-                          <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><a id="help_for_type" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Type"); ?></td>
-                      <td>
-                        <select  name="type" class="form-control" id="typeSelect">
-                          <option value="host" <?=$pconfig['type'] == "host" ? "selected=\"selected\"" : ""; ?>><?=gettext("Host(s)"); ?></option>
-                          <option value="network" <?=$pconfig['type'] == "network" ? "selected=\"selected\"" : ""; ?>><?=gettext("Network(s)"); ?></option>
-                          <option value="port" <?=$pconfig['type'] == "port" ? "selected=\"selected\"" : ""; ?>><?=gettext("Port(s)"); ?></option>
-                          <option value="url" <?=$pconfig['type'] == "url" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL (IPs)");?></option>
-                          <option value="url_ports" <?=$pconfig['type'] == "url_ports" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL (Ports)");?></option>
-                          <option value="urltable" <?=$pconfig['type'] == "urltable" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL Table (IPs)"); ?></option>
-                          <option value="urltable_ports" <?=$pconfig['type'] == "urltable_ports" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL Table (Ports)"); ?></option>
-                        </select>
-                        <div class="hidden" for="help_for_type">
-                          <span class="text-info">
-                            <?=gettext("Networks")?><br/>
-                          </span>
-                          <small>
-                            <?=gettext("Networks are specified in CIDR format.  Select the CIDR mask that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 specifies 255.255.255.0, /64 specifies a normal IPv6 network, etc. Hostnames (FQDNs) may also be specified, using a /32 mask for IPv4 or /128 for IPv6.");?>
-                            <br/>
-                          </small>
-                          <span class="text-info">
-                            <?=gettext("Hosts")?><br/>
-                          </span>
-                          <small>
-                            <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
-                            <br/>
-                          </small>
-                          <span class="text-info">
-                            <?=gettext("Ports")?><br/>
-                          </span>
-                          <small>
-                            <?=gettext("Enter as many ports as you wish. Port ranges can be expressed by separating with a colon.");?>
-                            <br/>
-                          </small>
-                          <span class="text-info">
-                            <?=gettext("URL's")?><br/>
-                          </span>
-                          <small>
-                            <?=gettext("Enter a URL containing a large number of IPs,ports and/or Subnets. After saving the lists will be downloaded and scheduled for automatic updates when a frequency is provided.");?>
-                          </small>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td><div id="addressnetworkport"><a id="help_for_hosts" href="#" class="showhelp"><i class="fa fa-info-circle text-muted"></i></a> <?=gettext("Host(s)"); ?></div></td>
-                      <td>
-                        <table class="table table-striped table-condensed" id="detailTable">
-                          <thead>
-                            <tr>
-                              <th></th>
-                              <th id="detailsHeading1"><?=gettext("Network"); ?></th>
-                              <th id="detailsHeading3"><?=gettext("Description"); ?></th>
-                              <th id="updatefreqHeader" ><?=gettext("Update Freq. (days)");?></th>
-                            </tr>
-                          </thead>
-                          <tbody>
+          <div class="content-box tab-content">
+            <form action="firewall_aliases_edit.php" method="post" name="iform" id="iform">
+              <table class="table table-striped">
+                <tr>
+                  <td width="22%"><strong><?=gettext("Alias Edit");?></strong></td>
+                  <td width="78%" align="right">
+                    <small><?=gettext("full help"); ?> </small>
+                    <i class="fa fa-toggle-off text-danger" style="cursor: pointer;" id="show_all_help_page" type="button"></i>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="22%"><a id="help_for_name" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Name"); ?></td>
+                  <td width="78%">
+                    <input name="origname" type="hidden" id="origname" class="form-control unknown" size="40" value="<?=$pconfig['name'];?>" />
+                    <?php if (isset($id)): ?>
+                      <input name="id" type="hidden" value="<?=$id;?>" />
+                    <?php endif; ?>
+                    <input name="name" type="text" id="name" class="form-control unknown" size="40" maxlength="31" value="<?=$pconfig['name'];?>" />
+                    <div class="hidden" for="help_for_name">
+                      <?=gettext("The name of the alias may only consist of the characters \"a-z, A-Z, 0-9 and _\"."); ?>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_description" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Description"); ?></td>
+                  <td>
+                    <input name="descr" type="text" class="form-control unknown" id="descr" size="40" value="<?=$pconfig['descr'];?>" />
+                    <div class="hidden" for="help_for_description">
+                      <?=gettext("You may enter a description here for your reference (not parsed)."); ?>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><a id="help_for_type" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Type"); ?></td>
+                  <td>
+                    <select  name="type" class="form-control" id="typeSelect">
+                      <option value="host" <?=$pconfig['type'] == "host" ? "selected=\"selected\"" : ""; ?>><?=gettext("Host(s)"); ?></option>
+                      <option value="network" <?=$pconfig['type'] == "network" ? "selected=\"selected\"" : ""; ?>><?=gettext("Network(s)"); ?></option>
+                      <option value="port" <?=$pconfig['type'] == "port" ? "selected=\"selected\"" : ""; ?>><?=gettext("Port(s)"); ?></option>
+                      <option value="url" <?=$pconfig['type'] == "url" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL (IPs)");?></option>
+                      <option value="url_ports" <?=$pconfig['type'] == "url_ports" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL (Ports)");?></option>
+                      <option value="urltable" <?=$pconfig['type'] == "urltable" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL Table (IPs)"); ?></option>
+                      <option value="urltable_ports" <?=$pconfig['type'] == "urltable_ports" ? "selected=\"selected\"" : ""; ?>><?=gettext("URL Table (Ports)"); ?></option>
+                    </select>
+                    <div class="hidden" for="help_for_type">
+                      <span class="text-info">
+                        <?=gettext("Networks")?><br/>
+                      </span>
+                      <small>
+                        <?=gettext("Networks are specified in CIDR format.  Select the CIDR mask that pertains to each entry. /32 specifies a single IPv4 host, /128 specifies a single IPv6 host, /24 specifies 255.255.255.0, /64 specifies a normal IPv6 network, etc. Hostnames (FQDNs) may also be specified, using a /32 mask for IPv4 or /128 for IPv6.");?>
+                        <br/>
+                      </small>
+                      <span class="text-info">
+                        <?=gettext("Hosts")?><br/>
+                      </span>
+                      <small>
+                        <?=gettext("Enter as many hosts as you would like. Hosts must be specified by their IP address or fully qualified domain name (FQDN). FQDN hostnames are periodically re-resolved and updated. If multiple IPs are returned by a DNS query, all are used.");?>
+                        <br/>
+                      </small>
+                      <span class="text-info">
+                        <?=gettext("Ports")?><br/>
+                      </span>
+                      <small>
+                        <?=gettext("Enter as many ports as you wish. Port ranges can be expressed by separating with a colon.");?>
+                        <br/>
+                      </small>
+                      <span class="text-info">
+                        <?=gettext("URL's")?><br/>
+                      </span>
+                      <small>
+                        <?=gettext("Enter a URL containing a large number of IPs,ports and/or Subnets. After saving the lists will be downloaded and scheduled for automatic updates when a frequency is provided.");?>
+                      </small>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td><div id="addressnetworkport"><a id="help_for_hosts" href="#" class="showhelp"><i class="fa fa-info-circle text-muted"></i></a> <?=gettext("Host(s)"); ?></div></td>
+                  <td>
+                    <table class="table table-striped table-condensed" id="detailTable">
+                      <thead>
+                        <tr>
+                          <th></th>
+                          <th id="detailsHeading1"><?=gettext("Network"); ?></th>
+                          <th id="detailsHeading3"><?=gettext("Description"); ?></th>
+                          <th id="updatefreqHeader" ><?=gettext("Update Freq. (days)");?></th>
+                        </tr>
+                      </thead>
+                      <tbody>
 <?php                      if (is_array($pconfig['aliasurl'])):
-                            $detail_desc = explode("||", $pconfig['detail']);
-                            foreach ($pconfig['aliasurl'] as $aliasid => $aliasurl):
+                        $detail_desc = explode("||", $pconfig['detail']);
+                        foreach ($pconfig['aliasurl'] as $aliasid => $aliasurl):
 ?>
-                              <tr>
-                                <td>
-                                  <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
-                                </td>
-                                <td>
-                                  <input type="text" class="form-control" name="host_url[]" value="<?=$aliasurl;?>"/>
-                                </td>
-                                <td>
-                                  <input type="text" class="form-control" name="detail[]" value="<?= isset($detail_desc[$aliasid])?$detail_desc[$aliasid]:"";?>">
-                                </td>
-                                <td>
+                        <tr>
+                          <td>
+                            <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
+                          </td>
+                          <td>
+                            <input type="text" class="form-control" name="host_url[]" value="<?=$aliasurl;?>"/>
+                          </td>
+                          <td>
+                            <input type="text" class="form-control" name="detail[]" value="<?= isset($detail_desc[$aliasid])?$detail_desc[$aliasid]:"";?>">
+                          </td>
+                          <td>
 <?php                          if ($aliasid ==0):
 ?>
-                                  <input type="text" class="form-control input-sm" id="updatefreq"  name="updatefreq" value="<?=$pconfig['updatefreq'];?>" >
+                            <input type="text" class="form-control input-sm" id="updatefreq"  name="updatefreq" value="<?=$pconfig['updatefreq'];?>" >
 <?php                          endif;
 ?>
-                                </td>
-                              </tr>
+                          </td>
+                        </tr>
 <?php                        endforeach;
-                          else:
-                            $detail_desc = explode("||", $pconfig['detail']);
-                            if (empty($pconfig['address']) && isset($pconfig['url'])) {
-                              $addresslst = array($pconfig['url']);
-                            } else {
-                              $addresslst = explode(' ', $pconfig['address']);
-                            }
-                            foreach ($addresslst as $addressid => $address):
+                      else:
+                        $detail_desc = explode("||", $pconfig['detail']);
+                        if (empty($pconfig['address']) && isset($pconfig['url'])) {
+                          $addresslst = array($pconfig['url']);
+                        } else {
+                          $addresslst = explode(' ', $pconfig['address']);
+                        }
+                        foreach ($addresslst as $addressid => $address):
 ?>
-                              <tr>
-                                <td>
-                                  <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
-                                </td>
-                                <td>
-                                  <input type="text" class="fld_detail"  name="host_url[]" value="<?=$address;?>"/>
-                                </td>
-                                <td>
-                                  <input type="text" name="detail[]" value="<?= isset($detail_desc[$addressid])?$detail_desc[$addressid]:"";?>"?>
-                                </td>
-                                <td>
+                        <tr>
+                          <td>
+                            <div style="cursor:pointer;" class="act-removerow btn btn-default btn-xs" alt="remove"><span class="glyphicon glyphicon-minus"></span></div>
+                          </td>
+                          <td>
+                            <input type="text" class="fld_detail"  name="host_url[]" value="<?=$address;?>"/>
+                          </td>
+                          <td>
+                            <input type="text" name="detail[]" value="<?= isset($detail_desc[$addressid])?$detail_desc[$addressid]:"";?>"/>
+                          </td>
+                          <td>
 <?php                          if ($addressid ==0):
 ?>
-                                  <input type="text" class="input-sm" id="updatefreq" name="updatefreq" value="<?=$pconfig['updatefreq'];?>" >
+                            <input type="text" class="input-sm" id="updatefreq" name="updatefreq" value="<?=$pconfig['updatefreq'];?>"/>
 <?php                          endif;
 ?>
-                                </td>
-                              </tr>
+                          </td>
+                        </tr>
 
 <?php                      endforeach;
-                          endif;
+                      endif;
 ?>
-                            </tbody>
-                            <tfoot>
-                              <tr>
-                                <td colspan="4">
-                                  <div id="addNew" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><span class="glyphicon glyphicon-plus"></span></div>
-                                </td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>&nbsp;</td>
-                        <td>
-                          <input id="submit" name="submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
-                          <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='<?=$referer;?>'" />
-                        </td>
-                      </tr>
-                  </table>
-                </div>
-              </form>
-            </div>
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td colspan="4">
+                            <div id="addNew" style="cursor:pointer;" class="btn btn-default btn-xs" alt="add"><span class="glyphicon glyphicon-plus"></span></div>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td>&nbsp;</td>
+                  <td>
+                    <input id="submit" name="submit" type="submit" class="btn btn-primary" value="<?=gettext("Save"); ?>" />
+                    <input type="button" class="btn btn-default" value="<?=gettext("Cancel");?>" onclick="window.location.href='<?=$referer;?>'" />
+                  </td>
+                </tr>
+              </table>
+            </form>
           </div>
         </section>
       </div>

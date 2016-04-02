@@ -139,7 +139,8 @@ include("head.inc");
 <script type="text/javascript">
 $( document ).ready(function() {
   // link delete buttons
-  $(".act_delete").click(function(){
+  $(".act_delete").click(function(event){
+    event.preventDefault();
     var id = $(this).attr("id").split('_').pop(-1);
     if (id != 'x') {
       // delete single
@@ -183,7 +184,8 @@ $( document ).ready(function() {
   });
 
   // link move buttons
-  $(".act_move").click(function(){
+  $(".act_move").click(function(event){
+    event.preventDefault();
     var id = $(this).attr("id").split('_').pop(-1);
     $("#id").val(id);
     $("#action").val("move");
@@ -191,13 +193,16 @@ $( document ).ready(function() {
   });
 
   // link toggle buttons
-  $(".act_toggle").click(function(){
+  $(".act_toggle").click(function(event){
+    event.preventDefault();
     var id = $(this).attr("id").split('_').pop(-1);
     $("#id").val(id);
     $("#action").val("toggle");
     $("#iform").submit();
   });
 
+  // watch scroll position and set to last known on page load
+  watchScrollPosition();
 
   // link category select/search
   $("#fw_category").change(function(){
@@ -236,7 +241,7 @@ $( document ).ready(function() {
   });
 
   // hide category search when not used
-  if ($("#fw_category > option").length == 1) {
+  if ($("#fw_category > option").length == 0) {
       $("#fw_category").addClass('hidden');
   }
 
@@ -375,7 +380,7 @@ $( document ).ready(function() {
                       <span class="glyphicon glyphicon-remove text-danger"></span>
 <?php
                       if (!isset($config['syslog']['nologprivatenets'])):?>
-                      <span class="glyphicon glyphicon-info-sign"></span>
+                      <span class="glyphicon glyphicon-info-sign text-info"></span>
 <?php
                       endif; ?>
                     </td>
@@ -400,7 +405,7 @@ $( document ).ready(function() {
                       <span class="glyphicon glyphicon-remove text-danger"></span>
 <?php
                       if (!isset($config['syslog']['nologbogons'])):?>
-                      <span class="glyphicon glyphicon-info-sign"></span>
+                      <span class="glyphicon glyphicon-info-sign text-info"></span>
 <?php
                       endif; ?>
                     </td>
@@ -431,11 +436,11 @@ $( document ).ready(function() {
                   } elseif ($filterent['type'] == "block" && !empty($filterent['disabled'])) {
                       $iconfn = "glyphicon-remove text-muted";
                   }  elseif ($filterent['type'] == "reject" && empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-remove  text-warning";
+                      $iconfn = "glyphicon-remove-sign text-danger";
                   }  elseif ($filterent['type'] == "reject" && !empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-remove  text-muted";
+                      $iconfn = "glyphicon-remove-sign text-muted";
                   } else if ($filterent['type'] == "match" && empty($filterent['disabled'])) {
-                      $iconfn = "glyphicon-ok";
+                      $iconfn = "glyphicon-ok text-info";
                   } else if ($filterent['type'] == "match" && !empty($filterent['disabled'])) {
                       $iconfn = "glyphicon-ok text-muted";
                   } elseif (empty($filterent['disabled'])) {
@@ -487,7 +492,7 @@ $( document ).ready(function() {
                         <i class="fa fa-flash text-muted" data-toggle="tooltip" title="<?= gettext('last match') ?>"></i>
 <?php                 endif; ?>
 <?php                 if (isset($filterent['log'])):?>
-                      <span class="glyphicon glyphicon-info-sign <?=!empty($filterent['disabled']) ? "text-muted" :""?>"></span>
+                      <span class="glyphicon glyphicon-info-sign <?=!empty($filterent['disabled']) ? 'text-muted' : 'text-info' ?>"></span>
 <?php                 endif; ?>
                     </td>
 
@@ -668,7 +673,6 @@ $( document ).ready(function() {
                   <tr>
                     <td colspan="5">
                       <select class="selectpicker" data-live-search="true" data-size="5"  multiple placeholder="<?=gettext("select category");?>" id="fw_category">
-                        <option value=""><?=gettext("Filter by category");?></value>
 <?php
                         // collect unique list of categories and append to option list
                         $categories = array();
@@ -678,7 +682,7 @@ $( document ).ready(function() {
                             }
                         }
                         foreach ($categories as $category):?>
-                        <option value="<?=$category;?>"><?=$category;?></value>
+                        <option value="<?=$category;?>"><?=$category;?></option>
 <?php
                         endforeach;?>
                       </select>
@@ -709,16 +713,16 @@ $( document ).ready(function() {
                           <td width="16"><span class="glyphicon glyphicon-play text-success"></span></td>
                           <td width="100"><?=gettext("pass");?></td>
                           <td width="14"></td>
-                          <td width="16"><span class="glyphicon glyphicon-ok"></span></td>
+                          <td width="16"><span class="glyphicon glyphicon-ok text-info"></span></td>
                           <td width="100"><?=gettext("match");?></td>
                           <td width="14"></td>
                           <td width="16"><span class="glyphicon glyphicon-remove text-danger"></span></td>
                           <td width="100"><?=gettext("block");?></td>
                           <td width="14"></td>
-                          <td width="16"><span class="glyphicon glyphicon-remove text-warning"></span></td>
+                          <td width="16"><span class="glyphicon glyphicon-remove-sign text-danger"></span></td>
                           <td width="100"><?=gettext("reject");?></td>
                           <td width="14"></td>
-                          <td width="16"><span class="glyphicon glyphicon-info-sign"></span></td>
+                          <td width="16"><span class="glyphicon glyphicon-info-sign text-info"></span></td>
                           <td width="100"><?=gettext("log");?></td>
                           <td width="16"><span class="fa fa-long-arrow-right"></span></td>
                           <td width="100"><?=gettext("in");?></td>
@@ -737,7 +741,7 @@ $( document ).ready(function() {
                           <td><span class="glyphicon glyphicon-remove text-muted"></span></td>
                           <td class="nowrap"><?=gettext("block (disabled)");?></td>
                           <td>&nbsp;</td>
-                          <td><span class="glyphicon glyphicon-remove text-muted"></span></td>
+                          <td><span class="glyphicon glyphicon-remove-sign text-muted"></span></td>
                           <td class="nowrap"><?=gettext("reject (disabled)");?></td>
                           <td>&nbsp;</td>
                           <td width="16"><span class="glyphicon glyphicon-info-sign text-muted"></span></td>
@@ -762,10 +766,6 @@ $( document ).ready(function() {
                   </tr>
                   <tr class="hidden-xs hidden-sm">
                     <td colspan="11">
-                      <strong>
-                        <span class="text-danger"><?=gettext("Hint:");?></span>
-                      </strong>
-                      <br />
                       <?php if ("FloatingRules" != $selected_if): ?>
                       <?=gettext("Rules are evaluated on a first-match basis (i.e. " .
                         "the action of the first rule to match a packet will be executed). " .
