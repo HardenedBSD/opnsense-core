@@ -76,10 +76,6 @@ fi
 # set keyboard map if needed
 /etc/rc.d/syscons onestart
 
-# set up and recover a crash dump before activating swap
-/usr/local/etc/rc.crashdump
-swapon -a
-
 # set up config directory structure
 mkdir -p /conf/backup
 mkdir -p /conf/sshd
@@ -98,28 +94,6 @@ if [ ! -f /usr/local/openssl/openssl.cnf ]; then
 	echo "done."
 fi
 
-# Disable APM on ATA drives.  Leaving this on will kill
-# drives long-term, especially laptop drives, by generating
-# excessive load cycles.
-ATAIDLE=/usr/local/sbin/ataidle
-for i in /dev/ad?; do
-	if [ ! -e ${i} ]; then
-		continue;
-	fi
-	SUPPORTED=`${ATAIDLE} ${i} | grep "APM Supported" | awk '{print $3;}'`
-	if [ "${SUPPORTED}" = "yes" ] ; then
-		echo Disabling APM on $i
-		${ATAIDLE} -P 0 ${i}
-	fi
-done
-
-#Eject CD devices on 3G modems
-MANUFACTURER="huawei|zte"
-CDDEVICE=`dmesg |egrep -ie "($MANUFACTURER)" | awk -F: '/cd/ {print $1}'`
-if [ "$CDDEVICE" != "" ]; then
-	cdcontrol -f /dev/"$CDDEVICE" eject
-fi
-
 # Enable console output if its muted.
 /sbin/conscontrol mute off >/dev/null
 
@@ -135,29 +109,51 @@ if [ ${USE_MFS_TMPVAR} -ne 0 ]; then
 		ln -s /root/var/db/pkg /var/db/pkg
 	fi
 
+	if [ ! -d /root/var/crash ]; then
+		mkdir -p /root/var
+		mv /var/crash /root/var
+		ln -s /root/var/crash /var/crash
+	fi
+
 	mount -t tmpfs -o mode=01777 tmpfs /tmp
 	mount -t tmpfs tmpfs /var
 
 	mkdir -p /var/db
 	ln -s /root/var/db/pkg /var/db/pkg
 
+	mkdir -p /var
+	ln -s /root/var/crash /var/crash
+
 	echo "done."
-elif [ -d /root/var/db/pkg ]; then
+else
 	# User must have just disabled RAM disks,
 	# let's move these back into place.
-	mkdir -p /var/db
-	# reverse the recovery symlink before moving
-	# back the original database:
-	rm -f /var/db/pkg
-	mv /root/var/db/pkg /var/db/
+
+	if [ -d /root/var/db/pkg ]; then
+		mkdir -p /var/db
+		# reverse the recovery symlink before moving
+		# back the original database:
+		rm -f /var/db/pkg
+		mv /root/var/db/pkg /var/db/
+	fi
+
+	if [ -d /root/var/crash ]; then
+		mkdir -p /var
+		rm -f /var/crash
+		mv /root/var/crash /var/crash
+	fi
 fi
 
 # make some directories in /var
 mkdir -p /var/run /var/log /var/etc /var/db/entropy /var/at/jobs \
-    /var/empty /var/tmp
+    /var/empty /var/tmp /var/crash
 
 # work around the fact that shutdown(8) doesn't clean up this file
 rm -f /var/run/nologin
+
+# set up and recover a crash dump before activating swap
+/usr/local/etc/rc.crashdump
+swapon -a
 
 # write /var/run/dmesg.boot
 /etc/rc.d/dmesg onestart

@@ -25,8 +25,13 @@
             </History>
             <Backups url="/diag_backup.php"/>
         </Configuration>
-        <CrashReporter order="90" VisibleName="Crash Reporter" url="/crash_reporter.php" cssClass="fa fa-bug fa-fw"/>
-        <Firmware order="5" url="/ui/core/firmware/" cssClass="fa fa-cloud-download fa-fw"/>
+        <Firmware order="5" cssClass="fa fa-building-o fa-fw">
+            <Updates order="10" url="/ui/core/firmware/"/>
+            <Reporter order="20" url="/crash_reporter.php"/>
+            <Reboot order="30" url="/reboot.php"/>
+            <Halt order="40" url="/diag_halt.php"/>
+            <Defaults order="50" url="/diag_defaults.php"/>
+        </Firmware>
         <HighAvailability order="50" VisibleName="High Availability" cssClass="fa fa-refresh fa-fw">
             <Synchronization url="/system_hasync.php"/>
             <CARPStatus order="100" VisibleName="CARP Status" url="/carp_status.php"/>
@@ -78,17 +83,12 @@
             </Servers>
             <Tester order="50" url="/diag_authentication.php"/>
         </Access>
-        <Diagnostics order="160" cssClass="fa fa-medkit fa-fw">
-            <Factory order="20" VisibleName="Factory Defaults" url="/diag_defaults.php"/>
-            <Halt order="30" VisibleName="Halt System" url="/diag_halt.php"/>
-            <Reboot order="40" VisibleName="Reboot System" url="/reboot.php"/>
-            <SmartStatus order="60" VisibleName="SMART Status" url="/diag_smart.php"/>
-        </Diagnostics>
     </System>
     <Interfaces order="2" cssClass="fa fa-sitemap">
         <Overview order="900" url="/status_interfaces.php" cssClass="fa fa-tasks fa-fw"/>
         <Assignments order="910" url="/interfaces_assign.php" cssClass="fa fa-pencil fa-fw"/>
-        <Types VisibleName="Other Types" order="929" cssClass="fa fa-archive fa-fw">
+        <Settings order="920" url="/system_advanced_network.php" cssClass="fa fa-cogs fa-fw"/>
+        <Types VisibleName="Other Types" order="950" cssClass="fa fa-archive fa-fw">
             <Bridge url="/interfaces_bridge.php">
                 <Edit url="/interfaces_bridge_edit.php*" visibility="hidden"/>
             </Bridge>
@@ -111,13 +111,13 @@
                 <Edit url="/interfaces_vlan_edit.php*" visibility="hidden"/>
             </VLAN>
         </Types>
-        <PPP order="926" VisibleName="Point-to-Point" cssClass="fa fa-tty fa-fw">
+        <PPP order="940" VisibleName="Point-to-Point" cssClass="fa fa-tty fa-fw">
             <Devices url="/interfaces_ppps.php">
                 <Edit url="/interfaces_ppps_edit.php*" visibility="hidden"/>
             </Devices>
             <LogFile VisibleName="Log File"  url="/diag_logs_ppp.php"/>
         </PPP>
-        <Wireless order="925" cssClass="fa fa-wifi fa-fw">
+        <Wireless order="930" cssClass="fa fa-wifi fa-fw">
             <Devices url="/interfaces_wireless.php">
                 <Edit url="/interfaces_wireless_edit.php*" visibility="hidden"/>
             </Devices>
@@ -126,9 +126,7 @@
                 <Status url="/status_wireless.php*" visibility="hidden"/>
             </Status>
         </Wireless>
-        <Settings order="930" url="/system_advanced_network.php" cssClass="fa fa-cogs fa-fw"/>
-        <Diagnostics order="940" cssClass="fa fa-medkit fa-fw">
-            <DNSLookup order="20" VisibleName="DNS Lookup" url="/diag_dns.php"/>
+        <Diagnostics order="960" cssClass="fa fa-medkit fa-fw">
             <PacketCapture order="40" VisibleName="Packet Capture" url="/diag_packet_capture.php"/>
             <Ping order="50" url="/diag_ping.php"/>
             <TestPort order="60" VisibleName="Test Port" url="/diag_testport.php"/>
@@ -238,6 +236,7 @@
             <RFC2136 order="30" VisibleName="RFC 2136" url="/services_rfc2136.php">
                 <Edit url="/services_rfc2136_edit.php*" visibility="hidden"/>
             </RFC2136>
+            <Lookup order="40" url="/diag_dns.php"/>
             <LogFile order="100" VisibleName="Log File" url="/diag_logs_resolver.php"/>
         </DNSTools>
         <IGMPProxy VisibleName="IGMP Proxy" url="/services_igmpproxy.php" cssClass="fa fa-map-signs fa-fw">
@@ -267,7 +266,7 @@
             <Status order="40" url="/status_ntpd.php"/>
             <Log order="50" VisibleName="Log File" url="/diag_logs_ntpd.php"/>
         </NTP>
-        <SNMP VisibleName="SNMP" url="/services_snmp.php" cssClass="fa fa-database fa-fw"/>
+        <SNMP url="/services_snmp.php" cssClass="fa fa-database fa-fw"/>
         <UPnP VisibleName="Universal Plug and Play" cssClass="fa fa-plug fa-fw">
             <Settings url="/services_upnp.php">
                 <Edit url="/services_upnp.php?*" visibility="hidden"/>
@@ -322,8 +321,8 @@
         </OpenVPN>
     </VPN>
     <Help order="6" cssClass="fa fa-support">
-        <OPNsense VisibleName="Documentation" order="10" url="https://docs.opnsense.org/" cssClass="fa fa-book" IsExternal="Y"/>
-        <UserForum VisibleName="User Forum" order="20" url="https://forum.opnsense.org/" cssClass="fa fa-ticket" IsExternal="Y"/>
-        <PaidSupport VisibleName="Paid Support" order="30" url="https://opnsense.org/support-overview/commercial-support/" cssClass="fa fa-phone" IsExternal="Y"/>
+        <Documentation order="10" url="https://docs.opnsense.org/" cssClass="fa fa-book" IsExternal="Y"/>
+        <Forum VisibleName="User Forum" order="20" url="https://forum.opnsense.org/" cssClass="fa fa-ticket" IsExternal="Y"/>
+        <Support VisibleName="Commercial Support" order="30" url="https://opnsense.org/support-overview/commercial-support/" cssClass="fa fa-phone" IsExternal="Y"/>
     </Help>
 </menu>

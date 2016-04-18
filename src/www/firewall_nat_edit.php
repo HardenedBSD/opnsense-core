@@ -145,24 +145,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         address_to_pconfig($a_nat[$configId]['destination'], $pconfig['dst'],
           $pconfig['dstmask'], $pconfig['dstnot'],
           $pconfig['dstbeginport'], $pconfig['dstendport']);
-    } else if (isset($_GET['template']) && $_GET['template'] == 'transparant_proxy') {
+    } elseif (isset($_GET['template']) && $_GET['template'] == 'transparant_proxy') {
         // new rule for transparant proxy reflection, to use as sample
         $pconfig['interface'] = "lan";
         $pconfig['src'] = "lan";
         $pconfig['dst'] = "any";
-        $pconfig['dstbeginport'] = 80 ;
-        $pconfig['dstendport'] = 80 ;
-        $pconfig['target'] = '127.0.0.1';
-        // try to read the proxy configuration to determine the current port
-        // this has some disadvantages in case of dependencies, but there isn't
-        // a much better solution available at the moment.
-        if (isset($config['OPNsense']['proxy']['forward']['port'])) {
-            $pconfig['local-port'] = $config['OPNsense']['proxy']['forward']['port'];
+        if (isset($_GET['https'])){
+            $pconfig['dstbeginport'] = 443;
+            $pconfig['dstendport'] = 443;
+            if (isset($config['OPNsense']['proxy']['forward']['sslbumpport'])) {
+                $pconfig['local-port'] = $config['OPNsense']['proxy']['forward']['sslbumpport'];
+            } else {
+                $pconfig['local-port'] = 3129;
+            }
         } else {
-            $pconfig['local-port'] = 3128;
+            $pconfig['dstbeginport'] = 80;
+            $pconfig['dstendport'] = 80;
+            // try to read the proxy configuration to determine the current port
+            // this has some disadvantages in case of dependencies, but there isn't
+            // a much better solution available at the moment.
+            if (isset($config['OPNsense']['proxy']['forward']['port'])) {
+                $pconfig['local-port'] = $config['OPNsense']['proxy']['forward']['port'];
+            } else {
+                $pconfig['local-port'] = 3128;
+            }
         }
+        $pconfig['target'] = '127.0.0.1';
+
         $pconfig['natreflection'] = 'enable';
-        $pconfig['descr'] = "redirect traffic to proxy";
+        $pconfig['descr'] = gettext("redirect traffic to proxy");
     } else {
         $pconfig['src'] = "any";
     }

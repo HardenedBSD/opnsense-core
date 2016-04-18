@@ -458,7 +458,6 @@ function openvpn_client_export_config($srvid, $usrid, $crtid, $useaddr, $verifys
 function openvpn_client_export_installer($srvid, $usrid, $crtid, $useaddr, $verifyservercn, $randomlocalport, $usetoken, $outpass, $proxy, $openvpnmanager, $advancedoptions, $openvpn_version = "x86-xp")
 {
     global $config, $input_errors, $current_openvpn_version, $current_openvpn_version_rev;
-    $uname_p = trim(exec("uname -p"));
 
     switch ($openvpn_version) {
         case "x86-xp":
@@ -474,21 +473,20 @@ function openvpn_client_export_installer($srvid, $usrid, $crtid, $useaddr, $veri
             $client_install_exe = "openvpn-install-{$current_openvpn_version}-I6{$current_openvpn_version_rev}-x86_64.exe";
             break;
         default:
-            $client_install_exe = "openvpn-install-{$current_openvpn_version}-I0{$current_openvpn_version_rev}-i686.exe";
+            $input_errors[] = gettext("Could not find matching OpenVPN architecture.");
+            return false;
     }
-
-    $ovpndir = "/usr/local/opnsense/contrib/openvpn";
-    $workdir = "{$ovpndir}/client-export";
 
     $validconfig = openvpn_client_export_validate_config($srvid, $usrid, $crtid);
     if (!$validconfig) {
+        $input_errors[] = gettext("Could not validate OpenVPN config.");
         return false;
     }
 
     list($settings, $server_cert, $server_ca, $servercn, $user, $cert, $nokeys) = $validconfig;
 
     // create template directory
-    $tempdir = "/tmp//openvpn-export-".uniqid();
+    $tempdir = '/tmp/openvpn-export-' . uniqid();
     mkdir($tempdir, 0700, true);
 
     // create config directory
@@ -498,7 +496,7 @@ function openvpn_client_export_installer($srvid, $usrid, $crtid, $useaddr, $veri
     }
 
     // copy the template directory
-    exec("cp -r {$workdir}/template/* {$tempdir}");
+    exec("cp -r /usr/local/opnsense/contrib/openvpn/client-export/template/* {$tempdir}");
     // and put the required installer exe in place
     exec("/bin/cp {$tempdir}/{$client_install_exe} {$tempdir}/openvpn-install.exe");
     if (stristr($openvpn_version, "x64")) {
@@ -565,11 +563,7 @@ RunProgram="openvpn-postinstall.exe"
     }
     file_put_contents("{$tempdir}/7zipConfig",$procchain);
 
-    if (file_exists("/usr/pbi/p7zip-{$uname_p}/bin/7z")) {
-        exec("/usr/pbi/p7zip-{$uname_p}/bin/7z -y a archive.7z {$files}");
-    } else {
-        exec("/usr/local/libexec/p7zip/7z -y a archive.7z {$files}");
-    }
+    exec("/usr/local/bin/7z -y a archive.7z {$files}");
 
     // create the final installer
     $outfile = "{$tempdir}-install.exe";
@@ -585,9 +579,6 @@ RunProgram="openvpn-postinstall.exe"
 function viscosity_openvpn_client_config_exporter($srvid, $usrid, $crtid, $useaddr, $verifyservercn, $randomlocalport, $usetoken, $outpass, $proxy, $openvpnmanager, $advancedoptions)
 {
     global $config;
-    $uname_p = trim(exec("uname -p"));
-
-    $ovpndir = "/usr/local/opnsense/contrib/openvpn/";
 
     $uniq = uniqid();
     $tempdir = "/tmp/openvpn-export-{$uniq}";
@@ -687,11 +678,7 @@ EOF;
     }
 
     // Zip Viscosity file
-    if (file_exists("/usr/pbi/zip-{$uname_p}/bin/zip")) {
-        exec("cd {$tempdir}/.. && /usr/pbi/zip-{$uname_p}/bin/zip -r {$zipfile} Viscosity.visc");
-    } else {
-        exec("cd {$tempdir}/.. && /usr/local/bin/zip -r {$zipfile} Viscosity.visc");
-    }
+    exec("cd {$tempdir}/.. && /usr/local/bin/zip -r {$zipfile} Viscosity.visc");
 
     // Remove temporary directory
     exec("rm -rf {$tempdir}");
@@ -818,11 +805,7 @@ function openvpn_client_export_sharedkey_config($srvid, $useaddr, $proxy, $zipco
         $shkeyfile = "{$tempdir}/{$shkeyfile}";
         file_put_contents("{$shkeyfile}", base64_decode($settings['shared_key']));
 
-        if (file_exists("/usr/pbi/zip-{$uname_p}/bin/zip")) {
-            exec("cd {$tempdir}/.. && /usr/pbi/zip-{$uname_p}/bin/zip -r /tmp/{$prefix}-config.zip {$prefix}");
-        } else {
-            exec("cd {$tempdir}/.. && /usr/local/bin/zip -r /tmp/{$prefix}-config.zip {$prefix}");
-        }
+        exec("cd {$tempdir}/.. && /usr/local/bin/zip -r /tmp/{$prefix}-config.zip {$prefix}");
 
         // Remove temporary directory
         exec("rm -rf {$tempdir}");

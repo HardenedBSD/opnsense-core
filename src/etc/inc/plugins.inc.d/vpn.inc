@@ -138,17 +138,12 @@ function vpn_pptpd_configure()
     killbypid('/var/run/pptp-vpn.pid', 'TERM', true);
     mwexec('rm -rf /var/etc/pptp-vpn');
 
-    if (!isset($pptpdcfg['mode']) || $pptpdcfg['mode'] == 'off') {
+    if (!isset($pptpdcfg['mode']) || $pptpdcfg['mode'] != 'server') {
         return 0;
     }
 
     if (file_exists('/var/run/booting')) {
         echo gettext("Configuring PPTP VPN service...");
-    }
-
-    if (empty($pptpdcfg['n_pptp_units'])) {
-        log_error("Something wrong in the PPTPd configuration. Preventing starting the daemon because issues would arise.");
-        return;
     }
 
     switch ($pptpdcfg['mode']) {
@@ -297,9 +292,6 @@ EOD;
             mwexec('/usr/local/sbin/mpd5 -b -d /var/etc/pptp-vpn -p /var/run/pptp-vpn.pid -s pptps pptps');
 
             break;
-
-        case 'redir':
-            break;
     }
 
     if (file_exists('/var/run/booting')) {
@@ -351,7 +343,7 @@ function vpn_pppoe_configure(&$pppoecfg)
     killbypid("/var/run/pppoe{$pppoecfg['pppoeid']}-vpn.pid", 'TERM', true);
     mwexec("rm -rf /var/etc/pppoe{$pppoecfg['pppoeid']}-vpn");
 
-    if (!isset($pppoecfg['mode']) || $pppoecfg['mode'] == 'off') {
+    if (!isset($pppoecfg['mode']) || $pppoecfg['mode'] != 'server') {
         return 0;
     }
 
@@ -520,7 +512,7 @@ function vpn_l2tp_configure()
         return 0;
     }
 
-    if (!isset($l2tpcfg['mode']) || $l2tpcfg['mode'] == 'off') {
+    if (!isset($l2tpcfg['mode']) || $l2tpcfg['mode'] != 'server') {
         return 0;
     }
 

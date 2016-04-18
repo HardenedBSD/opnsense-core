@@ -950,6 +950,7 @@ function system_webgui_start()
     global $config;
 
     chdir('/usr/local/www');
+    @unlink('/usr/local/www/csrf/csrf-secret.php');
 
     /* defaults */
     $portarg = "80";
@@ -1760,19 +1761,18 @@ function system_console_configure()
 
 function system_setup_sysctl()
 {
-    global $config;
     activate_sysctls();
-    if (isset($config['system']['sharednet'])) {
-        system_disable_arp_wrong_if();
-    }
+    system_arp_wrong_if();
 }
 
-function system_disable_arp_wrong_if()
+function system_arp_wrong_if()
 {
-  set_sysctl(array(
-      "net.link.ether.inet.log_arp_wrong_iface" => "0",
-      "net.link.ether.inet.log_arp_movements" => "0"
-  ));
+    global $config;
+
+    set_sysctl(array(
+        'net.link.ether.inet.log_arp_wrong_iface' => isset($config['system']['sharednet']) ? '0' : '1',
+        'net.link.ether.inet.log_arp_movements' => isset($config['system']['sharednet']) ? '0' : '1',
+    ));
 }
 
 function get_possible_listen_ips($include_ipv6_link_local=false) {

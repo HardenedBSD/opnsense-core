@@ -67,6 +67,18 @@ class NetflowController extends ApiControllerBase
             // load model and update with provided data
             $mdlNetflow = new Netflow();
             $mdlNetflow->setNodes($this->request->getPost("netflow"));
+            if ((string)$mdlNetflow->collect->enable == 1) {
+                // add localhost (127.0.0.1:2056) as target if local capture is configured
+                if (strpos((string)$mdlNetflow->capture->targets, "127.0.0.1:2056") === false) {
+                    if ((string)$mdlNetflow->capture->targets != "") {
+                        $targets = explode(",", (string)$mdlNetflow->capture->targets);
+                    } else {
+                        $targets = array();
+                    }
+                    $targets[] = "127.0.0.1:2056";
+                    $mdlNetflow->capture->targets = implode(',', $targets);
+                }
+            }
 
             // perform validation
             $validations = $mdlNetflow->validate();
@@ -102,6 +114,20 @@ class NetflowController extends ApiControllerBase
             // (which will only start if there are collectors configured)
             $backend->configdRun("netflow stop");
             $backend->configdRun("netflow start");
+            $mdlNetflow = new Netflow();
+            if ((string)$mdlNetflow->collect->enable == 1) {
+                // don't try to restart the collector, to avoid data loss on reconfigure
+                $response = $backend->configdRun("netflow collect status");
+                if (strpos($response, "not running") > 0) {
+                    $backend->configdRun("netflow collect start");
+                }
+                // aggregation process maybe restarted at all time
+                $backend->configdRun("netflow aggregate restart");
+            } else {
+                // stop collector and agreggator
+                $backend->configdRun("netflow collect stop");
+                $backend->configdRun("netflow aggregate stop");
+            }
             return array("status" => "ok");
         } else {
             return array("status" => "error");
@@ -130,7 +156,7 @@ class NetflowController extends ApiControllerBase
      * Retrieve netflow cache statistics
      * @return array cache statistics per netgraph node
      */
-    public function cache_statsAction()
+    public function cacheStatsAction()
     {
         $backend = new Backend();
         $response = $backend->configdRun("netflow cache stats json");

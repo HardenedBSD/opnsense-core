@@ -71,29 +71,6 @@ function get_dns_servers() {
     return array_unique($dns_servers);
 }
 
-
-/****f* legacy/setup_polling
- * NAME
- *   sets up polling
- * INPUTS
- *
- * RESULT
- *   null
- * NOTES
- *
- ******/
-function setup_polling()
-{
-    global $config;
-
-    if (isset($config['system']['polling'])) {
-        set_single_sysctl("kern.polling.idle_poll", "1");
-    } else {
-        set_single_sysctl("kern.polling.idle_poll", "0");
-    }
-}
-
-
 /*
  * get_carp_interface_status($carpinterface): returns the status of a carp ip
  */
@@ -476,73 +453,6 @@ function update_alias_names_upon_change($section, $field, $new_alias_name, $orig
             }
         }
     }
-}
-
-
-function process_alias_unzip($temp_filename) {
-    if (!file_exists("/usr/local/bin/unzip")) {
-        log_error(gettext("Alias archive is a .zip file which cannot be decompressed because utility is missing!"));
-        return false;
-    }
-    rename("{$temp_filename}/aliases", "{$temp_filename}/aliases.zip");
-    mwexec("/usr/local/bin/unzip {$temp_filename}/aliases.tgz -d {$temp_filename}/aliases/");
-    unlink("{$temp_filename}/aliases.zip");
-    $files_to_process = return_dir_as_array("{$temp_filename}/");
-    /* foreach through all extracted files and build up aliases file */
-    $fd = @fopen("{$temp_filename}/aliases", "w");
-    if (!$fd) {
-        log_error(sprintf(gettext('Could not open %s/aliases for writing!'), $temp_filename));
-        return false;
-    }
-    foreach($files_to_process as $f2p) {
-        $tmpfd = @fopen($f2p, 'r');
-        if (!$tmpfd) {
-            log_error(sprintf(gettext('The following file could not be read %s from %s'), $f2p, $temp_filename));
-            continue;
-        }
-        while (($tmpbuf = fread($tmpfd, 65536)) !== FALSE) {
-            fwrite($fd, $tmpbuf);
-        }
-        fclose($tmpfd);
-        unlink($f2p);
-    }
-    fclose($fd);
-    unset($tmpbuf);
-
-    return true;
-}
-
-function process_alias_tgz($temp_filename) {
-    if (!file_exists('/usr/bin/tar')) {
-        log_error(gettext("Alias archive is a .tar/tgz file which cannot be decompressed because utility is missing!"));
-        return false;
-    }
-    rename("{$temp_filename}/aliases", "{$temp_filename}/aliases.tgz");
-    mwexec("/usr/bin/tar xzf {$temp_filename}/aliases.tgz -C {$temp_filename}/aliases/");
-    unlink("{$temp_filename}/aliases.tgz");
-    $files_to_process = return_dir_as_array("{$temp_filename}/");
-    /* foreach through all extracted files and build up aliases file */
-    $fd = @fopen("{$temp_filename}/aliases", "w");
-    if (!$fd) {
-        log_error(sprintf(gettext('Could not open %s/aliases for writing!'), $temp_filename));
-        return false;
-    }
-    foreach($files_to_process as $f2p) {
-        $tmpfd = @fopen($f2p, 'r');
-        if (!$tmpfd) {
-            log_error(sprintf(gettext('The following file could not be read %s from %s'), $f2p, $temp_filename));
-            continue;
-        }
-        while (($tmpbuf = fread($tmpfd, 65536)) !== FALSE) {
-            fwrite($fd, $tmpbuf);
-        }
-        fclose($tmpfd);
-        unlink($f2p);
-    }
-    fclose($fd);
-    unset($tmpbuf);
-
-    return true;
 }
 
 function process_alias_urltable($name, $url, $freq, $forceupdate=false) {

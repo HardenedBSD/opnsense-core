@@ -33,6 +33,9 @@ import os
 import sys
 import signal
 import glob
+import copy
+import syslog
+import traceback
 sys.path.insert(0, "/usr/local/opnsense/site-python")
 from lib.parse import parse_flow
 from lib.aggregate import AggMetadata
@@ -44,8 +47,9 @@ MAX_FILE_SIZE_MB=10
 MAX_LOGS=10
 
 
-def aggregate_flowd():
+def aggregate_flowd(do_vacuum=False):
     """ aggregate collected flowd data
+    :param do_vacuum: vacuum database after cleanup
     :return: None
     """
     # init metadata (progress maintenance)
@@ -53,7 +57,6 @@ def aggregate_flowd():
 
     # register aggregate classes to stream data to
     stream_agg_objects = list()
-    resolutions = [60, 60*5]
     for agg_class in lib.aggregates.get_aggregators():
         for resolution in agg_class.resolutions():
             stream_agg_objects.append(agg_class(resolution))
@@ -69,12 +72,15 @@ def aggregate_flowd():
         if flow_record is not None:
             # send to aggregator
             for stream_agg_object in stream_agg_objects:
-                stream_agg_object.add(flow_record)
+                # class add() may change the flow contents for processing, its better to isolate
+                # paremeters here.
+                flow_record_cpy = copy.deepcopy(flow_record)
+                stream_agg_object.add(flow_record_cpy)
             prev_recv = flow_record['recv']
 
     # expire old data
     for stream_agg_object in stream_agg_objects:
-        stream_agg_object.cleanup()
+        stream_agg_object.cleanup(do_vacuum)
         del stream_agg_object
     del metadata
 
@@ -122,13 +128,26 @@ class Main(object):
         """ run, endless loop, until sigterm is received
         :return: None
         """
+        vacuum_interval = (60*60*8) # 8 hour vacuum cycle
+        vacuum_countdown = None
         while self.running:
+            # should we perform a vacuum
+            if not vacuum_countdown or vacuum_countdown < time.time():
+                vacuum_countdown = time.time() + vacuum_interval
+                do_vacuum = True
+            else:
+                do_vacuum = False
+
             # run aggregate
-            aggregate_flowd()
+            try:
+                aggregate_flowd(do_vacuum)
+            except:
+                syslog.syslog(syslog.LOG_ERR, 'flowd aggregate died with message %s' % (traceback.format_exc()))
+                return
             # rotate if needed
             check_rotate()
             # wait for next pass, exit on sigterm
-            for i in range(120):
+            for i in range(30):
                 if self.running:
                     time.sleep(0.5)
                 else:

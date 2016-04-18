@@ -55,7 +55,16 @@ function alias_expand_urltable($name) {
             if (preg_match("/urltable/i", $alias['type']) && ($alias['name'] == $name)) {
                 if (is_URL($alias["url"]) && file_exists($urltable_filename) && filesize($urltable_filename)) {
                     return $urltable_filename;
-                } else if (process_alias_urltable($name, $alias["url"], 0, true)) {
+                } elseif (process_alias_urltable($name, $alias["url"], 0, true)) {
+                    return $urltable_filename;
+                }
+            } elseif ($alias['type'] == 'geoip' && $alias['name'] == $name) {
+                if (!file_exists($urltable_filename) || filesize($urltable_filename) == 0) {
+                    if (download_alias_geoip($alias)) {
+                        return $urltable_filename;
+                    }
+                } else {
+                    // alias file found and not 0 bytes
                     return $urltable_filename;
                 }
             }
@@ -624,6 +633,7 @@ function filter_generate_aliases(&$FilterIflist)
                     $aliases .= "{$aliased['name']} = \"<{$aliased['name']}>\"\n";
                     break;
                 case "urltable":
+                case "geoip":
                     $urlfn = alias_expand_urltable($aliased['name']);
                     if ($urlfn) {
                         $aliases .= "table <{$aliased['name']}> persist file \"{$urlfn}\"\n";
@@ -959,7 +969,7 @@ function filter_generate_optcfg_array()
         $FilterIflist[$if] = $oic;
     }
 
-    if ($config['pptpd']['mode'] == "server" || $config['pptpd']['mode'] == "redir") {
+    if (isset($config['pptpd']['mode']) && $config['pptpd']['mode'] == 'server') {
         $oic = array();
         $oic['if'] = 'pptp';
         $oic['descr'] = 'pptp';
@@ -974,7 +984,7 @@ function filter_generate_optcfg_array()
         }
         $FilterIflist['pptp'] = $oic;
     }
-    if (isset($config['l2tp']['mode']) && $config['l2tp']['mode'] == "server") {
+    if (isset($config['l2tp']['mode']) && $config['l2tp']['mode'] == 'server') {
         $oic = array();
         $oic['if'] = 'l2tp';
         $oic['descr'] = 'L2TP';
@@ -2113,16 +2123,6 @@ function filter_nat_rules_generate(&$FilterIflist)
 
     fclose($inetd_fd);
 
-    if (isset($config['pptpd']['mode']) && ($config['pptpd']['mode'] != "off")) {
-        if ($config['pptpd']['mode'] == "redir") {
-            $pptpdtarget = $config['pptpd']['redir'];
-            $natrules .= "# PPTP\n";
-            $natrules .= "rdr on \${$FilterIflist['wan']['descr']} proto gre from any to any -> {$pptpdtarget}\n";
-            $natrules .= "rdr on \${$FilterIflist['wan']['descr']} proto tcp from any to any port 1723 -> {$pptpdtarget}\n";
-        }
-    }
-
-
     $natrules .= "\n# UPnP\n";
     $natrules .= "rdr-anchor \"miniupnpd\"\n";
 
@@ -3193,12 +3193,9 @@ EOD;
         unset($alports);
     }
 
-    /* PPTPd enabled? */
-    if ($pptpdcfg['mode'] && ($pptpdcfg['mode'] != "off") && !isset($config['system']['disablevpnrules'])) {
+    if ($pptpdcfg['mode'] && $pptpdcfg['mode'] == 'server' && !isset($config['system']['disablevpnrules'])) {
         if ($pptpdcfg['mode'] == "server") {
             $pptpdtarget = get_interface_ip();
-        } else {
-            $pptpdtarget = $pptpdcfg['redir'];
         }
         if (is_ipaddr($pptpdtarget) and is_array($FilterIflist['wan'])) {
             $ipfrules .= <<<EOD
