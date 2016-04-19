@@ -132,7 +132,6 @@ CORE_DEPENDS?=		apinger \
 			syslogd \
 			unbound \
 			wol \
-			zip \
 			zsh
 
 manifest: force
