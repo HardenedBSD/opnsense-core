@@ -402,21 +402,11 @@ function download_file($url, $destination, $verify_ssl = false, $connect_timeout
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
     curl_setopt($ch, CURLOPT_USERAGENT, $g['product_name'] . '/' . rtrim(file_get_contents("/usr/local/opnsense/version/opnsense")));
 
-    if (!empty($config['system']['proxyurl'])) {
-        curl_setopt($ch, CURLOPT_PROXY, $config['system']['proxyurl']);
-        if (!empty($config['system']['proxyport'])) {
-            curl_setopt($ch, CURLOPT_PROXYPORT, $config['system']['proxyport']);
-        }
-        if (!empty($config['system']['proxyuser']) && !empty($config['system']['proxypass'])) {
-            @curl_setopt($ch, CURLOPT_PROXYAUTH, CURLAUTH_ANY | CURLAUTH_ANYSAFE);
-            curl_setopt($ch, CURLOPT_PROXYUSERPWD, "{$config['system']['proxyuser']}:{$config['system']['proxypass']}");
-        }
-    }
-
     @curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     fclose($fp);
     curl_close($ch);
+
     return ($http_code == 200) ? true : $http_code;
 }
 
@@ -455,7 +445,8 @@ function update_alias_names_upon_change($section, $field, $new_alias_name, $orig
     }
 }
 
-function process_alias_urltable($name, $url, $freq, $forceupdate=false) {
+function process_alias_urltable($name, $url, $freq, $forceupdate = false)
+{
     global $config;
 
     $urltable_prefix = "/var/db/aliastables/";
@@ -468,15 +459,58 @@ function process_alias_urltable($name, $url, $freq, $forceupdate=false) {
         unlink($urltable_prefix);
         mkdir($urltable_prefix);
     }
-
+    if (empty($freq)) {
+        $freq = 1;
+    }
+    $update_freq = ($freq * 86400) - 90;
     // If the file doesn't exist or is older than update_freq days, fetch a new copy.
-    if (!file_exists($urltable_filename) || ((time() - filemtime($urltable_filename)) > ($freq * 86400 - 90)) || $forceupdate) {
+    if (!file_exists($urltable_filename) || ((time() - filemtime($urltable_filename)) > $update_freq) || $forceupdate) {
+        // open file handle to output file, in case the process takes a lot of time, make sure there's a file before
+        // filter starts to load. Also helps for tracking progress.
+        //
+        // todo: rethink alias_expand_urltable in filter.inc , its probably not a very good idea to download and
+        //       process files during boot.
+        $output_file_handle = fopen($urltable_filename, 'w');
+        $alias_type = alias_get_type($name);
         // Try to fetch the URL supplied
         @unlink("{$urltable_filename}.tmp");
         $verify_ssl = isset($config['system']['checkaliasesurlcert']);
         if (download_file($url, "{$urltable_filename}.tmp", $verify_ssl)) {
-            mwexec("/usr/bin/sed -E 's/\;.*//g; /^[[:space:]]*($|#)/d' ". escapeshellarg($urltable_filename . ".tmp") . " > " . escapeshellarg($urltable_filename));
-            if (alias_get_type($name) == "urltable_ports") {
+            foreach (preg_split('/[\n\r]+/', file_get_contents("{$urltable_filename}.tmp"), -1, PREG_SPLIT_NO_EMPTY) as $line) {
+                $line = trim($line); // remove leading spaces
+                if ($line[0] != '#') {
+                    // cleanse line item
+                    $line = preg_split('/\s+/', $line)[0];
+                    if ($alias_type == "urltable_ports") {
+                        // todo: add proper validation for ports here
+                        fwrite($output_file_handle, "{$line}\n");
+                    } else {
+                        // validate or resolve line items, skip unparseable content
+                        if (is_subnet($line) || is_ipaddr($line)) {
+                            fwrite($output_file_handle, "{$line}\n");
+                        } elseif (is_hostname($line)) {
+                            foreach (array(DNS_AAAA, DNS_A) as $dns_type) {
+                                // normally dns_get_record should be able to use DNS_A + DNS_AAAA
+                                // but for some strange reason not on our platform...
+                                $dns_records = @dns_get_record($line, $dns_type);
+                                if ($dns_records) {
+                                    foreach ($dns_records as $dns_record) {
+                                        if (!empty($dns_record['ipv6'])) {
+                                            fwrite($output_file_handle, $dns_record['ipv6'] . "\n");
+                                        } elseif (!empty($dns_record['ip'])) {
+                                            fwrite($output_file_handle, $dns_record['ip'] . "\n");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        fflush($output_file_handle);
+                    }
+                }
+            }
+            fclose($output_file_handle);
+
+            if ($alias_type == "urltable_ports") {
                 $ports = explode("\n", file_get_contents($urltable_filename));
                 $ports = group_ports($ports);
                 file_put_contents($urltable_filename, implode("\n", $ports));

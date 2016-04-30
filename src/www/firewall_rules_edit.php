@@ -37,6 +37,9 @@ $tcpflags = array("syn", "ack", "fin", "rst", "psh", "urg", "ece", "cwr");
 
 /* OS types, request from backend */
 $ostypes = json_decode(configd_run('filter list osfp json'));
+if ($ostypes == null) {
+    $ostypes = array();
+}
 
 /**
  * build array with interface options for this form
@@ -853,22 +856,22 @@ include("head.inc");
 <?php
                       $icmptypes = array(
                       "" => gettext("any"),
-                      "echoreq" => gettext("Echo request"),
-                      "echorep" => gettext("Echo reply"),
-                      "unreach" => gettext("Destination unreachable"),
-                      "squench" => gettext("Source quench"),
+                      "echoreq" => gettext("Echo Request"),
+                      "echorep" => gettext("Echo Reply"),
+                      "unreach" => gettext("Destination Unreachable"),
+                      "squench" => gettext("Source Quench (Deprecated)"),
                       "redir" => gettext("Redirect"),
-                      "althost" => gettext("Alternate Host"),
-                      "routeradv" => gettext("Router advertisement"),
-                      "routersol" => gettext("Router solicitation"),
-                      "timex" => gettext("Time exceeded"),
-                      "paramprob" => gettext("Invalid IP header"),
+                      "althost" => gettext("Alternate Host Address (Deprecated)"),
+                      "routeradv" => gettext("Router Advertisement"),
+                      "routersol" => gettext("Router Solicitation"),
+                      "timex" => gettext("Time Exceeded"),
+                      "paramprob" => gettext("Parameter Problem"),
                       "timereq" => gettext("Timestamp"),
-                      "timerep" => gettext("Timestamp reply"),
-                      "inforeq" => gettext("Information request"),
-                      "inforep" => gettext("Information reply"),
-                      "maskreq" => gettext("Address mask request"),
-                      "maskrep" => gettext("Address mask reply")
+                      "timerep" => gettext("Timestamp Reply"),
+                      "inforeq" => gettext("Information Request (Deprecated)"),
+                      "inforep" => gettext("Information Reply (Deprecated)"),
+                      "maskreq" => gettext("Address Mask Request (Deprecated)"),
+                      "maskrep" => gettext("Address Mask Reply (Deprecated)")
                       );
 
                       foreach ($icmptypes as $icmptype => $descr): ?>

@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 if [ -d /usr/local/lib/php/20151012 ]; then
-	# PHP 7
+	# PHP 7.0
 	EXTENSIONSDIR="/usr/local/lib/php/20151012/"
 elif [ -d /usr/local/lib/php/20131226 ]; then
 	# PHP 5.6
@@ -56,18 +56,12 @@ PHPMODULES="$PHPMODULES suhosin"
 PHPMODULES="$PHPMODULES ctype"
 # Page compression
 PHPMODULES="$PHPMODULES zlib"
-# SQLlite & Database
-PHPMODULES="$PHPMODULES pdo"
-PHPMODULES="$PHPMODULES pdo_sqlite"
+# Databases
 PHPMODULES="$PHPMODULES sqlite3"
 # RADIUS
 PHPMODULES="$PHPMODULES radius"
-# pfSense extensions
-PHPMODULES="$PHPMODULES pfSense"
 # json
 PHPMODULES="$PHPMODULES json"
-# bcmath
-PHPMODULES="$PHPMODULES bcmath"
 # filter
 PHPMODULES="$PHPMODULES filter"
 # OPNsense

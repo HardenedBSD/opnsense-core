@@ -1,5 +1,7 @@
+#!/usr/local/bin/python2.7
+
 """
-    Copyright (c) 2015 Deciso B.V.
+    Copyright (c) 2016 Ad Schellevis
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -24,34 +26,29 @@
     POSSIBILITY OF SUCH DAMAGE.
 
     --------------------------------------------------------------------------------------
-
-    package : translate
-    function: collect controller translatable text
+    drop an existing pf alias table
 """
-__author__ = 'Ad Schellevis'
+import tempfile
+import subprocess
+import os
+import sys
+import ujson
 
-def recursiveParseForm(xmlNode):
-    for childNode in xmlNode:
-        for tag in recursiveParseForm(childNode):
-            yield tag
+if __name__ == '__main__':
+    with tempfile.NamedTemporaryFile() as output_stream:
+        subprocess.call(['/sbin/pfctl', '-sT'], stdout=output_stream, stderr=open(os.devnull, 'wb'))
+        output_stream.seek(0)
+        tables = list()
+        for line in output_stream.read().strip().split('\n'):
+            tables.append(line.strip())
+        # only try to remove alias if it exists
+        if len(sys.argv) > 1 and sys.argv[1] in tables:
+            # cleanup related alias file
+            if os.path.isfile('/var/db/aliastables/%s.txt' % sys.argv[1]):
+                os.remove('/var/db/aliastables/%s.txt' % sys.argv[1])
+            subprocess.call(['/sbin/pfctl', '-t', sys.argv[1], '-T', 'kill'], stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+            # all good, exit 0
+            sys.exit(0)
 
-    if xmlNode.tag == 'help':
-        yield xmlNode.text
-
-
-def getTranslations(root):
-    import os
-    import xml.etree.ElementTree as ET
-
-    rootpath='%s/opnsense/mvc/app/controllers/'%root
-
-
-    for rootdir, dirs, files in os.walk(rootpath, topdown=False):
-        for name in files:
-            if name.lower()[-4:] == '.xml':
-                filename = '%s/%s'%(rootdir,name)
-                tree = ET.parse(filename)
-                rootObj = tree.getroot()
-                if rootObj.tag == 'form':
-                    for tag in recursiveParseForm(rootObj):
-                        yield tag
+# not found (or other issue)
+sys.exit(-1)

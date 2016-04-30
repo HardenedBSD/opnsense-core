@@ -72,27 +72,33 @@ if (isset($config['ipsec']['phase1'])) {
     }
 
     $ipsec_leases = json_decode(configd_run("ipsec list leases"), true);
+    if ($ipsec_leases == null) {
+        $ipsec_leases = array();
+    }
+
+    $ipsec_status = json_decode(configd_run("ipsec list status"), true);
+    if ($ipsec_status == null) {
+        $ipsec_status = array();
+    }
 
     // parse configured tunnels
-    $ipsec_status = json_decode(configd_run("ipsec list status"), true);
     $activetunnels = 0;
-    if ($ipsec_status != null) {
-        foreach ($ipsec_status as $status_key => $status_value) {
-            if (isset($status_value['children'])) {
-              foreach($status_value['children'] as $child_status_key => $child_status_value) {
-                  $ipsec_tunnels[$child_status_key] = array('active' => false,
-                                                            'local-addrs' => $status_value['local-addrs'],
-                                                            'remote-addrs' => $status_value['remote-addrs'],
-                                                          );
-                  $ipsec_tunnels[$child_status_key]['local-ts'] = implode(',', $child_status_value['local-ts']);
-                  $ipsec_tunnels[$child_status_key]['remote-ts'] = implode(',', $child_status_value['remote-ts']);
-              }
-            }
-            foreach ($status_value['sas'] as $sas_key => $sas_value) {
-                foreach ($sas_value['child-sas'] as $child_sa_key => $child_sa_value) {
-                    $ipsec_tunnels[$child_sa_key]['active'] = true;
-                    $activetunnels++;
-                }
+
+    foreach ($ipsec_status as $status_key => $status_value) {
+        if (isset($status_value['children'])) {
+          foreach($status_value['children'] as $child_status_key => $child_status_value) {
+              $ipsec_tunnels[$child_status_key] = array('active' => false,
+                                                        'local-addrs' => $status_value['local-addrs'],
+                                                        'remote-addrs' => $status_value['remote-addrs'],
+                                                      );
+              $ipsec_tunnels[$child_status_key]['local-ts'] = implode(',', $child_status_value['local-ts']);
+              $ipsec_tunnels[$child_status_key]['remote-ts'] = implode(',', $child_status_value['remote-ts']);
+          }
+        }
+        foreach ($status_value['sas'] as $sas_key => $sas_value) {
+            foreach ($sas_value['child-sas'] as $child_sa_key => $child_sa_value) {
+                $ipsec_tunnels[$child_sa_key]['active'] = true;
+                $activetunnels++;
             }
         }
     }
@@ -100,7 +106,45 @@ if (isset($config['ipsec']['phase1'])) {
 
 if (isset($config['ipsec']['phase2'])) {
 ?>
-
+<script type="text/javascript">
+  function changeTabDIV(selectedDiv){
+    var dashpos = selectedDiv.indexOf("-");
+    var tabclass = selectedDiv.substring(0,dashpos);
+    d = document;
+    //get deactive tabs first
+    tabclass = tabclass + "-class-tabdeactive";
+    var tabs = document.getElementsByClassName(tabclass);
+    var incTabSelected = selectedDiv + "-deactive";
+    for (i=0; i<tabs.length; i++){
+      var tab = tabs[i].id;
+      dashpos = tab.lastIndexOf("-");
+      var tab2 = tab.substring(0,dashpos) + "-deactive";
+      if (tab2 == incTabSelected){
+        tablink = d.getElementById(tab2);
+        tablink.style.display = "none";
+        tab2 = tab.substring(0,dashpos) + "-active";
+        tablink = d.getElementById(tab2);
+        tablink.style.display = "table-cell";
+        //now show main div associated with link clicked
+        tabmain = d.getElementById(selectedDiv);
+        tabmain.style.display = "block";
+      }
+      else
+      {
+        tab2 = tab.substring(0,dashpos) + "-deactive";
+        tablink = d.getElementById(tab2);
+        tablink.style.display = "table-cell";
+        tab2 = tab.substring(0,dashpos) + "-active";
+        tablink = d.getElementById(tab2);
+        tablink.style.display = "none";
+        //hide sections we don't want to see
+        tab2 = tab.substring(0,dashpos);
+        tabmain = d.getElementById(tab2);
+        tabmain.style.display = "none";
+      }
+    }
+  }
+</script>
 <div id="ipsec-Overview" style="display:block;background-color:#EEEEEE;">
   <table class="table table-striped">
     <thead>

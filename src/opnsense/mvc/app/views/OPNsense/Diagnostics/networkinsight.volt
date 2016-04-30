@@ -66,19 +66,45 @@ POSSIBILITY OF SUCH DAMAGE.
       function get_metadata()
       {
           var dfObj = new $.Deferred();
-          // fetch interface names
-          ajaxGet('/api/diagnostics/networkinsight/getInterfaces',{},function(intf_names,status){
-              interface_names = intf_names;
-              // fetch protocol names
-              ajaxGet('/api/diagnostics/networkinsight/getProtocols',{}, function(protocols, status) {
-                  protocol_names = protocols;
-                  // fetch service names
-                  ajaxGet('/api/diagnostics/networkinsight/getServices',{}, function(services, status) {
-                      service_names = services;
-                      dfObj.resolve();
+          ajaxGet('/api/diagnostics/netflow/isEnabled',{}, function(is_enabled, status){
+              if (is_enabled['local'] == 0) {
+                  dfObj.reject();
+                  return;
+              }
+              // fetch interface names
+              ajaxGet('/api/diagnostics/networkinsight/getInterfaces',{}, function(intf_names, status){
+                  interface_names = intf_names;
+                  // fetch protocol names
+                  ajaxGet('/api/diagnostics/networkinsight/getProtocols',{}, function(protocols, status) {
+                      protocol_names = protocols;
+                      // fetch service names
+                      ajaxGet('/api/diagnostics/networkinsight/getServices',{}, function(services, status) {
+                          service_names = services;
+                          // return promise, no need to wait for getMetadata
+                          dfObj.resolve();
+                          // fetch aggregators
+                          ajaxGet('/api/diagnostics/networkinsight/getMetadata',{}, function(metadata, status) {
+                            Object.keys(metadata['aggregators']).forEach(function (agg_name) {
+                              var res = metadata['aggregators'][agg_name]['resolutions'].join(',');
+                              $("#export_collection").append($("<option data-resolutions='"+res+"'/>").val(agg_name).text(agg_name));
+                            });
+                            $("#export_collection").change(function(){
+                                //alert($(this).find('option:selected').data('resolutions'));
+                                $("#export_resolution").html("");
+                                var resolutions = String($(this).find('option:selected').data('resolutions'));
+                                resolutions.split(',').map(function(item) {
+                                    $("#export_resolution").append($("<option/>").val(item).text(item));
+                                });
+                                $("#export_resolution").selectpicker('refresh');
+                            });
+                            $("#export_collection").change();
+                            $("#export_collection").selectpicker('refresh');
+                          });
+                      });
                   });
               });
           });
+
           return dfObj;
       }
 
@@ -149,8 +175,7 @@ POSSIBILITY OF SUCH DAMAGE.
                       .useInteractiveGuideline(true)
                       .interactive(true)
                       .showControls(true)
-                      .clipEdge(true)
-                      ;
+                      .clipEdge(true);
 
                   if (selected_time.resolution < 60) {
                       chart.xAxis.tickSize(8).tickFormat(function(d) {
@@ -212,7 +237,7 @@ POSSIBILITY OF SUCH DAMAGE.
         }
         var selected_time = get_time_select();
         var time_url = selected_time.from + '/' + selected_time.to;
-        ajaxGet('/api/diagnostics/networkinsight/top/FlowDstPortTotals/'+time_url+'/dst_port,protocol/octets/10/',
+        ajaxGet('/api/diagnostics/networkinsight/top/FlowDstPortTotals/'+time_url+'/dst_port,protocol/octets/25/',
             {'filter_field': 'if', 'filter_value': $('#interface_select').val()}, function(data, status){
             if (status == 'success'){
               nv.addGraph(function() {
@@ -228,28 +253,41 @@ POSSIBILITY OF SUCH DAMAGE.
                     .valueFormat(d3.format(',.2s'));
                     ;
 
-                  chart_data = [];
-                  data.map(function(item){
-                      var label = "(other)";
-                      var proto = "";
-                      if (item.protocol != "") {
-                          if (item.protocol in protocol_names) {
-                              proto = ' (' + protocol_names[item.protocol] + ')';
-                          }
-                          if (item.dst_port in service_names) {
-                              label = service_names[item.dst_port];
-                          } else {
-                              label = item.dst_port
-                          }
-                      }
-                      chart_data.push({'label': label + proto, 'value': item.total});
-                  });
+                chart_data = [];
+                data.map(function(item){
+                    var label = "(other)";
+                    var proto = "";
+                    if (item.protocol != "") {
+                        if (item.protocol in protocol_names) {
+                            proto = ' (' + protocol_names[item.protocol] + ')';
+                        }
+                        if (item.dst_port in service_names) {
+                            label = service_names[item.dst_port];
+                        } else {
+                            label = item.dst_port
+                        }
+                    }
+                    chart_data.push({'label': label + proto, 'value': item.total});
+                });
 
-                  d3.select("#chart_top_ports svg")
-                      .datum(chart_data)
-                      .transition().duration(350)
-                      .call(chart);
+                var diag = d3.select("#chart_top_ports svg")
+                    .datum(chart_data)
+                    .transition().duration(350)
+                    .call(chart);
                 pageCharts["chart_top_ports"] = chart;
+
+                // copy selection to detail page and query results
+                chart.pie.dispatch.on('elementClick', function(e){
+                    if (data[e.index].dst_port != "") {
+                        $("#interface_select_detail").val($("#interface_select").val());
+                        $('#interface_select_detail').selectpicker('refresh');
+                        $("#service_port_detail").val(data[e.index].dst_port);
+                        $("#address_detail").val("");
+                        $("#details_tab").click();
+                        grid_details();
+                    }
+                });
+
                 return chart;
               });
             }
@@ -268,7 +306,7 @@ POSSIBILITY OF SUCH DAMAGE.
         }
         var selected_time = get_time_select();
         var time_url = selected_time.from + '/' + selected_time.to;
-        ajaxGet('/api/diagnostics/networkinsight/top/FlowSourceAddrTotals/'+time_url+'/src_addr/octets/10/',
+        ajaxGet('/api/diagnostics/networkinsight/top/FlowSourceAddrTotals/'+time_url+'/src_addr/octets/25/',
             {'filter_field': 'if', 'filter_value': $('#interface_select').val()}, function(data, status){
             if (status == 'success'){
               nv.addGraph(function() {
@@ -283,24 +321,131 @@ POSSIBILITY OF SUCH DAMAGE.
                     .legendPosition("right")
                     .valueFormat(d3.format(',.2s'));
 
-                  chart_data = [];
-                  data.map(function(item){
-                      var label = "(other)";
-                      if (item.src_addr != "") {
-                          label = item.src_addr;
-                      }
-                      chart_data.push({'label': label, 'value': item.total});
-                  });
+                chart_data = [];
+                data.map(function(item){
+                    var label = "(other)";
+                    if (item.src_addr != "") {
+                        label = item.src_addr;
+                    }
+                    chart_data.push({'label': label, 'value': item.total});
+                });
 
-                  d3.select("#chart_top_sources svg")
-                      .datum(chart_data)
-                      .transition().duration(350)
-                      .call(chart);
+                d3.select("#chart_top_sources svg")
+                    .datum(chart_data)
+                    .transition().duration(350)
+                    .call(chart);
                 pageCharts["chart_top_sources"] = chart;
+
+                // copy selection to detail tab and query results
+                chart.pie.dispatch.on('elementClick', function(e){
+                    if (data[e.index].src_addr != "") {
+                        $("#interface_select_detail").val($("#interface_select").val());
+                        $('#interface_select_detail').selectpicker('refresh');
+                        $("#service_port_detail").val("");
+                        $("#address_detail").val(data[e.index].src_addr);
+                        $("#details_tab").click();
+                        grid_details();
+                    }
+                });
                 return chart;
               });
             }
         });
+      }
+
+      /**
+       * collect netflow details
+       */
+      function grid_details()
+      {
+        var filters = {'filter_field': [], 'filter_value': []};
+        if ($("#interface_select_detail").val() != "") {
+            filters['filter_field'].push('if');
+            filters['filter_value'].push($("#interface_select_detail").val());
+        }
+        if ($("#service_port_detail").val() != "") {
+            filters['filter_field'].push('service_port');
+            filters['filter_value'].push($("#service_port_detail").val());
+        }
+        if ($("#address_detail").val() != "") {
+            filters['filter_field'].push('src_addr');
+            filters['filter_value'].push($("#address_detail").val());
+        }
+
+        var time_url = $("#date_detail_from").val() + '/' +  $("#date_detail_to").val();
+        ajaxGet('/api/diagnostics/networkinsight/top/FlowSourceAddrDetails/'+time_url+'/service_port,protocol,if,src_addr,dst_addr/octets/100/',
+            {'filter_field': filters['filter_field'].join(','), 'filter_value': filters['filter_value'].join(',')}, function(data, status){
+            if (status == 'success'){
+                var html = []
+                // count total traffic
+                grand_total = 0;
+                data.map(function(item){
+                    grand_total += item['total'];
+                });
+                // dump  rows
+                data.map(function(item){
+                  if (item.protocol in protocol_names) {
+                      proto = ' (' + protocol_names[item.protocol] + ')';
+                  } else {
+                      proto = ''
+                  }
+                  if (item.service_port in service_names) {
+                      service_port = service_names[item.service_port];
+                  } else {
+                      service_port = item.service_port
+                  }
+                  tr_str = '<tr>';
+                  if (service_port != "") {
+                      tr_str += '<td> <span data-toggle="tooltip" title="'+proto+'/'+item.service_port+'">'+service_port+' </span> '+proto+'</td>';
+                  } else {
+                      tr_str += "<td>{{ lang._('(other)') }}</td>";
+                  }
+                  tr_str += '<td>' + item['src_addr'] + '</td>';
+                  tr_str += '<td>' + item['dst_addr'] + '</td>';
+                  tr_str += '<td>' + byteFormat(item['total']) + ' ' + '</td>';
+                  if (item['last_seen'] != "") {
+                      tr_str += '<td>' + d3.time.format('%b %e %H:%M:%S')(new Date(item['last_seen']*1000)) + '</td>';
+                  } else {
+                      tr_str += '<td></td>'
+                  }
+
+
+                  percentage = parseInt((item['total'] /grand_total) * 100);
+                  perc_text = ((item['total'] /grand_total) * 100).toFixed(2);
+                  tr_str += '<td>';
+                  tr_str += '<div class="progress-bar progress-bar-warning progress-bar-striped" role="progressbar" ';
+                  tr_str += 'aria-valuenow="'+percentage+'" aria-valuemin="0" aria-valuemax="100" style="color: black; min-width: 2em; width:' ;
+                  tr_str += percentage+'%;">'+perc_text+'&nbsp;%</div>';
+                  tr_str += '</td>';
+                  tr_str += '</tr>';
+                  html.push(tr_str);
+                });
+                $("#netflow_details > tbody").html(html.join(''));
+                if (grand_total > 0) {
+                    $("#netflow_details_total").html(byteFormat(grand_total));
+                } else {
+                    $("#netflow_details_total").html("");
+                }
+
+                // link tooltips
+                $('[data-toggle="tooltip"]').tooltip();
+            }
+        });
+      }
+
+      /**
+       * export detailed data (generate download link and click)
+       */
+      function export_flow_data()
+      {
+          var time_url = $("#export_date_from").val() + '/' +  $("#export_date_to").val();
+          var url = '/api/diagnostics/networkinsight/export/'+$("#export_collection").val()+'/'+time_url+'/'+$("#export_resolution").val();
+          var link = document.createElement("a");
+          $(link).click(function(e) {
+              e.preventDefault();
+              window.location.href = url;
+          });
+          $(link).click();
       }
 
       // hide heading
@@ -331,30 +476,94 @@ POSSIBILITY OF SUCH DAMAGE.
           // load charts for selected tab
           if (e.target.id == 'totals_tab'){
               $("#total_time_select").change();
-          } else if (e.target.id == 'history_tab'){
+          } else if (e.target.id == 'details_tab'){
           }
       });
+      // detail page, search on <enter>
+      $("#service_port_detail").keypress(function (e) {
+          if (e.which == 13) {
+              grid_details();
+          }
+      });
+      $("#address_detail").keypress(function (e) {
+          if (e.which == 13) {
+              grid_details();
+          }
+      });
+
 
       // trigger initial tab load
       get_metadata().done(function(){
           // known interfaces
           for (var key in interface_names) {
               $('#interface_select').append($("<option></option>").attr("value",key).text(interface_names[key]));
+              $('#interface_select_detail').append($("<option></option>").attr("value",key).text(interface_names[key]));
           }
           $('#interface_select').selectpicker('refresh');
+          $('#interface_select_detail').selectpicker('refresh');
+
+          // generate date selection (utc start, end times)
+          var now = new Date;
+          var date_begin = Date.UTC(now.getUTCFullYear(),now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0);
+          var date_end  = Date.UTC(now.getUTCFullYear(),now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 0);
+          var tmp_date = new Date();
+          for (i=0; i < 62; i++) {
+              from_date_ts = (date_begin - (24*60*60*1000 * i)) / 1000;
+              to_date_ts = parseInt((date_end - (24*60*60*1000 * i)) / 1000);
+              tmp_date = new Date(from_date_ts*1000);
+              tmp = tmp_date.getDate() + '/' + (tmp_date.getMonth()+1) + '/' + tmp_date.getFullYear();
+              if (i < 62) {
+                  $("#date_detail_from").append($("<option/>").val(from_date_ts).text(tmp));
+                  $("#date_detail_to").append($("<option/>").val(to_date_ts).text(tmp));
+              }
+              $("#export_date_from").append($("<option/>").val(from_date_ts).text(tmp));
+              $("#export_date_to").append($("<option/>").val(to_date_ts).text(tmp));
+
+          }
+
+          $("#date_detail_from").selectpicker('refresh');
+          $("#date_detail_to").selectpicker('refresh');
+          $("#date_detail_from").change(function(){
+              // change to date on change from date.
+              if ($("#date_detail_to").prop('selectedIndex') > $("#date_detail_from").prop('selectedIndex')) {
+                  $("#date_detail_to").prop('selectedIndex', $("#date_detail_from").prop('selectedIndex'));
+                  $("#date_detail_to").selectpicker('refresh');
+              }
+          });
+          $("#export_date_from").selectpicker('refresh');
+          $("#export_date_to").selectpicker('refresh');
+
           chart_interface_totals();
           chart_top_dst_port_usage();
           chart_top_src_addr_usage();
+      }).fail(function(){
+          // netflow / local collection not active.
+          $("#info_tab").show();
+          $("#info_tab").click();
       });
+
+
+      $("#refresh_details").click(grid_details);
+      $("#export_btn").click(export_flow_data);
 
     });
 </script>
 
 <ul class="nav nav-tabs" data-tabs="tabs" id="maintabs">
+    <li><a data-toggle="tab" id="info_tab" style="display:none;" href="#info">{{ lang._('Info') }}</a></li>
     <li class="active"><a data-toggle="tab" id="totals_tab" href="#totals">{{ lang._('Totals') }}</a></li>
-    <li><a data-toggle="tab" id="history_tab" href="#history">{{ lang._('History') }}</a></li>
+    <li><a data-toggle="tab" id="details_tab" href="#details">{{ lang._('Details') }}</a></li>
+    <li><a data-toggle="tab" id="export_tab" href="#export">{{ lang._('Export') }}</a></li>
 </ul>
 <div class="tab-content content-box tab-content" style="padding: 10px;">
+    <div id="info" class="tab-pane fade in">
+      <br/>
+      <div class="alert alert-warning" role="alert">
+        {{ lang._('Local data collection is not enabled at the moment, please configure netflow first') }}
+        <br/>
+        <a href="/ui/diagnostics/netflow/">{{ lang._('Go to netflow configuration') }} </a>
+      </div>
+    </div>
     <div id="totals" class="tab-pane fade in active">
       <div class="pull-right">
         <select class="selectpicker" id="total_time_select">
@@ -403,11 +612,106 @@ POSSIBILITY OF SUCH DAMAGE.
               </div>
             </div>
           </div>
+          <div class="col-xs-12">
+            <small>{{ lang._('click on pie for details') }}</small>
+          </div>
+
         </div>
       </div>
     </div>
-    <div id="history" class="tab-pane fade in">
+    <div id="details" class="tab-pane fade in">
+      <table class="table table-condensed">
+        <thead>
+          <tr>
+            <th>{{ lang._('Date from') }}</th>
+            <th>{{ lang._('Date to') }}</th>
+            <th>{{ lang._('Interface') }}</th>
+            <th>{{ lang._('(dst) Port') }}</th>
+            <th>{{ lang._('(src) Address') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <select class="selectpicker" id="date_detail_from"  data-live-search="true" data-size="10" data-width="120px"></select>
+            </td>
+            <td>
+              <select class="selectpicker" id="date_detail_to"  data-live-search="true" data-size="10" data-width="120px"></select>
+            </td>
+            <td>
+              <select class="selectpicker" id="interface_select_detail" data-width="150px"></select>
+            </td>
+            <td><input type="text" id="service_port_detail"></td>
+            <td><input type="text" id="address_detail"></td>
+            <td><button id="refresh_details" type="button" class="btn glyphicon glyphicon-refresh"></button></td>
+          </tr>
+        </tbody>
+      </table>
       <br/>
-
+      <table class="table table-condensed table-striped" id="netflow_details">
+        <thead>
+          <tr>
+            <th>{{ lang._('Service') }}</th>
+            <th>{{ lang._('Source') }}</th>
+            <th>{{ lang._('Destination') }}</th>
+            <th>{{ lang._('Bytes') }}</th>
+            <th>{{ lang._('Last seen') }}</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">{{ lang._('Total (selection)') }}</td>
+            <td id="netflow_details_total"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div id="export" class="tab-pane fade in">
+      <br/>
+      <table class="table table-condensed table-striped">
+        <thead>
+          <tr>
+            <th>{{ lang._('Attribute') }}</th>
+            <th>{{ lang._('Value') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ lang._('Collection') }}</td>
+            <td>
+              <select class="selectpicker" id="export_collection">
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>{{ lang._('Resolution (seconds)') }}</td>
+            <td>
+              <select class="selectpicker" id="export_resolution">
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td>{{ lang._('From date') }}</td>
+            <td>
+              <select class="selectpicker" id="export_date_from"  data-live-search="true" data-size="10"></select>
+            </td>
+          </tr>
+          <tr>
+            <td>{{ lang._('To date') }}</td>
+            <td>
+              <select class="selectpicker" id="export_date_to"  data-live-search="true" data-size="10"></select>
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <button id="export_btn" class="btn btn-default btn-xs"><i class="fa fa-cloud-download"></i> {{ lang._('Export')}}</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 </div>

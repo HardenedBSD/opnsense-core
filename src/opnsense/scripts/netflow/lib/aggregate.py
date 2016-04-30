@@ -31,6 +31,33 @@ import os
 import datetime
 import sqlite3
 
+def convert_timestamp(val):
+    """ convert timestamps from string (internal sqlite type) or seconds since epoch
+    """
+    if val.find('-') > -1:
+        # formatted date/time
+        if val.find(" ") > -1:
+            datepart, timepart = val.split(" ")
+        else:
+            datepart = val
+            timepart = "0:0:0,0"
+        year, month, day = map(int, datepart.split("-"))
+        timepart_full = timepart.split(".")
+        hours, minutes, seconds = map(int, timepart_full[0].split(":"))
+        if len(timepart_full) == 2:
+            microseconds = int('{:0<6.6}'.format(timepart_full[1].decode()))
+        else:
+            microseconds = 0
+
+        val = datetime.datetime(year, month, day, hours, minutes, seconds, microseconds)
+    else:
+        # timestamp stored as seconds since epoch, convert to utc
+        val = datetime.datetime.utcfromtimestamp(float(val))
+
+    return val
+
+sqlite3.register_converter('timestamp', convert_timestamp)
+
 class AggMetadata(object):
     """ store some metadata needed to keep track of parse progress
     """
@@ -121,10 +148,12 @@ class BaseFlowAggregator(object):
         self._update_cur = None
         self._known_targets = list()
         # construct update and insert sql statements
-        tmp = 'update timeserie set octets = octets + :octets_consumed, packets = packets + :packets_consumed '
+        tmp = 'update timeserie set  last_seen = :flow_end, '
+        tmp += 'octets = octets + :octets_consumed, packets = packets + :packets_consumed '
         tmp += 'where mtime = :mtime and %s '
         self._update_stmt = tmp % (' and '.join(map(lambda x: '%s = :%s' % (x, x), self.agg_fields)))
-        tmp = 'insert into timeserie (mtime, octets, packets, %s) values (:mtime, :octets_consumed, :packets_consumed, %s)'
+        tmp = 'insert into timeserie (mtime, last_seen, octets, packets, %s) '
+        tmp += 'values (:mtime, :flow_end, :octets_consumed, :packets_consumed, %s)'
         self._insert_stmt = tmp % (','.join(self.agg_fields), ','.join(map(lambda x: ':%s' % x, self.agg_fields)))
         # open database
         self._open_db()
@@ -157,7 +186,8 @@ class BaseFlowAggregator(object):
             # construct new aggregate table
             sql_text = list()
             sql_text.append('create table timeserie ( ')
-            sql_text.append('  mtime timestamp')
+            sql_text.append('   mtime timestamp')
+            sql_text.append(',  last_seen timestamp')
             for agg_field in self.agg_fields:
                 sql_text.append(', %s varchar(255)' % agg_field)
             sql_text.append(',  octets numeric')
@@ -224,7 +254,7 @@ class BaseFlowAggregator(object):
                 # upsert data
                 flow['octets_consumed'] = consume_perc * flow['octets']
                 flow['packets_consumed'] = consume_perc * flow['packets']
-                flow['mtime'] = datetime.datetime.fromtimestamp(start_time)
+                flow['mtime'] = datetime.datetime.utcfromtimestamp(start_time)
                 self._update_cur.execute(self._update_stmt, flow)
                 if self._update_cur.rowcount == 0:
                     self._update_cur.execute(self._insert_stmt, flow)
@@ -256,9 +286,9 @@ class BaseFlowAggregator(object):
         :return: datetime.datetime object
         """
         if type(timestamp) in (int, float):
-            return datetime.datetime.fromtimestamp(timestamp)
+            return datetime.datetime.utcfromtimestamp(timestamp)
         elif type(timestamp) != datetime.datetime:
-            return datetime.datetime.fromtimestamp(0)
+            return datetime.datetime.utcfromtimestamp(0)
         else:
             return timestamp
 
@@ -312,7 +342,7 @@ class BaseFlowAggregator(object):
             # close cursor
             cur.close()
 
-    def get_top_data(self, start_time, end_time, fields, value_field, data_filter=None, max_hits=100):
+    def get_top_data(self, start_time, end_time, fields, value_field, data_filters=None, max_hits=100):
         """ Retrieve top (usage) from this aggregation.
             Fetch data from aggregation source, groups by selected fields, sorts by value_field descending
             use data_filter to filter before grouping.
@@ -338,16 +368,17 @@ class BaseFlowAggregator(object):
         # query filters, correct start_time for resolution
         query_params['start_time'] = self._parse_timestamp((int(start_time/self.resolution))*self.resolution)
         query_params['end_time'] = self._parse_timestamp(end_time)
-        if data_filter:
-            tmp = data_filter.split('=')[0].strip()
-            if tmp in self.agg_fields and data_filter.find('=') > -1:
-                filter_fields.append(tmp)
-                query_params[tmp] = '='.join(data_filter.split('=')[1:])
+        if data_filters:
+            for data_filter in data_filters.split(','):
+                tmp = data_filter.split('=')[0].strip()
+                if tmp in self.agg_fields and data_filter.find('=') > -1:
+                    filter_fields.append(tmp)
+                    query_params[tmp] = '='.join(data_filter.split('=')[1:])
 
         if len(select_fields) > 0:
             # construct sql query to filter and select data
             sql_select = 'select %s' % ','.join(select_fields)
-            sql_select += ', %s as total \n' % value_sql
+            sql_select += ', %s as total, max(last_seen) last_seen \n' % value_sql
             sql_select += 'from timeserie \n'
             sql_select += 'where mtime >= :start_time and mtime < :end_time\n'
             for filter_field in filter_fields:
@@ -380,3 +411,32 @@ class BaseFlowAggregator(object):
             cur.close()
 
         return result
+
+    def get_data(self, start_time, end_time):
+        """ get detail data
+        :param start_time: start timestamp
+        :param end_time: end timestamp
+        :return: iterator
+        """
+        query_params = {}
+        query_params['start_time'] = self._parse_timestamp((int(start_time/self.resolution))*self.resolution)
+        query_params['end_time'] = self._parse_timestamp(end_time)
+        sql_select = 'select mtime start_time, '
+        sql_select += '%s, octets, packets, last_seen as "last_seen [timestamp]"  \n' % ','.join(self.agg_fields)
+        sql_select += 'from timeserie \n'
+        sql_select += 'where mtime >= :start_time and mtime < :end_time\n'
+        cur = self._db_connection.cursor()
+        cur.execute(sql_select, query_params)
+
+        # fetch all data, to a max of [max_hits] rows.
+        field_names = (map(lambda x:x[0], cur.description))
+        while True:
+            record = cur.fetchone()
+            if record is None:
+                break
+            else:
+                result_record=dict()
+                for field_indx in range(len(field_names)):
+                    if len(record) > field_indx:
+                        result_record[field_names[field_indx]] = record[field_indx]
+                yield result_record

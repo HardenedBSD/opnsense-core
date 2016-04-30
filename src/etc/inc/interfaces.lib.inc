@@ -225,17 +225,17 @@ function legacy_interface_details($intf)
 
 function legacy_netgraph_attach($ifs)
 {
-	mwexecf('/usr/local/sbin/ngattach %s', array($ifs));
+    mwexecf('/usr/local/sbin/ngattach %s', array($ifs));
 }
 
 function legacy_netgraph_detach($ifs)
 {
-        mwexecf('/usr/sbin/ngctl msg %s: detach', array($ifs), true);
+    mwexecf('/usr/sbin/ngctl msg %s: detach', array($ifs), true);
 }
 
 function legacy_netgraph_rename($tmpifs, $ifs)
 {
-        mwexecf('/usr/sbin/ngctl name %s: %s', array($tmpifs, $ifs));
+    mwexecf('/usr/sbin/ngctl name %s: %s', array($tmpifs, $ifs));
 }
 
 /**
@@ -273,4 +273,70 @@ function configure_interface_hardware($ifs)
             legacy_interface_flags($ifs, 'lro', false);
         }
     }
+}
+
+function _legacy_getall_interface_addresses($ifs)
+{
+    $cmd = '/sbin/ifconfig ' . escapeshellarg($ifs);
+    $addrs = array(
+        'macaddr' => '00:00:00:00:00:00',
+        'compat' => array(),
+    );
+
+    exec($cmd . ' 2>&1', $out, $ret);
+    if ($ret) {
+        log_error('The command `' . $cmd . '\' failed to execute');
+        return $addrs;
+    }
+
+    if (count($out)) {
+        foreach ($out as $line) {
+            if ($line[0] != "\t") {
+                continue;
+            }
+            $stat = explode(' ', $line);
+            if (isset($stat[0])) {
+                switch (trim($stat[0])) {
+                    case 'inet':
+                        $mask = substr_count(base_convert(hexdec($stat[3]), 10, 2), '1');
+                        $addrs['compat'][] = $stat[1] . '/' . $mask;
+                        if (!isset($addrs['ipaddr'])) {
+                            $addrs['ipaddr'] = $stat[1];
+                            $addrs['subnetbits'] = $mask;
+                        }
+                        break;
+                    case 'inet6':
+                        $addr = strtok($stat[1], '%');
+                        $addrs['compat'][] = $addr . '/' . $stat[3];
+                        if (!isset($addrs['ipaddr6']) && strpos($addr, 'fe80:') !== 0) {
+                            /* does not pick up link-local */
+                            $addrs['ipaddr6'] = $addr;
+                            $addrs['subnetbits6'] = intval($stat[3]);
+                        }
+                        break;
+                    case 'ether':
+                        $addrs['macaddr'] = $stat[1];
+                        break;
+                    default:
+                        /* not relevant to our interest */
+                        break;
+                }
+            }
+        }
+    }
+
+    return $addrs;
+}
+
+function legacy_getall_interface_addresses($ifs)
+{
+    $addrs = _legacy_getall_interface_addresses($ifs);
+    return $addrs['compat'];
+}
+
+function legacy_get_interface_addresses($ifs)
+{
+    $addrs = _legacy_getall_interface_addresses($ifs);
+    unset($addrs['compat']);
+    return $addrs;
 }

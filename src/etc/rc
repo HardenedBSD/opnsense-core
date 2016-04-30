@@ -67,8 +67,8 @@ else
 	done
 fi
 
-# regenerate groups and users
-/usr/local/etc/rc.recover > /dev/null
+# regenerate groups and users for base
+/usr/local/etc/rc.recover base > /dev/null
 
 # rewrite message of the day
 /etc/rc.d/motd onestart
@@ -180,6 +180,9 @@ fi
 
 echo "done."
 
+# regenerate groups and users for packages
+/usr/local/etc/rc.recover pkg > /dev/null
+
 # Recreate capabilities DB
 /usr/bin/cap_mkdb /etc/login.conf
 
@@ -193,6 +196,11 @@ echo "done."
 
 # Execute the early syshook / plugin commands
 /usr/local/etc/rc.syshook early
+
+# Restore backups from previous shutdown (if any)
+/usr/local/etc/rc.backup_dhcpleases restore
+/usr/local/etc/rc.backup_netflow restore
+/usr/local/etc/rc.backup_rrd restore
 
 # let the PHP-based configuration subsystem set up the system now
 echo -n "Launching the init system..."

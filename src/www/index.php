@@ -1,7 +1,7 @@
 <?php
 
 /*
-    Copyright (C) 2014 Deciso B.V.
+    Copyright (C) 2014-2016 Deciso B.V.
     Copyright (C) 2004-2012 Scott Ullrich
     Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>.
     All rights reserved.
@@ -34,317 +34,87 @@ ini_set('output_buffering', 'true');
 // Start buffering with a cache size of 100000
 ob_start(null, "1000");
 
-
-## Load Essential Includes
+// Load Essential Includes
 require_once('guiconfig.inc');
 
+// closing should be $_POST, but the whole notice handling needs more attention. Leave it as is for now.
 if (isset($_REQUEST['closenotice'])) {
     close_notice($_REQUEST['closenotice']);
     echo get_menu_messages();
     exit;
 }
 
-##build list of widgets
-$directory = "/usr/local/www/widgets/widgets/";
-$dirhandle  = opendir($directory);
-$filename = "";
-$widgetnames = array();
-$widgetfiles = array();
-$widgetlist = array();
-
-while (false !== ($filename = readdir($dirhandle))) {
-    $periodpos = strpos($filename, ".");
-    /* Ignore files not ending in .php */
-    if (substr($filename, -4, 4) != ".php") {
-        continue;
-    }
-    $widgetname = substr($filename, 0, $periodpos);
-    $widgetnames[] = $widgetname;
-    if ($widgetname != "system_information") {
-        $widgetfiles[] = $filename;
-    }
-}
-
-##sort widgets alphabetically
-sort($widgetfiles);
-
-##insert the system information widget as first, so as to be displayed first
-array_unshift($widgetfiles, "system_information.widget.php");
-
 ##if no config entry found, initialize config entry
-if (!is_array($config['widgets'])) {
+if (empty($config['widgets']) || !is_array($config['widgets'])) {
     $config['widgets'] = array();
 }
 
-if ($_POST && $_POST['sequence']) {
-    $config['widgets']['sequence'] = $_POST['sequence'];
-
-    foreach ($widgetnames as $widget) {
-        if ($_POST[$widget . '-config']) {
-            $config['widgets'][$widget . '-config'] = $_POST[$widget . '-config'];
-        }
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $pconfig = $config['widgets'];
+    if (empty($pconfig['sequence'])) {
+        // set default dashboard view
+        $pconfig['sequence'] = 'system_information-container:col1:show,interface_list-container:col1:show,traffic_graphs-container:col1:show';
     }
-
-    write_config(gettext("Widget configuration has been changed."));
+    // build list of widgets
+    $widgetCollection = array();
+    $widgetSeqParts = explode(",", $pconfig['sequence']);
+    foreach (glob('/usr/local/www/widgets/widgets/*.widget.php') as $php_file) {
+        $widgetItem = array();
+        $widgetItem['name'] = basename($php_file, '.widget.php');
+        $widgetItem['display_name'] = ucwords(str_replace("_", " ", $widgetItem['name']));
+        $widgetItem['filename'] = $php_file;
+        $widgetItem['state'] = "none";
+        /// default sort order
+        $widgetItem['sortKey'] = $widgetItem['name'] == 'system_information' ? "00000000" : "99999999" . $widgetItem['name'];
+        foreach ($widgetSeqParts as $seqPart) {
+            $tmp = explode(':', $seqPart);
+            if (count($tmp) == 3 && explode('-', $tmp[0])[0] == $widgetItem['name']) {
+                $widgetItem['state'] = $tmp[2];
+                if (is_numeric($tmp[1])) {
+                    $widgetItem['sortKey'] = $tmp[1];
+                }
+            }
+        }
+        $widgetCollection[] = $widgetItem;
+    }
+    // sort widgets
+    usort($widgetCollection, function ($item1, $item2) {
+      return strcmp(strtolower($item1['sortKey']), strtolower($item2['sortKey']));
+    });
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!empty($_POST['sequence'])) {
+        $config['widgets']['sequence'] = $_POST['sequence'];
+        write_config(gettext("Widget configuration has been changed."));
+    }
     header("Location: index.php");
     exit;
 }
 
-## Check to see if we have a swap space,
-## if true, display, if false, hide it ...
-if (file_exists('/usr/sbin/swapinfo')) {
-    $swapinfo = `/usr/sbin/swapinfo`;
-    if (stristr($swapinfo, '%')) {
-        $showswap = true;
-    }
+// handle widget includes
+foreach (glob("/usr/local/www/widgets/include/*.inc") as $filename) {
+    include($filename);
 }
-
-##build widget saved list information
-if ($config['widgets'] && $config['widgets']['sequence'] != "") {
-    $pconfig['sequence'] = $config['widgets']['sequence'];
-
-    $widgetlist = $pconfig['sequence'];
-    $colpos = array();
-    $savedwidgetfiles = array();
-    $widgetname = "";
-    $widgetlist = explode(",", $widgetlist);
-
-    ##read the widget position and display information
-    foreach ($widgetlist as $widget) {
-        $dashpos = strpos($widget, "-");
-        $widgetname = substr($widget, 0, $dashpos);
-        if (!in_array($widgetname, $widgetnames)) {
-            continue;
-        }
-        $colposition = strpos($widget, ":");
-        $displayposition = strrpos($widget, ":");
-        $colpos[] = substr($widget, $colposition+1, $displayposition - $colposition-1);
-        $displayarray[] = substr($widget, $displayposition+1);
-        $savedwidgetfiles[] = $widgetname . ".widget.php";
-    }
-
-    ##add widgets that may not be in the saved configuration, in case they are to be displayed later
-    foreach ($widgetfiles as $defaultwidgets) {
-        if (!in_array($defaultwidgets, $savedwidgetfiles)) {
-            $savedwidgetfiles[] = $defaultwidgets;
-        }
-    }
-
-    ##find custom configurations of a particular widget and load its info to $pconfig
-    foreach ($widgetnames as $widget) {
-        if (isset($config['widgets'][$widget . '-config'])) {
-            $pconfig[$widget . '-config'] = $config['widgets'][$widget . '-config'];
-        }
-    }
-
-    $widgetlist = $savedwidgetfiles;
-} else {
-    // no saved widget sequence found, build default list.
-    $widgetlist = $widgetfiles;
-}
-
-
-
-##build list of php include files
-$phpincludefiles = array();
-$directory = "/usr/local/www/widgets/include/";
-$dirhandle  = opendir($directory);
-$filename = "";
-while (false !== ($filename = readdir($dirhandle))) {
-    $phpincludefiles[] = $filename;
-}
-foreach ($phpincludefiles as $includename) {
-    if (!stristr($includename, ".inc")) {
-        continue;
-    }
-    include($directory . $includename);
-}
-
-##begin AJAX
-$jscriptstr = <<<EOD
-<script type="text/javascript">
-//<![CDATA[
-
-function widgetAjax(widget) {
-  uri = "widgets/widgets/" + widget + ".widget.php";
-  var opt = {
-    // Use GET
-    type: 'get',
-    async: true,
-    // Handle 404
-    statusCode: {
-    404: function(t) {
-      alert('Error 404: location "' + t.statusText + '" was not found.');
-    }
-    },
-    // Handle other errors
-    error: function(t) {
-      alert('Error ' + t.status + ' -- ' + t.statusText);
-    },
-    success: function(data) {
-      widget2 = '#' + widget + "-loader";
-      jQuery(widget2).fadeOut(1000,function(){
-        jQuery('#' + widget).show();
-      });
-      jQuery('#' + widget).html(data);
-    }
-  }
-  jQuery.ajax(uri, opt);
-}
-
-
-function addWidget(selectedDiv){
-  container  =  $('#'+selectedDiv);
-  state    =  $('#'+selectedDiv+'-config');
-
-  container.show();
-  showSave();
-  state.val('show');
-}
-
-function configureWidget(selectedDiv){
-  selectIntLink = '#' + selectedDiv + "-settings";
-  if ($(selectIntLink).css('display') == "none")
-    $(selectIntLink).show();
-  else
-    $(selectIntLink).hide();
-}
-
-function showWidget(selectedDiv,swapButtons){
-  container  =  $('#'+selectedDiv+'-container');
-  min_btn    =  $('#'+selectedDiv+'-min');
-  max_btn    =  $('#'+selectedDiv+'-max');
-  state    =  $('#'+selectedDiv+'-config');
-
-  container.show();
-  min_btn.show();
-  max_btn.hide();
-
-  showSave();
-
-  state.val('show');
-}
-
-function minimizeWidget(selectedDiv,swapButtons){
-  container  =  $('#'+selectedDiv+'-container');
-  min_btn    =  $('#'+selectedDiv+'-min');
-  max_btn    =  $('#'+selectedDiv+'-max');
-  state    =  $('#'+selectedDiv+'-config');
-
-  container.hide();
-  min_btn.hide();
-  max_btn.show();
-
-  showSave();
-
-  state.val('hide');
-
-
-}
-
-function closeWidget(selectedDiv){
-  widget    =  $('#'+selectedDiv);
-  state    =  $('#'+selectedDiv+'-config');
-
-  showSave();
-  widget.hide();
-  state.val('close');
-}
-
-function showSave(){
-  $('#updatepref').show();
-}
-
-function updatePref(){
-  var widgets = $('.widgetdiv');
-  var widgetSequence = '';
-  var firstprint = false;
-
-  widgets.each(function(key) {
-    obj = $(this);
-
-    if (firstprint)
-      widgetSequence += ',';
-
-
-    state = $('input[name='+obj.attr('id')+'-config]').val();
-
-    widgetSequence += obj.attr('id')+'-container:col1:'+state;
-
-    firstprint = true;
-  });
-
-  $("#sequence").val(widgetSequence);
-
-  $("#iform").submit();
-
-  return false;
-}
-
-function changeTabDIV(selectedDiv){
-  var dashpos = selectedDiv.indexOf("-");
-  var tabclass = selectedDiv.substring(0,dashpos);
-  d = document;
-  //get deactive tabs first
-  tabclass = tabclass + "-class-tabdeactive";
-  var tabs = document.getElementsByClassName(tabclass);
-  var incTabSelected = selectedDiv + "-deactive";
-  for (i=0; i<tabs.length; i++){
-    var tab = tabs[i].id;
-    dashpos = tab.lastIndexOf("-");
-    var tab2 = tab.substring(0,dashpos) + "-deactive";
-    if (tab2 == incTabSelected){
-      tablink = d.getElementById(tab2);
-      tablink.style.display = "none";
-      tab2 = tab.substring(0,dashpos) + "-active";
-      tablink = d.getElementById(tab2);
-      tablink.style.display = "table-cell";
-      //now show main div associated with link clicked
-      tabmain = d.getElementById(selectedDiv);
-      tabmain.style.display = "block";
-    }
-    else
-    {
-      tab2 = tab.substring(0,dashpos) + "-deactive";
-      tablink = d.getElementById(tab2);
-      tablink.style.display = "table-cell";
-      tab2 = tab.substring(0,dashpos) + "-active";
-      tablink = d.getElementById(tab2);
-      tablink.style.display = "none";
-      //hide sections we don't want to see
-      tab2 = tab.substring(0,dashpos);
-      tabmain = d.getElementById(tab2);
-      tabmain.style.display = "none";
-    }
-  }
-}
-//]]>
-</script>
-EOD;
 
 include("head.inc");
-
 ?>
-
 <body>
+<?php
+include("fbegin.inc");?>
 
 <?php
-include("fbegin.inc");
-echo "\n\t<script type=\"text/javascript\" src=\"/javascript/index/ajax.js\"></script>\n";
-echo $jscriptstr;
-?>
-
-<?php
-## If it is the first time webConfigurator has been
-## accessed since initial install show this stuff.
-if (isset($config['trigger_initial_wizard'])) :
-?>
+  ## If it is the first time webConfigurator has been
+  ## accessed since initial install show this stuff.
+  if (isset($config['trigger_initial_wizard'])) :?>
+  <script type="text/javascript">
+      $( document ).ready(function() {
+        $(".page-content-head:first").hide();
+      });
+  </script>
   <header class="page-content-head">
     <div class="container-fluid">
       <h1><?= gettext("Starting initial configuration!") ?></h1>
     </div>
   </header>
-
   <section class="page-content-main">
     <div class="container-fluid col-xs-12 col-sm-10 col-md-9">
       <div class="row">
@@ -368,196 +138,182 @@ if (isset($config['trigger_initial_wizard'])) :
     </div>
   </section>
   <meta http-equiv="refresh" content="3;url=wizard.php">
-  <?php exit; ?>
 <?php
-endif; ?>
+  // normal dashboard
+  else:?>
+
+<script src='/javascript/index/ajax.js'></script>
+<script src='/ui/js/jquery-sortable.js'></script>
+<script type="text/javascript">
+  function addWidget(selectedDiv) {
+      $('#'+selectedDiv).show();
+      $('#'+selectedDiv+'-config').val('show');
+      showSave();
+  }
+
+  function configureWidget(selectedDiv) {
+      selectIntLink = '#' + selectedDiv + "-settings";
+      if ($(selectIntLink).css('display') == "none") {
+          $(selectIntLink).show();
+      } else {
+          $(selectIntLink).hide();
+      }
+  }
+
+  function showWidget(selectedDiv,swapButtons) {
+      $('#'+selectedDiv+'-container').show();
+      $('#'+selectedDiv+'-min').show();
+      $('#'+selectedDiv+'-max').hide();
+      $('#'+selectedDiv+'-config').val('show');
+      showSave();
+  }
+
+  function minimizeWidget(selectedDiv, swapButtons) {
+      $('#'+selectedDiv+'-container').hide();
+      $('#'+selectedDiv+'-min').hide();
+      $('#'+selectedDiv+'-max').show();
+      $('#'+selectedDiv+'-config').val('hide');
+      showSave();
+  }
+
+  function closeWidget(selectedDiv) {
+      $('#'+selectedDiv).hide();
+      $('#'+selectedDiv+'-config').val('close');
+      showSave();
+  }
+
+  function showSave() {
+      $('#updatepref').show();
+  }
+
+  function updatePref() {
+      var widgetInfo = [];
+      var index = 0;
+      $('.widgetdiv').each(function(key) {
+          if ($(this).is(':visible')) {
+              // only capture visible widgets
+              var index_str = "0000000" + index;
+              index_str = index_str.substr(index_str.length-8);
+              widgetInfo.push($(this).attr('id')+'-container:'+index_str+':'+$('input[name='+$(this).attr('id')+'-config]').val());
+              index++;
+          }
+      });
+      $("#sequence").val(widgetInfo.join(','));
+      $("#iform").submit();
+      return false;
+  }
+</script>
+
+<script type="text/javascript">
+  $( document ).ready(function() {
+      // sortable widgets
+      $(".sortable").sortable({
+        handle: '.content-box-head',
+        itemSelector: '.widgetdiv',
+        containerSelector: '.sortable',
+        placeholder: '<div class="placeholder"><i class="fa fa-hand-o-right" aria-hidden="true"></i></div>',
+        afterMove: function (placeholder, container, closestItemOrContainer) {
+            showSave();
+        }
+      });
+  });
+</script>
 
 <section class="page-content-main">
-  <div class="container-fluid">
-    <div class="row">
+  <form method="post" id="iform">
+    <input type="hidden" value="" name="sequence" id="sequence" />
+    <div class="container-fluid">
+      <div class="row sortable">
 <?php
       $crash_report = get_crash_report();
       if ($crash_report != '') {
           print_info_box($crash_report);
       }
 
-      $totalwidgets = count($widgetfiles);
-      $halftotal = $totalwidgets / 2 - 2;
-      $widgetcounter = 0;
-      $directory = "/usr/local/www/widgets/widgets/";
-      $printed = false;
-      $firstprint = false;
-
-      foreach ($widgetlist as $widget) {
-          if (!stristr($widget, "widget.php")) {
-              continue;
-          }
-          $periodpos = strpos($widget, ".");
-          $widgetname = substr($widget, 0, $periodpos);
-          if ($widgetname != "") {
-              $nicename = $widgetname;
-              $nicename = str_replace("_", " ", $nicename);
-
-              //make the title look nice
-              $nicename = ucwords($nicename);
-          }
-
-          if (isset($config['widgets']) && isset($pconfig['sequence'])) {
-              if (isset($displayarray[$widgetcounter])) {
-                  $disparr = $displayarray[$widgetcounter];
-              } else {
-                  $disparr = null;
-              }
-              switch($disparr){
-                  case "show":
-                      $divdisplay = "block";
-                      $display = "block";
-                      $inputdisplay = "show";
-                      $showWidget = "none";
-                      $mindiv = "inline";
-                      break;
-                  case "hide":
-                      $divdisplay = "block";
-                      $display = "none";
-                      $inputdisplay = "hide";
-                      $showWidget = "inline";
-                      $mindiv = "none";
-                      break;
-                  case "close":
-                      $divdisplay = "none";
-                      $display = "block";
-                      $inputdisplay = "close";
-                      $showWidget = "none";
-                      $mindiv = "inline";
-                      break;
-                  default:
-                      $divdisplay = "none";
-                      $display = "block";
-                      $inputdisplay = "none";
-                      $showWidget = "none";
-                      $mindiv = "inline";
-                      break;
-              }
-          } else {
-              if ($firstprint == false) {
+      foreach ($widgetCollection as $widgetItem):
+          $widgettitle = $widgetItem['name'] . "_title";
+          $widgettitlelink = $widgetItem['name'] . "_title_link";
+          switch ($widgetItem['state']) {
+              case "show":
                   $divdisplay = "block";
                   $display = "block";
                   $inputdisplay = "show";
-                  $showWidget = "none";
                   $mindiv = "inline";
-                  $firstprint = true;
-              } else {
-                  switch ($widget) {
-                      case "interface_list.widget.php":
-                      case "traffic_graphs.widget.php":
-                          $divdisplay = "block";
-                          $display = "block";
-                          $inputdisplay = "show";
-                          $showWidget = "none";
-                          $mindiv = "inline";
-                          break;
-                      default:
-                          $divdisplay = "none";
-                          $display = "block";
-                          $inputdisplay = "close";
-                          $showWidget = "none";
-                          $mindiv = "inline";
-                          break;
-                  }
-              }
+                  break;
+              case "hide":
+                  $divdisplay = "block";
+                  $display = "none";
+                  $inputdisplay = "hide";
+                  $mindiv = "none";
+                  break;
+              case "close":
+                  $divdisplay = "none";
+                  $display = "block";
+                  $inputdisplay = "close";
+                  $mindiv = "inline";
+                  break;
+              default:
+                  $divdisplay = "none";
+                  $display = "block";
+                  $inputdisplay = "none";
+                  $mindiv = "inline";
+                  break;
           }?>
-          <section class="col-xs-12 col-md-6 widgetdiv" id="<?= $widgetname ?>"  style="display:<?= $divdisplay ?>;">
+          <section class="col-xs-12 col-md-6 widgetdiv" id="<?= $widgetItem['name'] ?>"  style="display:<?= $divdisplay ?>;">
             <div class="content-box">
-              <form action="<?=$_SERVER['REQUEST_URI'];?>" method="post" id="iform">
-              <input type="hidden" value="" name="sequence" id="sequence" />
-                <header class="content-box-head container-fluid">
-                  <ul class="list-inline __nomb">
-                    <li><h3>
+              <header class="content-box-head container-fluid">
+                <ul class="list-inline __nomb">
+                  <li><h3>
 <?php
-                      $widgettitle = $widgetname . "_title";
-                      $widgettitlelink = $widgetname . "_title_link";
-                      if (isset($$widgettitle)) {
-                          //only show link if defined
-                          if ($$widgettitlelink != "") {
-?>
-                              <u><span onclick="location.href='/<?= $$widgettitlelink ?>'" style="cursor:pointer">
-                              <?php
-                          }
-                              //echo widget title
-                              echo $$widgettitle;
-                          if (isset($$widgettitlelink)) {
-?>
-                              </span></u>
-                              <?php
-                          }
-                      } else {
-                          if (isset($$widgettitlelink)) {
-?>
-                              <u><span onclick="location.href='/<?= $$widgettitlelink ?>'" style="cursor:pointer">
-                              <?php
-                          }
-                          echo $nicename;
-                          if (isset($$widgettitlelink)) {
-?>
-                          </span></u>
-                          <?php
-                          }
-                      }?>
-                    </h3></li>
-                    <li class="pull-right">
-                      <div class="btn-group">
-                        <button type="button" class="btn btn-default btn-xs" title="minimize" id="<?= $widgetname ?>-min" onclick='return minimizeWidget("<?= $widgetname ?>",true)' style="display:<?= $mindiv ?>;"><span class="glyphicon glyphicon-minus"></span></button>
-                        <button type="button" class="btn btn-default btn-xs" title="maximize" id="<?= $widgetname ?>-max" onclick='return showWidget("<?= $widgetname ?>",true)' style="display:<?= $mindiv == 'none' ? 'inline' : 'none' ?>;"><span class="glyphicon glyphicon-plus"></span></button>
-                        <button type="button" class="btn btn-default btn-xs" title="remove widget" onclick='return closeWidget("<?= $widgetname ?>",true)'><span class="glyphicon glyphicon-remove"></span></button>
-                        <button type="button" class="btn btn-default btn-xs" id="<?= $widgetname ?>-configure" onclick='return configureWidget("<?=  $widgetname ?>")' style="display:none; cursor:pointer" ><span class="glyphicon glyphicon-pencil"></span></button>
-                      </div>
-                    </li>
-                  </ul>
-                </header>
-              </form>
-              <div class="content-box-main collapse in" id="<?= $widgetname ?>-container" style="display:<?= $mindiv ?>">
-                <input type="hidden" value="<?= $inputdisplay ?>" id="<?= $widgetname ?>-config" name="<?= $widgetname ?>-config" />
+                    if (isset($$widgettitlelink)):?>
+                        <u><span onclick="location.href='/<?= $$widgettitlelink ?>'" style="cursor:pointer">
 <?php
-                if ($divdisplay != "block") {?>
-                  <div id="<?= $widgetname ?>-loader" style="display:<?= $display ?>;" align="center">
+                    endif;
+                        echo empty($$widgettitle) ?   $widgetItem['display_name'] : $$widgettitle;
+                    if (isset($$widgettitlelink)):?>
+                        </span></u>
+<?php
+                    endif;?>
+                  </h3></li>
+                  <li class="pull-right">
+                    <div class="btn-group">
+                      <button type="button" class="btn btn-default btn-xs" title="minimize" id="<?= $widgetItem['name'] ?>-min" onclick='return minimizeWidget("<?= $widgetItem['name'] ?>",true)' style="display:<?= $mindiv ?>;"><span class="glyphicon glyphicon-minus"></span></button>
+                      <button type="button" class="btn btn-default btn-xs" title="maximize" id="<?= $widgetItem['name'] ?>-max" onclick='return showWidget("<?= $widgetItem['name'] ?>",true)' style="display:<?= $mindiv == 'none' ? 'inline' : 'none' ?>;"><span class="glyphicon glyphicon-plus"></span></button>
+                      <button type="button" class="btn btn-default btn-xs" title="remove widget" onclick='return closeWidget("<?= $widgetItem['name'] ?>",true)'><span class="glyphicon glyphicon-remove"></span></button>
+                      <button type="button" class="btn btn-default btn-xs" id="<?= $widgetItem['name'] ?>-configure" onclick='return configureWidget("<?=  $widgetItem['name'] ?>")' style="display:none; cursor:pointer" ><span class="glyphicon glyphicon-pencil"></span></button>
+                    </div>
+                  </li>
+                </ul>
+              </header>
+              <div class="content-box-main collapse in container" id="<?= $widgetItem['name'] ?>-container" style="display:<?= $mindiv ?>">
+                <input type="hidden" value="<?= $inputdisplay ?>" id="<?= $widgetItem['name'] ?>-config" name="<?= $widgetItem['name'] ?>-config" />
+<?php
+                if ($divdisplay != "block"):?>
+                  <div id="<?= $widgetItem['name'] ?>-loader" style="display:<?= $display ?>;" align="center">
                     <br />
                       <span class="glyphicon glyphicon-refresh"></span> <?= gettext("Loading selected widget") ?>
                     <br />
-                  </div> <?php $display = "none";
-}
-                  if (file_exists($directory . $widget)) {
-                      if ($divdisplay == 'block') {
-                          include($directory . $widget);
-                      }
-                  }
-                  $widgetcounter++; ?>
+                  </div>
+<?php
+                else:
+                    include($widgetItem['filename']);
+                endif;
+?>
               </div>
             </div>
           </section>
 <?php
-          } //end foreach ?>
+          endforeach;?>
       </div>
     </div>
+  </form>
 </section>
-
-
-
 <?php
-    //build list of javascript include files
-    $jsincludefiles = array();
-    $directory = "widgets/javascript/";
-    $dirhandle  = opendir($directory);
-    $filename = "";
-    while (false !== ($filename = readdir($dirhandle))) {
-        $jsincludefiles[] = $filename;
-    }
-    foreach ($jsincludefiles as $jsincludename) {
-        if (!preg_match('/\.js$/', $jsincludename)) {
-            continue;
-        }
-        echo "<script src='{$directory}{$jsincludename}' type='text/javascript'></script>\n";
-    }
-?>
-
-
-<?php include("foot.inc");
+    // include widget javascripts
+    foreach (glob("/usr/local/www/widgets/javascript/*.js") as $filename):?>
+      <script src="/widgets/javascript/<?=basename($filename);?>" type="text/javascript"></script>
+<?php
+    endforeach;?>
+<?php
+  endif;
+include("foot.inc");?>

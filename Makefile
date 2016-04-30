@@ -1,3 +1,28 @@
+# Copyright (c) 2014-2016 Franco Fichtner <franco@opnsense.org>
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
 PKG!=		which pkg || echo true
 GIT!=		which git || echo true
 PAGER?=		less
@@ -84,15 +109,14 @@ CORE_DEPENDS?=		apinger \
 			ntp \
 			openssh-portable \
 			openvpn \
+			opnsense-lang \
 			opnsense-update \
 			p7zip \
 			pecl-radius \
 			pftop \
 			phalcon \
-			php-pfSense \
 			php-suhosin \
 			php56 \
-			php56-bcmath \
 			php56-ctype \
 			php56-curl \
 			php56-dom \
@@ -103,8 +127,6 @@ CORE_DEPENDS?=		apinger \
 			php56-ldap \
 			php56-mcrypt \
 			php56-openssl \
-			php56-pdo \
-			php56-pdo_sqlite \
 			php56-session \
 			php56-simplexml \
 			php56-sockets \
@@ -171,7 +193,6 @@ scripts: force
 
 install: force
 	@${MAKE} -C ${.CURDIR}/contrib install DESTDIR=${DESTDIR}
-	@${MAKE} -C ${.CURDIR}/lang install DESTDIR=${DESTDIR}
 	@${MAKE} -C ${.CURDIR}/src install DESTDIR=${DESTDIR} \
 	    CORE_PACKAGESITE=${CORE_PACKAGESITE} \
 	    CORE_REPOSITORY=${CORE_REPOSITORY}
@@ -183,7 +204,6 @@ bootstrap: force
 
 plist: force
 	@${MAKE} -C ${.CURDIR}/contrib plist
-	@${MAKE} -C ${.CURDIR}/lang plist
 	@${MAKE} -C ${.CURDIR}/src plist
 
 package-keywords: force
@@ -203,7 +223,6 @@ package: force
 		echo ">>> Missing required file(s).  Please run 'make package-keywords'" >&2; \
 		exit 1; \
 	fi
-	@${PKG} info gettext-tools > /dev/null
 	@${PKG} info git > /dev/null
 	@rm -rf ${WRKSRC} ${PKGDIR}
 	@${MAKE} DESTDIR=${WRKSRC} FLAVOUR=${FLAVOUR} install
@@ -225,7 +244,7 @@ lint: force
 	    -name "*.sh" -type f -print0 | xargs -0 -n1 sh -n
 	find ${.CURDIR}/src ${.CURDIR}/src \
 	    -name "*.xml" -type f -print0 | xargs -0 -n1 xmllint --noout
-	find ${.CURDIR}/src ${.CURDIR}/lang/dynamic/helpers \
+	find ${.CURDIR}/src \
 	    ! -name "*.xml" ! -name "*.xml.sample" ! -name "*.eot" \
 	    ! -name "*.svg" ! -name "*.woff" ! -name "*.woff2" \
 	    ! -name "*.otf" ! -name "*.png" ! -name "*.js" \
@@ -236,8 +255,6 @@ lint: force
 sweep: force
 	find ${.CURDIR}/src ! -name "*.min.*" ! -name "*.svg" \
 	    ! -name "*.map" ! -name "*.ser" -type f -print0 | \
-	    xargs -0 -n1 scripts/cleanfile
-	find ${.CURDIR}/lang -type f -print0 | \
 	    xargs -0 -n1 scripts/cleanfile
 	find ${.CURDIR}/scripts -type f -print0 | \
 	    xargs -0 -n1 scripts/cleanfile

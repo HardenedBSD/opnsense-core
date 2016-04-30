@@ -902,10 +902,8 @@ function get_interface_list($only_active = false)
 
         foreach ($ifnames as $ifname) {
             $ifinfo = legacy_interface_stats($ifname);
-            if (isset($ifinfo['link state'])) {
-                if ($ifinfo['link state'] == '2') {
-                    $_ifnames[] = $ifname;
-                }
+            if ($ifinfo['link state'] == '2') {
+                $_ifnames[] = $ifname;
             }
         }
 
@@ -918,7 +916,7 @@ function get_interface_list($only_active = false)
             continue;
         }
 
-        $ifdata = pfSense_get_interface_addresses($ifname);
+        $ifdata = legacy_get_interface_addresses($ifname);
 
         $toput = array(
           'up' => in_array($ifname, $ifnames_up),

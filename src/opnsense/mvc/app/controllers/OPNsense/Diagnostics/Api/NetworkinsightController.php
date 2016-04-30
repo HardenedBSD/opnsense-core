@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    Copyright (C) 2016 Deciso B.V.
  *
@@ -52,7 +53,7 @@ class NetworkinsightController extends ApiControllerBase
      * @param string $field field name to aggregate
      * @return array timeseries
      */
-     public function timeserieAction(
+    public function timeserieAction(
         $provider = null,
         $measure = null,
         $from_date = null,
@@ -74,9 +75,14 @@ class NetworkinsightController extends ApiControllerBase
         if ($this->request->isGet()) {
             $backend = new Backend();
             // request current data
-            $response = $backend->configdRun("netflow aggregate fetch {$provider} {$from_date} {$to_date} {$resolution} {$field}"); //
+            $response = $backend->configdRun(
+                "netflow aggregate fetch {$provider} {$from_date} {$to_date} {$resolution} {$field}"
+            );
             // for test, request random data
-            //$response = $backend->configdRun("netflow aggregate fetch {$provider} {$from_date} {$to_date} {$resolution} {$field} em0,in~em0,out~em1,in~em1,out~em2,in~em2,out~em3,in~em3,out"); //
+            //$response = $backend->configdRun(
+            //    "netflow aggregate fetch {$provider} {$from_date} {$to_date} {$resolution} {$field} " .
+            //    "em0,in~em0,out~em1,in~em1,out~em2,in~em2,out~em3,in~em3,out"
+            //);
             $graph_data = json_decode($response, true);
             if ($graph_data != null) {
                 ksort($graph_data);
@@ -121,7 +127,7 @@ class NetworkinsightController extends ApiControllerBase
      * @param string $max_hits maximum number of results
      * @return array timeseries
      */
-     public function topAction(
+    public function topAction(
         $provider = null,
         $from_date = null,
         $to_date = null,
@@ -141,7 +147,18 @@ class NetworkinsightController extends ApiControllerBase
         $result = array();
         if ($this->request->isGet()) {
             if ($this->request->get("filter_field") != null && $this->request->get("filter_value") != null) {
-                $data_filter = $this->request->get("filter_field") . "=" . $this->request->get("filter_value");
+                $filter_fields = explode(',', $this->request->get("filter_field"));
+                $filter_values = explode(',', $this->request->get("filter_value"));
+                $data_filter="";
+                foreach ($filter_fields as $field_indx => $filter_field) {
+                    if ($data_filter != '') {
+                        $data_filter .= ',';
+                    }
+                    if (isset($filter_values[$field_indx])) {
+                        $data_filter .= $filter_field.'='.$filter_values[$field_indx] ;
+                    }
+                }
+                $data_filter = "'{$data_filter}'";
             } else {
                 // no filter, empty parameter
                 $data_filter = "''";
@@ -153,6 +170,24 @@ class NetworkinsightController extends ApiControllerBase
             $graph_data = json_decode($response, true);
             if ($graph_data != null) {
                 return $graph_data;
+            }
+        }
+        return array();
+    }
+
+    /**
+     * get metadata from backend aggregation process
+     * @return array timeseries
+     */
+    public function getMetadataAction()
+    {
+        if ($this->request->isGet()) {
+            $backend = new Backend();
+            $configd_cmd = "netflow aggregate metadata json";
+            $response = $backend->configdRun($configd_cmd);
+            $metadata = json_decode($response, true);
+            if ($metadata != null) {
+                return $metadata;
             }
         }
         return array();
@@ -179,7 +214,7 @@ class NetworkinsightController extends ApiControllerBase
     public function getProtocolsAction()
     {
         $result = array();
-        foreach (explode ("\n", file_get_contents('/etc/protocols')) as $line) {
+        foreach (explode("\n", file_get_contents('/etc/protocols')) as $line) {
             if (strlen($line) > 1 && $line[0] != '#') {
                 $parts = preg_split('/\s+/', $line);
                 if (count($parts) >= 4) {
@@ -196,7 +231,7 @@ class NetworkinsightController extends ApiControllerBase
     public function getServicesAction()
     {
         $result = array();
-        foreach (explode ("\n", file_get_contents('/etc/services')) as $line) {
+        foreach (explode("\n", file_get_contents('/etc/services')) as $line) {
             if (strlen($line) > 1 && $line[0] != '#') {
                 // there a few ports which have different names for different protocols, but to not overcomplicate
                 // things here, we ignore those exceptions.
@@ -208,5 +243,35 @@ class NetworkinsightController extends ApiControllerBase
             }
         }
         return $result;
+    }
+
+    /**
+     * request timeserie data to use for reporting
+     * @param string $provider provider class name
+     * @param string $from_date from timestamp
+     * @param string $to_date to timestamp
+     * @param string $resolution resolution in seconds
+     * @return string csv output
+     */
+    public function exportAction(
+        $provider = null,
+        $from_date = null,
+        $to_date = null,
+        $resolution = null
+    ) {
+        $this->response->setContentType('application/CSV', 'UTF-8');
+        $this->response->setHeader(
+            'Content-Disposition:',
+            "Attachment; filename=\"" . $provider . ".csv\""
+        );
+        if ($this->request->isGet()) {
+            $backend = new Backend();
+            $configd_cmd = "netflow aggregate export {$provider} {$from_date} {$to_date} {$resolution}" ;
+            $response = $backend->configdRun($configd_cmd);
+            return $response;
+        } else {
+            return "";
+        }
+
     }
 }

@@ -78,10 +78,6 @@ function thermal_modules()
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig = array();
-    $pconfig['proxyurl'] = !empty($config['system']['proxyurl']) ? $config['system']['proxyurl'] : null;
-    $pconfig['proxyport'] = !empty($config['system']['proxyport']) ? $config['system']['proxyport'] : null;
-    $pconfig['proxyuser'] = !empty($config['system']['proxyuser']) ? $config['system']['proxyuser'] : null;
-    $pconfig['proxypass'] = !empty($config['system']['proxypass']) ? $config['system']['proxypass'] : null;
     $pconfig['lb_use_sticky'] = isset($config['system']['lb_use_sticky']);
     $pconfig['srctrack'] = !empty($config['system']['srctrack']) ? $config['system']['srctrack'] : null;
     $pconfig['gw_switch_default'] = isset($config['system']['gw_switch_default']);
@@ -96,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $pconfig['powerd_ac_mode'] = "hadp";
     $pconfig['rrdbackup'] = !empty($config['system']['rrdbackup']) ? $config['system']['rrdbackup'] : null;
     $pconfig['dhcpbackup'] = !empty($config['system']['dhcpbackup']) ? $config['system']['dhcpbackup'] : null;
+    $pconfig['netflowbackup'] = !empty($config['system']['netflowbackup']) ? $config['system']['netflowbackup'] : null;
     if (!empty($config['system']['powerd_ac_mode'])) {
         $pconfig['powerd_ac_mode'] = $config['system']['powerd_ac_mode'];
     }
@@ -117,30 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (count($input_errors) == 0) {
-        if (!empty($pconfig['proxyurl'])) {
-            $config['system']['proxyurl'] = $_POST['proxyurl'];
-        } elseif (isset($config['system']['proxyurl'])) {
-            unset($config['system']['proxyurl']);
-        }
-
-        if (!empty($pconfig['proxyport'])) {
-            $config['system']['proxyport'] = $pconfig['proxyport'];
-        } elseif (isset($config['system']['proxyport'])) {
-            unset($config['system']['proxyport']);
-        }
-
-        if (!empty($pconfig['proxyuser'])) {
-            $config['system']['proxyuser'] = $pconfig['proxyuser'];
-        } elseif (isset($config['system']['proxyuser'])) {
-            unset($config['system']['proxyuser']);
-        }
-
-        if (!empty($pconfig['proxypass'])) {
-            $config['system']['proxypass'] = $pconfig['proxypass'];
-        } elseif (isset($config['system']['proxypass'])) {
-            unset($config['system']['proxypass']);
-        }
-
         $need_relayd_restart = false;
         if (!empty($pconfig['lb_use_sticky'])) {
             if (!isset($config['system']['lb_use_sticky'])) {
@@ -216,24 +189,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         if (!empty($pconfig['rrdbackup'])) {
-            $config['system']['rrdbackup'] = $_POST['rrdbackup'];
-            install_cron_job("/usr/local/etc/rc.backup_rrd", ($config['system']['rrdbackup'] > 0), $minute = "0", "*/{$config['system']['rrdbackup']}");
+            $config['system']['rrdbackup'] = $pconfig['rrdbackup'];
         } elseif (isset($config['system']['rrdbackup'])) {
-            install_cron_job("/usr/local/etc/rc.backup_rrd", false, $minute = "0", "*/{$config['system']['rrdbackup']}");
             unset($config['system']['rrdbackup']);
         }
+
         if (!empty($pconfig['dhcpbackup'])) {
             $config['system']['dhcpbackup'] = $pconfig['dhcpbackup'];
-            install_cron_job("/usr/local/etc/rc.backup_dhcpleases", ($config['system']['dhcpbackup'] > 0), $minute = "0", "*/{$config['system']['dhcpbackup']}");
         } elseif (isset($config['system']['dhcpbackup'])) {
-            install_cron_job("/usr/local/etc/rc.backup_dhcpleases", false, $minute = "0", "*/{$config['system']['dhcpbackup']}");
             unset($config['system']['dhcpbackup']);
+        }
+
+        if (!empty($pconfig['netflowbackup'])) {
+            $config['system']['netflowbackup'] = $pconfig['netflowbackup'];
+        } elseif (isset($config['system']['netflowbackup'])) {
+            unset($config['system']['netflowbackup']);
         }
 
         write_config();
         $savemsg = get_std_save_message();
 
         system_resolvconf_generate(true);
+        configure_cron();
         filter_configure();
         activate_powerd();
         load_crypto_module();
@@ -251,20 +228,8 @@ include("head.inc");
 ?>
 
 <body>
-    <?php
-    include("fbegin.inc");
-    ?>
-    <script type="text/javascript">
-    //<![CDATA[
-    function sticky_checked(obj) {
-      if (obj.checked) {
-        $('#srctrack').attr('disabled',false);
-      } else {
-        $('#srctrack').attr('disabled','true');
-      }
-    }
-//]]>
-</script>
+
+<?php include("fbegin.inc"); ?>
 
 <section class="page-content-main">
   <div class="container-fluid">
@@ -282,50 +247,11 @@ include("head.inc");
           <form action="system_advanced_misc.php" method="post" name="iform" id="iform">
             <table class="table table-striped">
               <tr>
-                <td width="22%"><strong><?=gettext("Proxy support"); ?></strong></td>
-                <td  width="78%" align="right">
+                <td width="22%"><strong><?= gettext('Load Balancing') ?></strong></td>
+                <td width="78%" align="right">
                   <small><?=gettext("full help"); ?> </small>
                   <i class="fa fa-toggle-off text-danger"  style="cursor: pointer;" id="show_all_help_page" type="button"></i>
                 </td>
-              </tr>
-              <tr>
-                <td><a id="help_for_proxyurl" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Proxy URL"); ?></td>
-                <td>
-                  <input name="proxyurl" id="proxyurl" type="text" value="<?=!empty($pconfig['proxyurl']) ? $pconfig['proxyurl'] : ""; ?>"/>
-                  <div class="hidden" for="help_for_proxyurl">
-                    <?php printf(gettext("Proxy url for allowing %s to use this proxy to connect outside."), $g['product']); ?>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a id="help_for_proxyport" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Proxy Port"); ?></td>
-                <td>
-                  <input name="proxyport" id="proxyport" type="text" value="<?=!empty($pconfig['proxyport']) ? $pconfig['proxyport'] :"";?>"/>
-                  <div class="hidden" for="help_for_proxyport">
-                    <?php printf(gettext("Proxy port to use when %s connects to the proxy URL configured above. Default is 8080 for http protocol or 443 for ssl."), $g['product']); ?>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a id="help_for_proxyuser" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Proxy Username"); ?></td>
-                <td>
-                  <input name="proxyuser" id="proxyuser" type="text" value="<?= !empty($pconfig['proxyuser']) ? $pconfig['proxyuser'] : "";?>"/>
-                  <div class="hidden" for="help_for_proxyuser">
-                    <?php printf(gettext("Proxy username for allowing %s to use this proxy to connect outside"), $g['product']); ?>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a id="help_for_proxypassword" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Proxy Pass"); ?></td>
-                <td>
-                  <input type="password" name="proxypass" id="proxypass" value="<?= !empty($pconfig['proxypass']) ? $pconfig['proxypass'] : "";?>"/>
-                  <div class="hidden" for="help_for_proxypassword">
-                    <?php printf(gettext("Proxy password for allowing %s to use this proxy to connect outside"), $g['product']); ?>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <th colspan="2" valign="top" class="listtopic"><?=gettext("Load Balancing"); ?></th>
               </tr>
               <tr>
                 <td><a id="help_for_gw_switch_default" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Gateway switching");?> </td>
@@ -341,7 +267,7 @@ include("head.inc");
               <tr>
                 <td><a id="help_for_lb_use_sticky" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Sticky connections");?> </td>
                 <td>
-                  <input name="lb_use_sticky" type="checkbox" id="lb_use_sticky" value="yes" <?= !empty($pconfig['lb_use_sticky']) ? "checked=\"checked\"" :"";?> onclick="sticky_checked(this)" />
+                  <input name="lb_use_sticky" type="checkbox" id="lb_use_sticky" value="yes" <?= !empty($pconfig['lb_use_sticky']) ? 'checked="checked"' : '';?>/>
                   <strong><?=gettext("Use sticky connections"); ?></strong><br />
                   <div class="hidden" for="help_for_lb_use_sticky">
                     <?=gettext("Successive connections will be redirected to the servers " .
@@ -352,8 +278,8 @@ include("head.inc");
                                         "the sticky connection. Further connections from that host " .
                                         "will be redirected to the next web server in the round " .
                                         "robin. Changing this option will restart the Load Balancing service."); ?>
-                  </div>
-                  <input placeholder="<?=gettext("Source tracking timeout");?>" title="<?=gettext("Source tracking timeout");?>" data-toggle="tooltip" data-placement="left" name="srctrack" id="srctrack" type="text" value="<?= !empty($pconfig['srctrack']) ? $pconfig['srctrack'] : "";?>" <?= empty($pconfig['lb_use_sticky']) ? "disabled=\"disabled\"" : "";?> />
+                  </div><br/>
+                  <input placeholder="<?=gettext("Source tracking timeout");?>" title="<?=gettext("Source tracking timeout");?>" name="srctrack" id="srctrack" type="text" value="<?= !empty($pconfig['srctrack']) ? $pconfig['srctrack'] : "";?>"/>
 
                   <div class="hidden" for="help_for_lb_use_sticky">
                     <?=gettext("Set the source tracking timeout for sticky connections. " .
@@ -363,57 +289,12 @@ include("head.inc");
                 </td>
               </tr>
               <tr>
-                <th colspan="2" valign="top" class="listtopic"><?=gettext("Power savings"); ?></th>
+                <th colspan="2" valign="top" class="listtopic"><?=gettext("Power Savings"); ?></th>
               </tr>
               <tr>
                 <td><a id="help_for_powerd_enable" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use PowerD"); ?></td>
                 <td>
                   <input name="powerd_enable" type="checkbox" id="powerd_enable" value="yes" <?=!empty($pconfig['powerd_enable']) ? "checked=\"checked\"" : "";?> />
-                  <hr/>
-                  <table class="table table-condensed">
-                      <thead>
-                        <tr>
-                          <th><?=gettext("On AC Power Mode"); ?></th>
-                          <th><?=gettext("On Battery Power Mode"); ?></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>
-                            <select name="powerd_ac_mode" class="selectpicker" data-style="btn-default" data-width="auto">
-                              <option value="hadp" <?=$pconfig['powerd_ac_mode']=="hadp" ? "selected=\"selected\"" : "";?>>
-                                <?=gettext("Hiadaptive");?>
-                              </option>
-                              <option value="adp" <?=$pconfig['powerd_ac_mode']=="adp" ? "selected=\"selected\"" : "";?>>
-                                <?=gettext("Adaptive");?>
-                              </option>
-                              <option value="min" <?=$pconfig['powerd_ac_mode']=="min" ? "selected=\"selected\"" : "";?>>
-                                <?=gettext("Minimum");?>
-                              </option>
-                              <option value="max" <?=$pconfig['powerd_ac_mode']=="max" ? " selected=\"selected\"" : "";?>>
-                                <?=gettext("Maximum");?>
-                              </option>
-                            </select>
-                          </td>
-                          <td>
-                            <select name="powerd_battery_mode" class="selectpicker" data-style="btn-default" data-width="auto">
-                              <option value="hadp"<?=$pconfig['powerd_battery_mode']=="hadp" ? "selected=\"selected\"" : "";?>>
-                                <?=gettext("Hiadaptive");?>
-                              </option>
-                              <option value="adp" <?=$pconfig['powerd_battery_mode']=="adp" ? "selected=\"selected\"" : "";?>>
-                                <?=gettext("Adaptive");?>
-                              </option>
-                              <option value="min" <?=$pconfig['powerd_battery_mode']=="min" ? "selected=\"selected\"" :"";?>>
-                                <?=gettext("Minimum");?>
-                              </option>
-                              <option value="max" <?=$pconfig['powerd_battery_mode']=="max" ? "selected=\"selected\"" : "";?>>
-                                <?=gettext("Maximum");?>
-                              </option>
-                            </select>
-                          </td>
-                        </tr>
-                      </tbody>
-                  </table>
                   <div class="hidden" for="help_for_powerd_enable">
                     <?=gettext("The powerd utility monitors the system state and sets various power control " .
                                         "options accordingly.  It offers four modes (maximum, minimum, adaptive " .
@@ -429,6 +310,43 @@ include("head.inc");
                                         "than power consumption.  It raises frequency faster, drops slower and " .
                                         "keeps twice lower CPU load."); ?>
                   </div>
+                </td>
+              </tr>
+              <tr>
+                <td><i class="fa fa-info-circle text-muted"></i>  <?=gettext('On AC Power Mode') ?></td>
+                <td>
+                  <select name="powerd_ac_mode" class="selectpicker" data-style="btn-default" data-width="auto">
+                    <option value="hadp" <?=$pconfig['powerd_ac_mode']=="hadp" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Hiadaptive");?>
+                    </option>
+                    <option value="adp" <?=$pconfig['powerd_ac_mode']=="adp" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Adaptive");?>
+                    </option>
+                    <option value="min" <?=$pconfig['powerd_ac_mode']=="min" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Minimum");?>
+                    </option>
+                    <option value="max" <?=$pconfig['powerd_ac_mode']=="max" ? " selected=\"selected\"" : "";?>>
+                      <?=gettext("Maximum");?>
+                    </option>
+                  </select>
+                </td>
+              <tr>
+                <td><i class="fa fa-info-circle text-muted"></i>  <?=gettext('On Battery Power Mode') ?></td>
+                <td>
+                  <select name="powerd_battery_mode" class="selectpicker" data-style="btn-default" data-width="auto">
+                    <option value="hadp"<?=$pconfig['powerd_battery_mode']=="hadp" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Hiadaptive");?>
+                    </option>
+                    <option value="adp" <?=$pconfig['powerd_battery_mode']=="adp" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Adaptive");?>
+                    </option>
+                    <option value="min" <?=$pconfig['powerd_battery_mode']=="min" ? "selected=\"selected\"" :"";?>>
+                      <?=gettext("Minimum");?>
+                    </option>
+                    <option value="max" <?=$pconfig['powerd_battery_mode']=="max" ? "selected=\"selected\"" : "";?>>
+                      <?=gettext("Maximum");?>
+                    </option>
+                  </select>
                 </td>
               </tr>
               <tr>
@@ -539,26 +457,24 @@ include("head.inc");
                 </td>
               </tr>
               <tr>
-                <th colspan="2" valign="top" class="listtopic"><?=gettext("Periodic Backups)"); ?></th>
+                <th colspan="2" valign="top" class="listtopic"><?=gettext("Periodic Backups"); ?></th>
               </tr>
               <tr>
                 <td><a id="help_for_rrdbackup" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Periodic RRD Backup");?></td>
-                  <td>
-                    <select name="rrdbackup" class="selectpicker" data-style="btn-default" id="rrdbackup">
-                      <option value='0' <?=!$pconfig['rrdbackup'] == 0 ? "selected='selected'" : "";?>>
-                        <?=gettext("Disable"); ?>
-                      </option>
+                <td>
+                  <select name="rrdbackup" class="selectpicker" data-style="btn-default" id="rrdbackup">
+                    <option value='0' <?=!$pconfig['rrdbackup'] == 0 ? 'selected="selected"' : ''; ?>><?=gettext("Disabled"); ?></option>
 <?php
-                      for ($x=1; $x<=24; $x++):?>
-                      <option value='<?= $x ?>' <?= $pconfig['rrdbackup'] == $x ? "selected='selected'" : "";?>>
-                        <?= $x ?> <?=gettext("hour"); ?><?=($x>1) ? "s" : "";?>
-                      </option>
+                    for ($x = 1; $x <= 24; $x++): ?>
+                    <option value="<?= $x ?>" <?= $pconfig['rrdbackup'] == $x ? 'selected="selected"' : ''; ?>>
+                      <?= $x == 1 ? gettext('1 hour') : sprintf(gettext('%s hours'), $x) ?>
+                    </option>
 <?php
                       endfor; ?>
                   </select>
                   <br />
                   <div class="hidden" for="help_for_rrdbackup">
-                    <?=gettext("This will periodically backup the RRD data so it can be restored automatically on the next boot. Keep in mind that the more frequent the backup, the more writes will happen to your media.");?>
+                    <?=gettext("This will periodically backup the RRD data so it can be restored automatically on the next boot.");?>
                   </div>
                 </td>
               </tr>
@@ -566,17 +482,35 @@ include("head.inc");
                 <td><a id="help_for_dhcpbackup" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Periodic DHCP Leases Backup");?></td>
                 <td>
                   <select name="dhcpbackup" class="selectpicker" data-style="btn-default" id="dhcpbackup">
-                    <option value='0' <?= $pconfig['dhcpbackup'] == 0 ? "selected='selected'" : ""; ?>><?=gettext("Disable"); ?></option>
+                    <option value='0' <?= $pconfig['dhcpbackup'] == 0 ? "selected='selected'" : ''; ?>><?=gettext('Disabled'); ?></option>
 <?php
-                    for ($x=1; $x<=24; $x++):?>
-                    <option value='<?= $x ?>' <?= $pconfig['dhcpbackup'] == $x ? "selected='selected'" : "";?>>
-                      <?= $x ?> <?=gettext("hour"); ?><?=($x>1) ? "s" : "";?>
+                    for ($x = 1; $x <= 24; $x++): ?>
+                    <option value="<?= $x ?>" <?= $pconfig['dhcpbackup'] == $x ? 'selected="selected"' : '';?>>
+                      <?= $x == 1 ? gettext('1 hour') : sprintf(gettext('%s hours'), $x) ?>
                     </option>
 <?php
                     endfor; ?>
                   </select>
                   <div class="hidden" for="help_for_dhcpbackup">
-                    <?=gettext("This will periodically backup the DHCP leases data so it can be restored automatically on the next boot. Keep in mind that the more frequent the backup, the more writes will happen to your media.");?>
+                    <?=gettext("This will periodically backup the DHCP leases data so it can be restored automatically on the next boot.");?>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><a id="help_for_netflowbackup" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Periodic NetFlow Backup");?></td>
+                <td>
+                  <select name="netflowbackup" class="selectpicker" data-style="btn-default" id="netflowbackup">
+                    <option value='0' <?= $pconfig['netflowbackup'] == 0 ? 'selected="selected"' : ''; ?>><?=gettext('Disabled'); ?></option>
+<?php
+                    for ($x = 1; $x <= 24; $x++): ?>
+                    <option value="<?= $x ?>" <?= $pconfig['netflowbackup'] == $x ? 'selected="selected"' : '';?>>
+                      <?= $x == 1 ? gettext('1 hour') : sprintf(gettext('%s hours'), $x) ?>
+                    </option>
+<?php
+                    endfor; ?>
+                  </select>
+                  <div class="hidden" for="help_for_netflowbackup">
+                    <?=gettext("This will periodically backup the NetFlow data aggregation so it can be restored automatically on the next boot.");?>
                   </div>
                 </td>
               </tr>
@@ -587,10 +521,10 @@ include("head.inc");
                 <td><a id="help_for_use_mfs_tmpvar" href="#" class="showhelp"><i class="fa fa-info-circle"></i></a> <?=gettext("Use RAM Disks"); ?></td>
                 <td>
                   <input name="use_mfs_tmpvar" type="checkbox" id="use_mfs_tmpvar" value="yes" <?=!empty($pconfig['use_mfs_tmpvar']) ? "checked=\"checked\"" : "";?>/>
+                  <strong><?=gettext("Use memory file system for /tmp and /var"); ?></strong>
                   <div class="hidden" for="help_for_use_mfs_tmpvar">
-                    <strong><?=gettext("Use memory file system for /tmp and /var"); ?></strong><br />
                     <?=gettext("Set this if you wish to use /tmp and /var as RAM disks (memory file system disks) on a full install " .
-                                        "rather than use the hard disk. Setting this will cause the data in /tmp and /var to be lost at reboot, including log data. RRD and DHCP Leases will be retained."); ?>
+                      "rather than use the hard disk. Setting this will cause the data in /tmp and /var to be lost on reboot, including log data."); ?>
                   </div>
                 </td>
               </tr>

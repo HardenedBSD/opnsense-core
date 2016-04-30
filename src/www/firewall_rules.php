@@ -476,13 +476,10 @@ $( document ).ready(function() {
                       <a href="#" class="act_toggle" id="toggle_<?=$i;?>" data-toggle="tooltip" title="<?=(empty($filterent['disabled'])) ? gettext("disable rule") : gettext("enable rule");?>"><span class="glyphicon <?=$iconfn;?>"></span></a>
 <?php
                       if (!empty($filterent['direction']) && $filterent['direction'] == "in"):?>
-                        <i class="fa fa-long-arrow-right" data-toggle="tooltip" title="<?=gettext("in");?>"></i>
+                        <i class="fa fa-long-arrow-right text-info" data-toggle="tooltip" title="<?=gettext("in");?>"></i>
 <?php
                       elseif (!empty($filterent['direction']) && $filterent['direction'] == "out"):?>
                         <i class="fa fa-long-arrow-left" data-toggle="tooltip" title="<?=gettext("out");?>"></i>
-<?php
-                      elseif (!empty($filterent['direction']) && $filterent['direction'] == "any"):?>
-                        <i class="fa fa-arrows-h" data-toggle="tooltip" title="<?=gettext("any");?>"></i>
 <?php                 endif;?>
 <?php                 if ($selected_if != 'FloatingRules'):
                         ; // interfaces are always quick
@@ -501,22 +498,22 @@ $( document ).ready(function() {
 <?php
                         $icmptypes = array(
                           "" => gettext("any"),
-                          "echoreq" => gettext("Echo request"),
-                          "echorep" => gettext("Echo reply"),
-                          "unreach" => gettext("Destination unreachable"),
-                          "squench" => gettext("Source quench"),
+                          "echoreq" => gettext("Echo Request"),
+                          "echorep" => gettext("Echo Reply"),
+                          "unreach" => gettext("Destination Unreachable"),
+                          "squench" => gettext("Source Quench (Deprecated)"),
                           "redir" => gettext("Redirect"),
-                          "althost" => gettext("Alternate Host"),
-                          "routeradv" => gettext("Router advertisement"),
-                          "routersol" => gettext("Router solicitation"),
-                          "timex" => gettext("Time exceeded"),
-                          "paramprob" => gettext("Invalid IP header"),
+                          "althost" => gettext("Alternate Host Address (Deprecated)"),
+                          "routeradv" => gettext("Router Advertisement"),
+                          "routersol" => gettext("Router Solicitation"),
+                          "timex" => gettext("Time Exceeded"),
+                          "paramprob" => gettext("Parameter Problem"),
                           "timereq" => gettext("Timestamp"),
-                          "timerep" => gettext("Timestamp reply"),
-                          "inforeq" => gettext("Information request"),
-                          "inforep" => gettext("Information reply"),
-                          "maskreq" => gettext("Address mask request"),
-                          "maskrep" => gettext("Address mask reply")
+                          "timerep" => gettext("Timestamp Reply"),
+                          "inforeq" => gettext("Information Request (Deprecated)"),
+                          "inforep" => gettext("Information Reply (Deprecated)"),
+                          "maskreq" => gettext("Address Mask Request (Deprecated)"),
+                          "maskrep" => gettext("Address Mask Reply (Deprecated)")
                         );
                         if (isset($filterent['protocol']) && $filterent['protocol'] == "icmp" && !empty($filterent['icmptype'])):
 ?>
@@ -724,7 +721,7 @@ $( document ).ready(function() {
                           <td width="14"></td>
                           <td width="16"><span class="glyphicon glyphicon-info-sign text-info"></span></td>
                           <td width="100"><?=gettext("log");?></td>
-                          <td width="16"><span class="fa fa-long-arrow-right"></span></td>
+                          <td width="16"><span class="fa fa-long-arrow-right text-info"></span></td>
                           <td width="100"><?=gettext("in");?></td>
 <?php                     if ($selected_if == 'FloatingRules'): ?>
                           <td width="16"><span class="fa fa-flash text-warning"></span></td>

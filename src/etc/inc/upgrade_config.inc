@@ -501,76 +501,6 @@ function upgrade_024_to_025() {
 	unset($config['system']['use_rrd_gateway']);
 }
 
-function upgrade_025_to_026()
-{
-	global $config;
-	$cron_item = array();
-	$cron_item['minute'] = "0";
-	$cron_item['hour'] = "*";
-	$cron_item['mday'] = "*";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "newsyslog";
-
-	$config['cron']['item'][] = $cron_item;
-
-	$cron_item = array();
-	$cron_item['minute'] = "1,31";
-	$cron_item['hour'] = "0-5";
-	$cron_item['mday'] = "*";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "adjkerntz -a";
-
-	$config['cron']['item'][] = $cron_item;
-
-	$cron_item = array();
-	$cron_item['minute'] = "1";
-	$cron_item['hour'] = "*";
-	$cron_item['mday'] = "1";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "/usr/local/etc/rc.update_bogons";
-
-	$config['cron']['item'][] = $cron_item;
-
-	$cron_item = array();
-	$cron_item['minute'] = "*/60";
-	$cron_item['hour'] = "*";
-	$cron_item['mday'] = "*";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "/usr/local/sbin/expiretable -v -t 3600 sshlockout";
-
-	$config['cron']['item'][] = $cron_item;
-
-	$cron_item = array();
-	$cron_item['minute'] = "1";
-	$cron_item['hour'] = "1";
-	$cron_item['mday'] = "*";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "/usr/local/etc/rc.dyndns.update";
-
-	$config['cron']['item'][] = $cron_item;
-
-	$cron_item = array();
-	$cron_item['minute'] = "*/60";
-	$cron_item['hour'] = "*";
-	$cron_item['mday'] = "*";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "/usr/local/sbin/expiretable -v -t 3600 virusprot";
-
-	$config['cron']['item'][] = $cron_item;
-}
-
 function upgrade_028_to_029() {
 	global $config;
 	$rule_item = array();
@@ -583,7 +513,6 @@ function upgrade_028_to_029() {
 	$rule_item['statetype'] = "keep state";
 	$a_filter[] = $rule_item;
 }
-
 
 function upgrade_029_to_030() {
 	global $config;
@@ -2123,13 +2052,6 @@ function upgrade_054_to_055()
 		unset($rrdxmlarray);
 	}
 	enable_rrd_graphing();
-	/* Let's save the RRD graphs after we run enable RRD graphing */
-	/* The function will restore the rrd.tgz so we will save it after */
-	exec("cd /; LANG=C NO_REMOUNT=1 RRDDBPATH='{$rrddbpath}' CF_CONF_PATH='/conf' /usr/local/etc/rc.backup_rrd");
-	mwexec('/bin/rm /var/db/rrd/*.xml');
-	if (file_exists("/var/run/booting")) {
-		echo "Updating configuration...";
-	}
 }
 
 function upgrade_055_to_056() {
@@ -2511,19 +2433,6 @@ function upgrade_069_to_070() {
 	}
 }
 
-function upgrade_070_to_071() {
-	global $config;
-
-	if (is_array($config['cron']['item'])) {
-		foreach($config['cron']['item'] as $idx => $cronitem) {
-			if(stristr($cronitem['command'], "checkreload.sh")) {
-				unset($config['cron']['item'][$idx]);
-				break;
-			}
-		}
-	}
-}
-
 function rename_field(& $section, $oldname, $newname) {
 	if (is_array($section)) {
 		foreach($section as & $item) {
@@ -2575,19 +2484,6 @@ function upgrade_074_to_075() {
 		rename_field($config['cert'], 'name', 'descr');
 	if (is_array($config['crl']))
 		rename_field($config['crl'], 'name', 'descr');
-}
-
-function upgrade_075_to_076() {
-	global $config;
-	$cron_item = array();
-	$cron_item['minute'] = "30";
-	$cron_item['hour'] = "12";
-	$cron_item['mday'] = "*";
-	$cron_item['month'] = "*";
-	$cron_item['wday'] = "*";
-	$cron_item['who'] = "root";
-	$cron_item['command'] = "/usr/local/etc/rc.update_urltables";
-	$config['cron']['item'][] = $cron_item;
 }
 
 function upgrade_076_to_077() {
@@ -2788,15 +2684,12 @@ function upgrade_080_to_081()
 		@unlink("/tmp/{$xmldumpnew}");
 	}
 	enable_rrd_graphing();
-	/* Let's save the RRD graphs after we run enable RRD graphing */
-	/* The function will restore the rrd.tgz so we will save it after */
-	exec("cd /; LANG=C NO_REMOUNT=1 RRDDBPATH='{$rrddbpath}' CF_CONF_PATH='/conf' /usr/local/etc/rc.backup_rrd");
-	if (file_exists("/var/run/booting"))
-		echo "Updating configuration...";
+
 	foreach($config['filter']['rule'] as & $rule) {
 		if (isset($rule['protocol']) && !empty($rule['protocol']))
 			$rule['protocol'] = strtolower($rule['protocol']);
 	}
+
 	unset($rule);
 }
 
@@ -3094,9 +2987,6 @@ function upgrade_095_to_096()
 
 	}
 	enable_rrd_graphing();
-	/* Let's save the RRD graphs after we run enable RRD graphing */
-	/* The function will restore the rrd.tgz so we will save it after */
-	exec("cd /; LANG=C NO_REMOUNT=1 RRDDBPATH='{$rrddbpath}' CF_CONF_PATH='/conf' /usr/local/etc/rc.backup_rrd");
 }
 
 function upgrade_096_to_097()
@@ -3130,11 +3020,6 @@ function upgrade_098_to_099() {
 			unset($dhcpifconf['next-server']);
 		}
 	}
-}
-
-function upgrade_099_to_100()
-{
-	install_cron_job("newsyslog", false);
 }
 
 function upgrade_100_to_101()
