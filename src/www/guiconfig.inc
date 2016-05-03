@@ -34,18 +34,17 @@ require_once("config.inc");
 
 /* THIS MUST BE ABOVE ALL OTHER CODE */
 if (empty($nocsrf)) {
-    function csrf_startup()
-    {
-      csrf_conf('rewrite-js', '/csrf/csrf-magic.js');
-      $timeout_minutes = isset($config['system']['webgui']['session_timeout']) ?  $config['system']['webgui']['session_timeout'] : 240;
-      csrf_conf('expires', $timeout_minutes * 60);
-    }
-    require_once('csrf/csrf-magic.php');
+    function csrf_startup() {
+        global $config;
 
-    // make sure the session is closed after executing csrf-magic
-    if (session_status() != PHP_SESSION_NONE) {
-        session_write_close();
+        csrf_conf('rewrite-js', '/csrf/csrf-magic.js');
+        $timeout_minutes = isset($config['system']['webgui']['session_timeout']) ? $config['system']['webgui']['session_timeout'] : 240;
+        csrf_conf('expires', $timeout_minutes * 60);
     }
+
+    session_start();
+    require_once('csrf/csrf-magic.php');
+    session_write_close();
 }
 
 function set_language()
@@ -84,15 +83,6 @@ function html_safe($text)
 {
     /* gettext() embedded in JavaScript can cause syntax errors */
     return htmlspecialchars($text, ENT_QUOTES | ENT_HTML401);
-}
-
-/* make sure nothing is cached */
-if (isset($omit_nocacheheaders) && $omit_nocacheheaders) {
-    header("Expires: 0");
-    header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-    header("Cache-Control: no-store, no-cache, must-revalidate");
-    header("Cache-Control: post-check=0, pre-check=0", false);
-    header("Pragma: no-cache");
 }
 
 header("X-Frame-Options: SAMEORIGIN");
